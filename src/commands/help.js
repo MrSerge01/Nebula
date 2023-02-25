@@ -15,7 +15,7 @@ module.exports = class Help {
     let embed = new EmbedBuilder()
       .setTitle("Help")
       .addFields(
-        { name: "🔉 • Echo", value: "test" }, // ちーっす
+        { name: "🔉 • Echo", value: "test" },
         { name: "🎮 • Game", value: "rps" },
         { name: "❔ • Info", value: ["about", "changelog", "donate", "server", "user"].join(", ") },
         { name: "📊 • Manage", value: ["ban", "clear", "kick", "unban", "warn"].join(", ") },
