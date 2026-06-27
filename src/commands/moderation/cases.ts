@@ -84,7 +84,7 @@ async function generateEmbed(options: {
 
   const embed = new EmbedBuilder()
     .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${id ? capitalize(displayedCases[0].type?.toLowerCase()) : (type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length))} ${id ? `#${id}` : (user ? `of ${user.username}` : "in the server")}`,
+      name: `${dotCheck({ string: avatar, doubleSpace: true })}${id ? capitalize(displayedCases[0].type?.toLowerCase()) : type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length)} ${id ? `#${id}` : user ? `of ${user.username}` : "in the server"}`,
       iconURL: avatar ?? undefined,
     })
     .setFooter({

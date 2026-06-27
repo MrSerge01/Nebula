@@ -10,8 +10,6 @@
   "type": "module",
   "scripts": {
     "setup": "bun i && bun run cli/setup.ts",
-    "buildProj": "bun tsgo -p tsconfig.json",
-    "altdev": "bun --watch ./dist/src/bot.js",
     "dev": "bun --watch ./src/bot.ts",
     "start": "bun ./src/index.ts",
     "ql": "prettier --w .; eslint . --fix"
@@ -23,20 +21,19 @@
     "chartjs-node-canvas": "^5.0.0",
     "colorthief": "^3.3.1",
     "discord.js": "^14.26.4",
-    "enhanced-ms": "^4.3.0",
+    "enhanced-ms": "^5.0.0",
     "mathjs": "^15.2.0",
-    "sharp": "^0.34.5"
+    "sharp": "^0.35.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@typescript-eslint/eslint-plugin": "^8.60.1",
-    "@typescript-eslint/parser": "^8.60.1",
-    "@typescript/native-preview": "^7.0.0-dev.20260602.1",
+    "@typescript-eslint/eslint-plugin": "^8.62.0",
+    "@typescript-eslint/parser": "^8.62.0",
     "bun-types": "^1.3.14",
-    "eslint": "^10.4.1",
-    "eslint-plugin-unicorn": "^64.0.0",
-    "prettier": "^3.8.3",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.60.1"
+    "eslint": "^10.6.0",
+    "eslint-plugin-unicorn": "^69.0.0",
+    "prettier": "^3.9.0",
+    "typescript": "^7.0.1-rc",
+    "typescript-eslint": "^8.62.0"
   }
 }

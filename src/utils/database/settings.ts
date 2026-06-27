@@ -334,8 +334,7 @@ export async function getSetting<
   // TODO: here value should be "string[]" but somehow is "string & any[]" if you remove the type cast
   if (Array.isArray(value))
     return (value as string[]).map(valuelet => switchTypes(valuelet)) as
-      | SqlType<FieldData>
-      | SqlType<FieldData>[];
+      SqlType<FieldData> | SqlType<FieldData>[];
 
   return switchTypes(value);
 }

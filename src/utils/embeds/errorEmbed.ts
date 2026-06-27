@@ -1,10 +1,18 @@
 import {
+  ActionRowBuilder,
   AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   codeBlock,
   ContainerBuilder,
   FileBuilder,
+  FileUploadBuilder,
+  LabelBuilder,
+  ModalBuilder,
   SeparatorBuilder,
   TextDisplayBuilder,
+  TextInputBuilder,
+  TextInputStyle,
   type AnySelectMenuInteraction,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
@@ -14,6 +22,7 @@ import {
   type ModalSubmitInteraction,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
+import { modalSubmit } from "utils/modalSubmit";
 import { safeChannel, safeReply } from "utils/safeThings";
 import { errorType } from "../errorType";
 
@@ -50,7 +59,7 @@ export async function errorEmbed(options: {
   if (reason) content.push(reason);
   if (!title && !reason)
     content.push(
-      `The bot has experienced an internal error.\nThe team has been informed. [If you keep encountering this issue, please go to our support server to report it.](https://discord.gg/c6C25P4BuY)`,
+      `The bot has experienced an internal error.\n## If you can, PLEASE report the issue with the button below.`,
     );
 
   const container = new ContainerBuilder()
@@ -59,6 +68,13 @@ export async function errorEmbed(options: {
       new TextDisplayBuilder().setContent(content.join("\n")),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Red }));
+
+  if (log && interaction)
+    container.addActionRowComponents(
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder().setLabel("Report").setStyle(ButtonStyle.Primary).setCustomId("please"),
+      ),
+    );
 
   if (options.error)
     container
@@ -74,9 +90,9 @@ export async function errorEmbed(options: {
           [
             "**📜 • Error stack**",
             stack
-              ? (stack.length <= 4096
+              ? stack.length <= 4096
                 ? codeBlock(stack)
-                : "The error stacktrace is an attachment below this embed due to it being too large.")
+                : "The error stacktrace is an attachment below this embed due to it being too large."
               : "No error stacktrace.",
           ].join("\n"),
         ),
@@ -91,10 +107,10 @@ export async function errorEmbed(options: {
   if (forward) {
     const developmentErrorChannel = process.env.DEV_ERROR_CHANNEL_ID;
     if (!developmentErrorChannel) {
+      console.error(error);
       console.log(
         "hey, you don't have DEV_ERROR_CHANNEL_ID set in .env and the bot tried to forward an error message to undefined :D",
       );
-      console.error(error);
       return;
     }
 
@@ -109,16 +125,77 @@ export async function errorEmbed(options: {
   }
 
   if (log) console.error(error);
-  if (interaction)
-    return await safeReply({
+  if (interaction) {
+    const reply = await safeReply({
       interaction,
       replyOptions: { components: [container], files, flags: ["Ephemeral", "IsComponentsV2"] },
     });
+    const collector = reply.createMessageComponentCollector({ time: 60_000 });
+    collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
+      if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+      collector.resetTimer({ time: 60_000 });
+
+      if (buttonInteraction.customId == "please") {
+        const modal = new ModalBuilder()
+          .setCustomId("modalpls")
+          .setTitle("•  Report the issue pretty please")
+          .addLabelComponents(
+            new LabelBuilder()
+              .setLabel("Description")
+              .setTextInputComponent(
+                new TextInputBuilder()
+                  .setCustomId("description")
+                  .setPlaceholder("Describe the issue... please 🥹")
+                  .setMaxLength(4000)
+                  .setStyle(TextInputStyle.Paragraph)
+                  .setRequired(true),
+              ),
+            new LabelBuilder()
+              .setLabel("How to reproduce?")
+              .setTextInputComponent(
+                new TextInputBuilder()
+                  .setCustomId("reproduction")
+                  .setPlaceholder("Now how the hell did you reproduce the issue?... please say ❤️‍🩹")
+                  .setMaxLength(4000)
+                  .setStyle(TextInputStyle.Paragraph)
+                  .setRequired(false),
+              ),
+            new LabelBuilder()
+              .setLabel("Any screenies?")
+              .setFileUploadComponent(
+                new FileUploadBuilder().setCustomId("image").setRequired(false),
+              ),
+          );
+
+        await buttonInteraction.showModal(modal);
+        const modalInteraction = await modalSubmit(buttonInteraction);
+        collector.resetTimer({ time: 60_000 });
+        if (!modalInteraction) return;
+
+        const modalContainer = new ContainerBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              "Thank you for reporting... you've made Goos proud 🥹\nWe'll look into this error.",
+            ),
+          )
+          .setAccentColor(await colorize({ hue: Sokolors.Purple }));
+
+        await safeReply({
+          interaction: modalInteraction,
+          replyOptions: { components: [modalContainer], flags: ["Ephemeral", "IsComponentsV2"] },
+        });
+      }
+    });
+  }
 }
 
 export async function buttonCheck(options: {
   i: ButtonInteraction | AnySelectMenuInteraction;
-  interaction: ChatInputCommandInteraction | ButtonInteraction | ModalSubmitInteraction;
+  interaction:
+    | ChatInputCommandInteraction
+    | ButtonInteraction
+    | ModalSubmitInteraction
+    | AnySelectMenuInteraction;
   reply: Message | InteractionResponse;
   noExecuteError?: boolean;
 }): Promise<Awaited<ReturnType<typeof errorEmbed>>> {

@@ -181,9 +181,7 @@ export async function settingsEmbed(
   // Create a container
   async function construct(
     settingsObject_:
-      | Record<string, SingleSettingDefinition>
-      | Record<string, SingleSettingDefinition>[]
-      | null,
+      Record<string, SingleSettingDefinition> | Record<string, SingleSettingDefinition>[] | null,
     container: ContainerBuilder,
     reset: boolean,
     buttons: ActionRowBuilder<MessageActionRowComponentBuilder>[],
@@ -263,8 +261,7 @@ export async function settingsEmbed(
   // Build a single setting row
   const settingComponent = async (options: {
     settingsObj:
-      | Record<string, SingleSettingDefinition>
-      | Record<string, SingleSettingDefinition>[];
+      Record<string, SingleSettingDefinition> | Record<string, SingleSettingDefinition>[];
     name: string;
     reset: boolean;
     objectView?: boolean;
@@ -335,8 +332,8 @@ export async function settingsEmbed(
 
     const typedSetting = (settingsObj as Record<string, SingleSettingDefinition>)[name];
     let settingObject:
-      | SingleSettingDefinition
-      | (SingleSettingDefinition & { type: "OBJECT" })["settings"] = typedSetting;
+      SingleSettingDefinition | (SingleSettingDefinition & { type: "OBJECT" })["settings"] =
+      typedSetting;
 
     if (typedSetting.type === "OBJECT")
       switch (name) {
@@ -681,7 +678,7 @@ export async function settingsEmbed(
         const value = modalInteraction.fields.getTextInputValue("setting");
         const length = value.length;
         let settingText = `**${dotCheck({ string: settingsObject[cID].emoji, twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`;
-        let valueText = `The ${value.length < 50 ? "value" : "**value**"} has been set ${length >= 500 ? "successfully." : (length >= 50 ? `to ${value}` : `to **${value}**`)}`;
+        let valueText = `The ${value.length < 50 ? "value" : "**value**"} has been set ${length >= 500 ? "successfully." : length >= 50 ? `to ${value}` : `to **${value}**`}`;
         let hue = Sokolors.Blue;
 
         if (isValueValid(value, settingsObject[cID].type))
