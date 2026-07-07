@@ -180,7 +180,7 @@ export async function errorEmbed(options: {
                 new TextInputBuilder()
                   .setCustomId("description")
                   .setPlaceholder("Pleasepleasepleasepleasepleasplesae 🥹")
-                  .setMaxLength(4000)
+                  .setMaxLength(3900)
                   .setStyle(TextInputStyle.Paragraph)
                   .setRequired(true),
               ),
@@ -190,7 +190,7 @@ export async function errorEmbed(options: {
                 new TextInputBuilder()
                   .setCustomId("explanation")
                   .setPlaceholder("Now how the hell did you reproduce the issue..? please say ❤️‍🩹")
-                  .setMaxLength(4000)
+                  .setMaxLength(3900)
                   .setStyle(TextInputStyle.Paragraph)
                   .setRequired(false),
               ),

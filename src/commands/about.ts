@@ -41,7 +41,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new TextDisplayBuilder().setContent(
         [
           "**📃 • General**",
-          `Version **${version}**, *Heijun*`,
+          `Version **${version}** • *Heijun*`,
           `**${members.toLocaleString("en-US")}** ${pluralOrNot("member", members)} • **${guilds.size.toLocaleString("en-US")}** ${pluralOrNot(
             "guild",
             guilds.size,

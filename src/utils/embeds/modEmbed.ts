@@ -183,9 +183,8 @@ export async function modEmbed(
   const serverAvatar = (guild.icon ? guild.iconURL() : undefined) ?? undefined;
   const avatar = user ? user.displayAvatarURL() : serverAvatar;
   let author = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""} ${name}`;
-  if (reason) generalValues.push(`**Reason**: ${reason}`);
-  else generalValues.push("*No reason provided*");
 
+  if (reason) generalValues.push(`**Reason**: ${reason}`);
   if (duration) generalValues.push(`**Duration**: ${ms(duration, "fullPrecision")}`);
   if (channel) generalValues.push(`**Channel**: ${mention(channel, "CHANNEL")}`);
 
@@ -265,11 +264,6 @@ export async function modEmbed(
 
     return await safeReply({ interaction, replyOptions: { embeds: [embed] } });
   }
-
-  if (!user)
-    throw new Error(
-      "modEmbed got to a place where user must be defined (for logChannel) but is somehow not.",
-    );
 
   await Promise.all([
     logChannel(guild, { embeds: [embed] }, dm, {
