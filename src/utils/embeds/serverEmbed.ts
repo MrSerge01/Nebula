@@ -119,7 +119,7 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
   const container = new ContainerBuilder();
   const start = new TextDisplayBuilder().setContent(
     [
-      `## ${pages && pages > 1 ? `#${page + 1}  •  ` : dot}${guild.name}`,
+      `## ${pages && pages > 1 ? `#${page + 1}  •  ` : ""}${guild.name}`,
       generalValues,
       safetyValues.join(" • "),
     ].join("\n"),
