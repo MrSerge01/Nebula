@@ -1,7 +1,15 @@
 services:
-  app:
+  sokora:
     build: .
     container_name: sokora
+    restart: unless-stopped
+    volumes:
+      - ./data.db:/app/data.db
+      - ./.env:/app/.env
+
+  sokora-prod:
+    image: ghcr.io/sokoradesu/sokora:main
+    container_name: sokora-prod
     restart: unless-stopped
     volumes:
       - ./data.db:/app/data.db
