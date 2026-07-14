@@ -568,7 +568,9 @@ export async function settingsEmbed(
   const collector = reply.createMessageComponentCollector({ time: 60_000 });
 
   collector.on("collect", async (selectInteraction: AnySelectMenuInteraction) => {
-    if (await buttonCheck({ i: selectInteraction, interaction, reply })) return;
+    if (await buttonCheck({ i: selectInteraction, interaction, reply, noIdMismatchError: true }))
+      return;
+
     collector.resetTimer({ time: 60_000 });
     const cID = selectInteraction.customId;
 

@@ -16,7 +16,9 @@ interface Command {
 }
 
 export const commands: (Command & { data: SlashCommandBuilder })[] = [];
-export const subCommands: (Command & { data: SlashCommandSubcommandBuilder })[] = [];
+export const subCommands: (Command & {
+  data: SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder;
+})[] = [];
 
 const commandsPath = join(process.cwd(), "src", "commands");
 
@@ -53,6 +55,7 @@ async function createSubCommand(name: string): Promise<Command> {
       )) as Command & { data: SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder };
       if (subCommand.data instanceof SlashCommandSubcommandBuilder)
         command.addSubcommand(subCommand.data);
+      else command.addSubcommandGroup(subCommand.data);
 
       pushSubCommand(run, subCommand);
       subNames.push(subCommand.data.name);

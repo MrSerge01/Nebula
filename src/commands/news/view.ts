@@ -65,7 +65,11 @@ export async function run(
   if (pages <= 1) return;
   const collector = reply.createMessageComponentCollector({ time: 60_000 });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-    if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+    if (await buttonCheck({ i: buttonInteraction, interaction, reply, noIdMismatchError: true }))
+      return;
+
+    return await errorEmbed({ interaction, title: "guh", reason: "goh", forward: true });
+
     collector.resetTimer({ time: 60_000 });
     page = await handlePages({ i: buttonInteraction, page, pages, collector });
 

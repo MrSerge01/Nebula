@@ -2,19 +2,21 @@ import {
   ActionRowBuilder,
   AttachmentBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
   codeBlock,
   ContainerBuilder,
   FileBuilder,
   FileUploadBuilder,
   LabelBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
   ModalBuilder,
   SeparatorBuilder,
   TextDisplayBuilder,
   TextInputBuilder,
   TextInputStyle,
   type AnySelectMenuInteraction,
-  type ButtonInteraction,
   type ChatInputCommandInteraction,
   type Client,
   type InteractionResponse,
@@ -97,9 +99,9 @@ export async function errorEmbed(options: {
     )
     .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
-  const forwardContainer = new ContainerBuilder().setAccentColor(
-    await colorize({ hue: Sokolors.Red }),
-  );
+  const forwardContainer = new ContainerBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content.join("\n")))
+    .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
   if (options.error) {
     container.addSeparatorComponents(new SeparatorBuilder());
@@ -165,106 +167,114 @@ export async function errorEmbed(options: {
 
     const collector = reply.createMessageComponentCollector({ time: 240_000 });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-      if (await buttonCheck({ i: buttonInteraction, interaction, reply, noIdMismatchError: true }))
-        return;
+      if (buttonInteraction.customId != "please") return;
+      const modal = new ModalBuilder()
+        .setCustomId("modalpls")
+        .setTitle("•  Report the issue pretty please")
+        .addLabelComponents(
+          new LabelBuilder()
+            .setLabel("Mind describing? 😟")
+            .setTextInputComponent(
+              new TextInputBuilder()
+                .setCustomId("description")
+                .setPlaceholder("Pleasepleasepleasepleasepleasplesae 🥹")
+                .setMaxLength(3900)
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true),
+            ),
+          new LabelBuilder()
+            .setLabel("How????????????????????????")
+            .setTextInputComponent(
+              new TextInputBuilder()
+                .setCustomId("explanation")
+                .setPlaceholder("Now how the hell did you reproduce the issue..? please say ❤️‍🩹")
+                .setMaxLength(3900)
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(false),
+            ),
+          new LabelBuilder()
+            .setLabel("Any screenies? (or videos) 🥺")
+            .setFileUploadComponent(
+              new FileUploadBuilder().setCustomId("images").setMaxValues(10).setRequired(false),
+            ),
+        );
 
+      await buttonInteraction.showModal(modal);
+      const modalInteraction = await modalSubmit(buttonInteraction);
       collector.resetTimer({ time: 240_000 });
-      if (buttonInteraction.customId == "please") {
-        const modal = new ModalBuilder()
-          .setCustomId("modalpls")
-          .setTitle("•  Report the issue pretty please")
-          .addLabelComponents(
-            new LabelBuilder()
-              .setLabel("Mind describing? 😟")
-              .setTextInputComponent(
-                new TextInputBuilder()
-                  .setCustomId("description")
-                  .setPlaceholder("Pleasepleasepleasepleasepleasplesae 🥹")
-                  .setMaxLength(3900)
-                  .setStyle(TextInputStyle.Paragraph)
-                  .setRequired(true),
-              ),
-            new LabelBuilder()
-              .setLabel("How????????????????????????")
-              .setTextInputComponent(
-                new TextInputBuilder()
-                  .setCustomId("explanation")
-                  .setPlaceholder("Now how the hell did you reproduce the issue..? please say ❤️‍🩹")
-                  .setMaxLength(3900)
-                  .setStyle(TextInputStyle.Paragraph)
-                  .setRequired(false),
-              ),
-            new LabelBuilder()
-              .setLabel("Any screenies? 🥺")
-              .setFileUploadComponent(
-                new FileUploadBuilder().setCustomId("images").setRequired(false),
-              ),
+      if (!modalInteraction) return;
+
+      const modalContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            "## Thank you for reporting!.. you've made Goos proud 🥹\nWe'll look into this error and properly thank you in a future patch release 🫶",
+          ),
+        )
+        .setAccentColor(await colorize({ hue: Sokolors.Purple }));
+
+      await safeReply({
+        interaction: modalInteraction,
+        replyOptions: { components: [modalContainer], flags: ["Ephemeral", "IsComponentsV2"] },
+      });
+
+      const descriptionContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            modalInteraction.fields.getTextInputValue("description"),
+          ),
+        )
+        .setAccentColor(await colorize({ hue: Sokolors.Green }));
+
+      const media = modalInteraction.fields.getUploadedFiles("images");
+      if (media) {
+        const actualMediaGallery = media
+          .filter(
+            item =>
+              item.contentType == "image/jpeg" ||
+              item.contentType == "image/png" ||
+              item.contentType == "video/mp4",
+          )
+          .map(image => new MediaGalleryItemBuilder().setURL(image.url))
+          .reverse();
+
+        if (actualMediaGallery)
+          descriptionContainer.addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(actualMediaGallery),
           );
-
-        await buttonInteraction.showModal(modal);
-        const modalInteraction = await modalSubmit(buttonInteraction);
-        collector.resetTimer({ time: 240_000 });
-        if (!modalInteraction) return;
-
-        const modalContainer = new ContainerBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              "## Thank you for reporting!.. you've made Goos proud 🥹\nWe'll look into this error and properly thank you in a future patch release 🫶",
-            ),
-          )
-          .setAccentColor(await colorize({ hue: Sokolors.Purple }));
-
-        await safeReply({
-          interaction: modalInteraction,
-          replyOptions: { components: [modalContainer], flags: ["Ephemeral", "IsComponentsV2"] },
-        });
-
-        const reportContainer0 = new ContainerBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              modalInteraction.fields.getTextInputValue("description"),
-            ),
-            new TextDisplayBuilder().setContent("-# description"),
-          )
-          .setAccentColor(await colorize({ hue: Sokolors.Green }));
-
-        // [TODO] make images from file upload appear in container 1
-        // const images = modalInteraction.fields.getUploadedFiles("images")[1];
-        // console.log(modalInteraction.fields.getUploadedFiles("images"));
-        // if (images != null)
-        //   container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(images));
-
-        const reportContainer1 = new ContainerBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              modalInteraction.fields.getTextInputValue("explanation"),
-            ),
-            new TextDisplayBuilder().setContent("-# explanation"),
-          )
-          .setAccentColor(await colorize({ hue: Sokolors.Yellow }));
-
-        const reportChannel = process.env.REPORT_CHANNEL_ID;
-        if (!reportChannel) {
-          console.error(error);
-          console.log(
-            "hey, you don't have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
-          );
-          return;
-        }
-
-        const channel = await safeChannel(client, reportChannel);
-        if (!channel?.isTextBased() || !channel.isSendable()) return;
-        await channel.send({
-          components: [reportContainer0, reportContainer1, forwardContainer],
-          files,
-          flags: "IsComponentsV2",
-        });
       }
+
+      descriptionContainer.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent("-# description"),
+      );
+
+      const explanationContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            modalInteraction.fields.getTextInputValue("explanation"),
+          ),
+          new TextDisplayBuilder().setContent("-# explanation"),
+        )
+        .setAccentColor(await colorize({ hue: Sokolors.Yellow }));
+
+      const reportChannel = process.env.REPORT_CHANNEL_ID;
+      if (!reportChannel) {
+        console.error(error);
+        console.log(
+          "hey, you don't have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
+        );
+        return;
+      }
+
+      const channel = await safeChannel(client, reportChannel);
+      if (!channel?.isTextBased() || !channel.isSendable()) return;
+      await channel.send({
+        components: [descriptionContainer, explanationContainer, forwardContainer],
+        files,
+        flags: "IsComponentsV2",
+      });
     });
 
-    collector.on("end", async () => {
-      await interaction.deleteReply();
-    });
+    collector.on("end", async () => await interaction.deleteReply());
   }
 }
 
@@ -280,7 +290,7 @@ export async function buttonCheck(options: {
   noIdMismatchError?: boolean;
 }): Promise<Awaited<ReturnType<typeof errorEmbed>>> {
   const { i, interaction, reply, noExecuteError, noIdMismatchError } = options;
-  // [TODO] fix issue where clicking on the report button brings out the error below
+
   if (!noIdMismatchError && i.message.id != (await reply.fetch()).id)
     return await errorEmbed({
       interaction: i,
