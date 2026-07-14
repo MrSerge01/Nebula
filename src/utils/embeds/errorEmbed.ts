@@ -167,7 +167,7 @@ export async function errorEmbed(options: {
 
     const collector = reply.createMessageComponentCollector({ time: 240_000 });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-      if (buttonInteraction.customId != "please") return;
+      if (buttonInteraction.customId != "please") return collector.stop("end");
       const modal = new ModalBuilder()
         .setCustomId("modalpls")
         .setTitle("•  Report the issue pretty please")
@@ -202,7 +202,7 @@ export async function errorEmbed(options: {
       await buttonInteraction.showModal(modal);
       const modalInteraction = await modalSubmit(buttonInteraction);
       collector.resetTimer({ time: 240_000 });
-      if (!modalInteraction) return;
+      if (!modalInteraction) return collector.stop("end");
 
       const modalContainer = new ContainerBuilder()
         .addTextDisplayComponents(
@@ -262,11 +262,11 @@ export async function errorEmbed(options: {
         console.log(
           "hey, you don't have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
         );
-        return;
+        return collector.stop("end");
       }
 
       const channel = await safeChannel(client, reportChannel);
-      if (!channel?.isTextBased() || !channel.isSendable()) return;
+      if (!channel?.isTextBased() || !channel.isSendable()) return collector.stop("end");
       await channel.send({
         components: [descriptionContainer, explanationContainer, forwardContainer],
         files,
@@ -274,7 +274,10 @@ export async function errorEmbed(options: {
       });
     });
 
-    collector.on("end", async () => await interaction.deleteReply());
+    collector.on("end", async (_, reason) => {
+      if (reason == "end") return await interaction.deleteReply();
+      await interaction.deleteReply();
+    });
   }
 }
 
