@@ -1,14 +1,14 @@
 import { getSetting } from "database/settings";
-import {
-  type Channel,
-  type DMChannel,
-  type Guild,
-  type InteractionResponse,
-  type Message,
-  type MessageCreateOptions,
-  type MessagePayload,
-  type TextChannel,
-  type User,
+import type {
+  Channel,
+  DMChannel,
+  Guild,
+  InteractionResponse,
+  Message,
+  MessageCreateOptions,
+  MessagePayload,
+  TextChannel,
+  User,
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { channelCheck } from "./channelCheck";

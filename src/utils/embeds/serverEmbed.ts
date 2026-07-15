@@ -88,7 +88,7 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
 
   if (guild.nsfwLevel != GuildNSFWLevel.Default)
     safetyValues.push(
-      `**${guild.nsfwLevel == GuildNSFWLevel.Explicit ? "Explicit" : guild.nsfwLevel == GuildNSFWLevel.Safe ? "Safe" : "Age restricted"}**`,
+      `**${guild.nsfwLevel == GuildNSFWLevel.Explicit ? "Explicit" : (guild.nsfwLevel == GuildNSFWLevel.Safe ? "Safe" : "Age restricted")}**`,
     );
 
   const statValues: (string | null)[] = [

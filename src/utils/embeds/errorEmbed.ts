@@ -2,7 +2,7 @@ import {
   ActionRowBuilder,
   AttachmentBuilder,
   ButtonBuilder,
-  ButtonInteraction,
+  type ButtonInteraction,
   ButtonStyle,
   codeBlock,
   ContainerBuilder,
@@ -58,7 +58,7 @@ export async function errorEmbed(options: {
   const error = errorType(options.error);
   const stack = error.stack;
 
-  function addContent(fwdContainer: boolean) {
+  function addContent(fwdContainer: boolean): string {
     const content = [];
     if (title) content.push(`**${title}**`);
     if (reason) content.push(reason);
@@ -69,14 +69,14 @@ export async function errorEmbed(options: {
 
       if (forward)
         content.push(
-          "-# Or, if you can...\n## report the issue with the button at the bottom.. pls...",
+          "-# Or, if you can…\n## report the issue with the button at the bottom.. pls…",
         );
     }
 
     return content.join("\n");
   }
 
-  function showErrors(container: ContainerBuilder, emojis: boolean) {
+  function showErrors(container: ContainerBuilder, emojis: boolean): ContainerBuilder {
     return container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         [
@@ -88,9 +88,9 @@ export async function errorEmbed(options: {
         [
           emojis ? "**📜 • Error stack**" : "**error stack**",
           stack
-            ? stack.length <= 4096
+            ? (stack.length <= 4096
               ? codeBlock(stack)
-              : "The error stacktrace is an attachment below this embed due to it being too large."
+              : "The error stacktrace is an attachment below this embed due to it being too large.")
             : "No error stacktrace.",
         ].join("\n"),
       ),
@@ -119,7 +119,7 @@ export async function errorEmbed(options: {
     showErrors(forwardContainer, false);
   }
 
-  if (interaction)
+  if (interaction?.guild)
     forwardContainer
       .addSeparatorComponents(new SeparatorBuilder())
       .addTextDisplayComponents(
@@ -177,7 +177,10 @@ export async function errorEmbed(options: {
 
     const collector = reply.createMessageComponentCollector({ time: 240_000 });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-      if (buttonInteraction.customId != "please") return collector.stop();
+      if (buttonInteraction.customId != "please") {
+        collector.stop();
+        return;
+      }
       const modal = new ModalBuilder()
         .setCustomId("modalpls")
         .setTitle("•  Report the issue pretty please")
@@ -212,7 +215,10 @@ export async function errorEmbed(options: {
       await buttonInteraction.showModal(modal);
       const modalInteraction = await modalSubmit(buttonInteraction);
       collector.resetTimer({ time: 240_000 });
-      if (!modalInteraction) return collector.stop();
+      if (!modalInteraction) {
+        collector.stop();
+        return;
+      }
 
       const modalContainer = new ContainerBuilder()
         .addTextDisplayComponents(
@@ -245,7 +251,7 @@ export async function errorEmbed(options: {
               item.contentType == "video/mp4",
           )
           .map(image => new MediaGalleryItemBuilder().setURL(image.url))
-          .reverse();
+          .toReversed();
 
         if (actualMediaGallery)
           descriptionContainer.addMediaGalleryComponents(
@@ -272,11 +278,15 @@ export async function errorEmbed(options: {
         console.log(
           "hey, you don't have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
         );
-        return collector.stop();
+        collector.stop();
+        return;
       }
 
       const channel = await safeChannel(client, reportChannel);
-      if (!channel?.isTextBased() || !channel.isSendable()) return collector.stop();
+      if (!channel?.isTextBased() || !channel.isSendable()) {
+        collector.stop();
+        return;
+      }
       await channel.send({
         components: [descriptionContainer, explanationContainer, forwardContainer],
         files,

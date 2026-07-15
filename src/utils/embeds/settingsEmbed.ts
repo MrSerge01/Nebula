@@ -679,7 +679,7 @@ export async function settingsEmbed(
         const value = modalInteraction.fields.getTextInputValue("setting");
         const length = value.length;
         let settingText = `**${dotCheck({ string: settingsObject[cID].emoji, twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`;
-        let valueText = `The ${value.length < 50 ? "value" : "**value**"} has been set ${length >= 500 ? "successfully." : length >= 50 ? `to ${value}` : `to **${value}**`}`;
+        let valueText = `The ${value.length < 50 ? "value" : "**value**"} has been set ${length >= 500 ? "successfully." : (length >= 50 ? `to ${value}` : `to **${value}**`)}`;
         let hue = Sokolors.Blue;
 
         if (isValueValid(value, settingsObject[cID].type))
