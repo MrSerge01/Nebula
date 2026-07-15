@@ -57,18 +57,23 @@ export async function errorEmbed(options: {
 
   const error = errorType(options.error);
   const stack = error.stack;
-  const content = [];
-  if (title) content.push(`**${title}**`);
-  if (reason) content.push(reason);
-  if (!title && !reason) {
-    content.push(
-      "The bot has experienced an internal error.\nPretty please join the support server if you wish to report the issue! https://discord.gg/c6C25P4BuY",
-    );
 
-    if (forward)
+  function addContent(fwdContainer: boolean) {
+    const content = [];
+    if (title) content.push(`**${title}**`);
+    if (reason) content.push(reason);
+    if (!fwdContainer && !title && !reason) {
       content.push(
-        "-# Or, if you can...\n## report the issue with the button at the bottom.. pls...",
+        "The bot has experienced an internal error.\nPretty please join the support server if you wish to report the issue! https://discord.gg/c6C25P4BuY",
       );
+
+      if (forward)
+        content.push(
+          "-# Or, if you can...\n## report the issue with the button at the bottom.. pls...",
+        );
+    }
+
+    return content.join("\n");
   }
 
   function showErrors(container: ContainerBuilder, emojis: boolean) {
@@ -95,13 +100,18 @@ export async function errorEmbed(options: {
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent("## Something went wrong!"),
-      new TextDisplayBuilder().setContent(content.join("\n")),
+      new TextDisplayBuilder().setContent(addContent(false)),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
-  const forwardContainer = new ContainerBuilder()
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content.join("\n")))
-    .setAccentColor(await colorize({ hue: Sokolors.Red }));
+  const forwardContainer = new ContainerBuilder().setAccentColor(
+    await colorize({ hue: Sokolors.Red }),
+  );
+
+  if (addContent(true))
+    forwardContainer.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(addContent(true)),
+    );
 
   if (options.error) {
     container.addSeparatorComponents(new SeparatorBuilder());
@@ -167,7 +177,7 @@ export async function errorEmbed(options: {
 
     const collector = reply.createMessageComponentCollector({ time: 240_000 });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-      if (buttonInteraction.customId != "please") return collector.stop("end");
+      if (buttonInteraction.customId != "please") return collector.stop();
       const modal = new ModalBuilder()
         .setCustomId("modalpls")
         .setTitle("•  Report the issue pretty please")
@@ -202,7 +212,7 @@ export async function errorEmbed(options: {
       await buttonInteraction.showModal(modal);
       const modalInteraction = await modalSubmit(buttonInteraction);
       collector.resetTimer({ time: 240_000 });
-      if (!modalInteraction) return collector.stop("end");
+      if (!modalInteraction) return collector.stop();
 
       const modalContainer = new ContainerBuilder()
         .addTextDisplayComponents(
@@ -262,11 +272,11 @@ export async function errorEmbed(options: {
         console.log(
           "hey, you don't have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
         );
-        return collector.stop("end");
+        return collector.stop();
       }
 
       const channel = await safeChannel(client, reportChannel);
-      if (!channel?.isTextBased() || !channel.isSendable()) return collector.stop("end");
+      if (!channel?.isTextBased() || !channel.isSendable()) return collector.stop();
       await channel.send({
         components: [descriptionContainer, explanationContainer, forwardContainer],
         files,
@@ -274,8 +284,7 @@ export async function errorEmbed(options: {
       });
     });
 
-    collector.on("end", async (_, reason) => {
-      if (reason == "end") return await interaction.deleteReply();
+    collector.on("end", async () => {
       await interaction.deleteReply();
     });
   }
@@ -290,11 +299,11 @@ export async function buttonCheck(options: {
     | AnySelectMenuInteraction;
   reply: Message | InteractionResponse;
   noExecuteError?: boolean;
-  noIdMismatchError?: boolean;
 }): Promise<Awaited<ReturnType<typeof errorEmbed>>> {
-  const { i, interaction, reply, noExecuteError, noIdMismatchError } = options;
+  const { i, interaction, reply, noExecuteError } = options;
 
-  if (!noIdMismatchError && i.message.id != (await reply.fetch()).id)
+  if (i.customId == "please") return;
+  if (i.message.id != (await reply.fetch()).id)
     return await errorEmbed({
       interaction: i,
       title:
