@@ -69,7 +69,7 @@ export async function errorEmbed(options: {
 
       if (forward)
         content.push(
-          "-# Or, if you can…\n## report the issue with the button at the bottom.. pls…",
+          "-# Or, if you can…\n## report the issue with the button at the bottom… please…",
         );
     }
 
@@ -200,7 +200,7 @@ export async function errorEmbed(options: {
             .setTextInputComponent(
               new TextInputBuilder()
                 .setCustomId("explanation")
-                .setPlaceholder("Now how the hell did you reproduce the issue..? please say ❤️‍🩹")
+                .setPlaceholder("Now how the hell did you reproduce the issue…? please say ❤️‍🩹")
                 .setMaxLength(3900)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(false),
@@ -223,7 +223,7 @@ export async function errorEmbed(options: {
       const modalContainer = new ContainerBuilder()
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
-            "## Thank you for reporting!.. you've made Goos proud 🥹\nWe'll look into this error and properly thank you in a future patch release 🫶",
+            "## Thank you for reporting! You've made Goos proud 🥹\nWe'll look into this error and properly thank you in a future patch release 🫶",
           ),
         )
         .setAccentColor(await colorize({ hue: Sokolors.Purple }));
