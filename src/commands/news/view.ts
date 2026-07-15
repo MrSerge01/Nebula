@@ -66,6 +66,7 @@ export async function run(
   const collector = reply.createMessageComponentCollector({ time: 60_000 });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+
     collector.resetTimer({ time: 60_000 });
     page = await handlePages({ i: buttonInteraction, page, pages, collector });
 
@@ -77,7 +78,7 @@ export async function run(
 
   collector.on("end", async () => {
     try {
-      await interaction.editReply({ components: [] });
+      await interaction.deleteReply();
     } catch (error) {
       if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
       throw error;

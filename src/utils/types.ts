@@ -3,12 +3,7 @@ import type { ClientEvents } from "discord.js";
 export type Event<K extends keyof ClientEvents> = (...arguments_: ClientEvents[K]) => unknown;
 
 export type Mentionable =
-  | "USER"
-  | "ROLE"
-  | "CHANNEL"
-  | "DEFAULT_TIMESTAMP"
-  | "SIMPLE_TIMESTAMP"
-  | "DETAILED_TIMESTAMP";
+  "USER" | "ROLE" | "CHANNEL" | "DEFAULT_TIMESTAMP" | "SIMPLE_TIMESTAMP" | "DETAILED_TIMESTAMP";
 
 export type ReplaceableStrings =
   | "(name)"

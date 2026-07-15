@@ -1,4 +1,4 @@
-import { type Client, type InteractionResponse, type Message } from "discord.js";
+import type { Client, InteractionResponse, Message } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";

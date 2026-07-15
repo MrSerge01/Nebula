@@ -6,7 +6,6 @@
     "module": "Preserve",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
-    // "outDir": "./dist", // For some reason this invalidates package.json in path
     "resolveJsonModule": true,
     "composite": true,
     "skipLibCheck": true,

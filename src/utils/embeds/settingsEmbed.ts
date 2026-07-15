@@ -181,9 +181,7 @@ export async function settingsEmbed(
   // Create a container
   async function construct(
     settingsObject_:
-      | Record<string, SingleSettingDefinition>
-      | Record<string, SingleSettingDefinition>[]
-      | null,
+      Record<string, SingleSettingDefinition> | Record<string, SingleSettingDefinition>[] | null,
     container: ContainerBuilder,
     reset: boolean,
     buttons: ActionRowBuilder<MessageActionRowComponentBuilder>[],
@@ -263,8 +261,7 @@ export async function settingsEmbed(
   // Build a single setting row
   const settingComponent = async (options: {
     settingsObj:
-      | Record<string, SingleSettingDefinition>
-      | Record<string, SingleSettingDefinition>[];
+      Record<string, SingleSettingDefinition> | Record<string, SingleSettingDefinition>[];
     name: string;
     reset: boolean;
     objectView?: boolean;
@@ -335,8 +332,8 @@ export async function settingsEmbed(
 
     const typedSetting = (settingsObj as Record<string, SingleSettingDefinition>)[name];
     let settingObject:
-      | SingleSettingDefinition
-      | (SingleSettingDefinition & { type: "OBJECT" })["settings"] = typedSetting;
+      SingleSettingDefinition | (SingleSettingDefinition & { type: "OBJECT" })["settings"] =
+      typedSetting;
 
     if (typedSetting.type === "OBJECT")
       switch (name) {
@@ -572,6 +569,7 @@ export async function settingsEmbed(
 
   collector.on("collect", async (selectInteraction: AnySelectMenuInteraction) => {
     if (await buttonCheck({ i: selectInteraction, interaction, reply })) return;
+
     collector.resetTimer({ time: 60_000 });
     const cID = selectInteraction.customId;
 
