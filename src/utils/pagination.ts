@@ -52,6 +52,7 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
   const { i, page, pages, collector } = options;
   const noErrorPages = pages - 1;
   let functionPage = Math.max(0, Math.min(page, pages));
+
   if (i.customId == "left") return functionPage === 0 ? noErrorPages : page - 1;
   if (i.customId == "right") return functionPage === noErrorPages ? 0 : page + 1;
 
@@ -97,54 +98,10 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
           )
           .setAccentColor(await colorize({ hue: Sokolors.Green }));
 
-  if (value > pages)
-    await safeReply({
-      interaction: modalInteraction,
-      replyOptions: { components: [container], flags: ["Ephemeral", "IsComponentsV2"] },
-    });
+  await safeReply({
+    interaction: modalInteraction,
+    replyOptions: { components: [container], flags: ["Ephemeral", "IsComponentsV2"] },
+  });
 
   return functionPage;
 }
-
-/* todo: fix
-export function pageContainer(options: {
-  interaction: ChatInputCommandInteraction;
-  reply: InteractionResponse;
-  collector: InteractionCollector<ButtonInteraction | AnySelectMenuInteraction>;
-  page: number;
-  pages: number;
-  normalResponse: () => Promise<ContainerBuilder>;
-  endResponse: () => Promise<ContainerBuilder>;
-}): number {
-  const { interaction, reply, collector, page, pages, normalResponse, endResponse } = options;
-
-  let resPage: number = page.valueOf();
-
-  collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-    if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-    collector.resetTimer({ time: 60_000 });
-    resPage = await handlePages({
-      i: buttonInteraction,
-      page,
-      pages,
-      collector,
-    });
-
-    await safeReply({
-      interaction: buttonInteraction,
-      editOptions: { components: [await normalResponse()] },
-    });
-  });
-
-  collector.on("end", async () => {
-    try {
-      await interaction.editReply({ components: [await endResponse()] });
-    } catch (error) {
-      if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
-      throw error;
-    }
-  });
-
-  return resPage;
-}
-*/

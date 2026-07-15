@@ -102,15 +102,4 @@ export async function run(
       throw error;
     }
   });
-
-  /* todo when fixed
-  page = pageContainer({
-    interaction,
-    reply,
-    collector,
-    page,
-    pages,
-    normalResponse: async () => await getContainer(false),
-    endResponse: async () => await getContainer(true),
-  }); */
 }
