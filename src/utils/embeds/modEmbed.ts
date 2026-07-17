@@ -1,8 +1,8 @@
 import { createCase, editCase, getCase, type ModType } from "database/moderation";
 import {
-  EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
   type ChatInputCommandInteraction,
-  type ContainerBuilder,
   type InteractionResponse,
   type Message,
   type PermissionResolvable,
@@ -12,7 +12,6 @@ import ms from "enhanced-ms";
 import { mention } from "utils/mention";
 import { safeChannel, safeMember, safeReply } from "utils/safeThings";
 import { colorize, Sokolors } from "../colorize";
-import { dotCheck } from "../dotCheck";
 import { logChannel } from "../logChannel";
 import { errorEmbed } from "./errorEmbed";
 
@@ -180,8 +179,6 @@ export async function modEmbed(
   if (!guild) throw new Error("Cannot create modEmbed without a guild!");
   const name = user?.displayName;
   const generalValues = [`**Moderator**: ${interaction.user.displayName}`];
-  const serverAvatar = (guild.icon ? guild.iconURL() : undefined) ?? undefined;
-  const avatar = user ? user.displayAvatarURL() : serverAvatar;
   let author = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""} ${name}`;
 
   if (reason) generalValues.push(`**Reason**: ${reason}`);
@@ -245,41 +242,48 @@ export async function modEmbed(
     }
   }
 
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${customText?.logTitle ?? author}`,
-      iconURL: avatar,
-    })
-    .setDescription(generalValues.join("\n"))
-    .setFooter({ text: user ? `User ID: ${user.id}` : `Channel ID: ${channel}` })
-    .setTimestamp(new Date())
-    .setColor(await colorize({ hue: Sokolors.Green }));
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`## ${customText?.logTitle ?? author}`),
+      new TextDisplayBuilder().setContent(generalValues.join("\n")),
+      new TextDisplayBuilder().setContent(
+        `-# ${user ? `User ID: ${user.id}` : `Channel ID: ${channel}`} • ${mention(Date.now(), "DETAILED_TIMESTAMP")}`,
+      ),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Green }));
 
   async function replier(): Promise<Awaited<ReturnType<typeof safeReply>>> {
     if (silent)
       return await safeReply({
         interaction,
-        replyOptions: { embeds: [embed], flags: "Ephemeral" },
+        replyOptions: { components: [container], flags: ["Ephemeral", "IsComponentsV2"] },
       });
 
-    return await safeReply({ interaction, replyOptions: { embeds: [embed] } });
+    return await safeReply({
+      interaction,
+      replyOptions: { components: [container], flags: "IsComponentsV2" },
+    });
   }
 
   await Promise.all([
-    logChannel(guild, { embeds: [embed] }, dm, {
+    logChannel(guild, { components: [container], flags: "IsComponentsV2" }, dm, {
       silent: silent ?? false,
       user,
       options: {
-        embeds: [
-          new EmbedBuilder()
-            .setAuthor({
-              name: `${dotCheck({ string: serverAvatar, doubleSpace: true })}${customText?.dmTitle ?? `You got ${action?.toLowerCase()} from ${guild.name}`}`,
-              iconURL: serverAvatar,
-            })
-            .setDescription(generalValues.join("\n"))
-            .setTimestamp(new Date())
-            .setColor(await colorize({ hue: Sokolors.Red })),
+        components: [
+          new ContainerBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                customText?.dmTitle ?? `You got ${action?.toLowerCase()} from ${guild.name}`,
+              ),
+              new TextDisplayBuilder().setContent(generalValues.join("\n")),
+              new TextDisplayBuilder().setContent(
+                `-# ${mention(Date.now(), "DETAILED_TIMESTAMP")}`,
+              ),
+            )
+            .setAccentColor(await colorize({ hue: Sokolors.Red })),
         ],
+        flags: "IsComponentsV2",
       },
     }),
     replier(),

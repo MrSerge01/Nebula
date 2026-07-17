@@ -2,7 +2,6 @@ import {
   ActionRowBuilder,
   AttachmentBuilder,
   ButtonBuilder,
-  type ButtonInteraction,
   ButtonStyle,
   codeBlock,
   ContainerBuilder,
@@ -17,6 +16,7 @@ import {
   TextInputBuilder,
   TextInputStyle,
   type AnySelectMenuInteraction,
+  type ButtonInteraction,
   type ChatInputCommandInteraction,
   type Client,
   type InteractionResponse,
@@ -88,9 +88,9 @@ export async function errorEmbed(options: {
         [
           emojis ? "**📜 • Error stack**" : "**error stack**",
           stack
-            ? (stack.length <= 4096
+            ? stack.length <= 4096
               ? codeBlock(stack)
-              : "The error stacktrace is an attachment below this embed due to it being too large.")
+              : "The error stacktrace is an attachment below this embed due to it being too large."
             : "No error stacktrace.",
         ].join("\n"),
       ),
@@ -175,12 +175,9 @@ export async function errorEmbed(options: {
       replyOptions: { components: [container], files, flags: ["Ephemeral", "IsComponentsV2"] },
     });
 
+    // todo: fix this mf
     const collector = reply.createMessageComponentCollector({ time: 240_000 });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-      if (buttonInteraction.customId != "please") {
-        collector.stop();
-        return;
-      }
       const modal = new ModalBuilder()
         .setCustomId("modalpls")
         .setTitle("•  Report the issue pretty please")
@@ -295,8 +292,15 @@ export async function errorEmbed(options: {
     });
 
     collector.on("end", async () => {
-      await interaction.deleteReply();
+      try {
+        await interaction.deleteReply();
+      } catch (error) {
+        if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
+        throw error;
+      }
     });
+
+    return reply;
   }
 }
 
