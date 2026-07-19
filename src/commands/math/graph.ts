@@ -2,8 +2,11 @@ import type { ChartConfiguration } from "chart.js";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import {
   AttachmentBuilder,
-  EmbedBuilder,
+  ContainerBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   type ChatInputCommandInteraction,
   type InteractionResponse,
   type Message,
@@ -119,14 +122,23 @@ export async function run(
       await chartJSNodeCanvas.renderToBuffer(configuration),
       { name: "graph.png" },
     );
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent("## Function graph"),
+        new TextDisplayBuilder().setContent(`\`f(x) = ${function_}\``),
+      )
+      .addMediaGalleryComponents(
+        new MediaGalleryBuilder().addItems(
+          new MediaGalleryItemBuilder().setURL("attachment://graph.png"),
+        ),
+      )
+      .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
-    const embed = new EmbedBuilder()
-      .setAuthor({ name: "Function graph" })
-      .setDescription(`\`f(x) = ${function_}\``)
-      .setImage("attachment://graph.png")
-      .setColor(await colorize({ hue: Sokolors.Blue }));
-
-    await interaction.reply({ embeds: [embed], files: [attachment] });
+    await interaction.reply({
+      components: [container],
+      files: [attachment],
+      flags: "IsComponentsV2",
+    });
   } catch {
     return await errorEmbed({
       interaction,

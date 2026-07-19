@@ -1,6 +1,7 @@
 import {
-  EmbedBuilder,
+  ContainerBuilder,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   type ChatInputCommandInteraction,
   type InteractionResponse,
   type Message,
@@ -39,10 +40,12 @@ export async function run(
     });
   }
 
-  const embed = new EmbedBuilder()
-    .setAuthor({ name: "Calculation result" })
-    .setDescription(`\`${expr}\` = **${result}**`)
-    .setColor(await colorize({ hue: Sokolors.Blue }));
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## Calculation result"),
+      new TextDisplayBuilder().setContent(`\`${expr}\` = **${result}**`),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
-  await interaction.reply({ embeds: [embed] });
+  await interaction.reply({ components: [container], flags: "IsComponentsV2" });
 }

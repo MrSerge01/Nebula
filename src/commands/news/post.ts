@@ -1,10 +1,11 @@
 import { getLatestNews } from "database/news";
 import {
-  EmbedBuilder,
+  ContainerBuilder,
   FileUploadBuilder,
   LabelBuilder,
   ModalBuilder,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   TextInputBuilder,
   TextInputStyle,
   type ChatInputCommandInteraction,
@@ -100,11 +101,11 @@ export async function run(
   }
 
   await modalInteraction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setTitle("News post created.")
-        .setColor(await colorize({ hue: Sokolors.Green })),
+    components: [
+      new ContainerBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post created."))
+        .setAccentColor(await colorize({ hue: Sokolors.Green })),
     ],
-    flags: "Ephemeral",
+    flags: ["Ephemeral", "IsComponentsV2"],
   });
 }

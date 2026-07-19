@@ -177,9 +177,8 @@ export async function modEmbed(
   } = options;
   const guild = interaction.guild;
   if (!guild) throw new Error("Cannot create modEmbed without a guild!");
-  const name = user?.displayName;
   const generalValues = [`**Moderator**: ${interaction.user.displayName}`];
-  let author = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""} ${name}`;
+  let author = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""} ${mention(user.id, "USER")}`;
 
   if (reason) generalValues.push(`**Reason**: ${reason}`);
   if (duration) generalValues.push(`**Duration**: ${ms(duration, "fullPrecision")}`);
