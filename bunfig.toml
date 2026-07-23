@@ -1,0 +1,7 @@
+telemetry = false
+
+[console]
+depth = 7
+
+[install]
+minimumReleaseAge = 259200

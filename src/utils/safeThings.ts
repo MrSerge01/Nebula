@@ -1,22 +1,24 @@
-import type {
-  AnySelectMenuInteraction,
-  BaseFetchOptions,
-  ButtonInteraction,
-  Channel,
-  ChatInputCommandInteraction,
-  Client,
-  Collection,
-  Guild,
-  GuildMember,
-  InteractionEditReplyOptions,
-  InteractionReplyOptions,
-  InteractionResponse,
-  InteractionUpdateOptions,
-  Message,
-  MessagePayload,
-  ModalSubmitInteraction,
-  Role,
-  User,
+import {
+  ChannelType,
+  type TextChannel,
+  type AnySelectMenuInteraction,
+  type BaseFetchOptions,
+  type ButtonInteraction,
+  type Channel,
+  type ChatInputCommandInteraction,
+  type Client,
+  type Collection,
+  type Guild,
+  type GuildMember,
+  type InteractionEditReplyOptions,
+  type InteractionReplyOptions,
+  type InteractionResponse,
+  type InteractionUpdateOptions,
+  type Message,
+  type MessagePayload,
+  type ModalSubmitInteraction,
+  type Role,
+  type User,
 } from "discord.js";
 
 /**
@@ -111,4 +113,22 @@ export async function safeReply(options: {
     return await interaction.update((replyOptions ?? editOptions) as InteractionUpdateOptions);
 
   return await interaction.reply(reply);
+}
+
+/**
+ * Finds a channel to send important stuff to. **This should be used as a fallback,** i.e. prioritize log channel. This is only for things like welcome, canary updates, or important alerts when the server owner is not DM-able.
+ *
+ * It does not check for logChannel, whether this should change will be checked.
+ *
+ * @param guild Guild to find a channel in.
+ */
+export function safeAlertChannel(guild: Guild): TextChannel {
+  return (
+    guild.systemChannel ??
+    guild.channels.cache
+      .filter(c => c.type === ChannelType.GuildText)
+      .filter(c => c.permissionsFor(guild.members.me).has("SendMessages"))
+      .sort((a, b) => a.position - b.position)
+      .first()
+  );
 }

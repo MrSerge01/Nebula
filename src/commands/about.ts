@@ -10,9 +10,11 @@ import {
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { version } from "package";
+import { CANARY } from "src/canary";
 import { colorize, Sokolors } from "utils/colorize";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { replace } from "utils/replace";
+import type { GHCommit } from "utils/types";
 
 export const data = new SlashCommandBuilder()
   .setName("about")
@@ -32,6 +34,22 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(banner)),
     );
 
+  let commit: GHCommit | null = null;
+
+  if (CANARY) {
+    const response = await fetch(
+      `https://api.github.com/repos/SokoraDesu/Sokora/commits?per_page=1`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2026-03-10",
+        },
+      },
+    );
+    const log = (await response.json()) as [GHCommit];
+    commit = log[0];
+  }
+
   container
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent("## About Sokora"),
@@ -41,7 +59,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new TextDisplayBuilder().setContent(
         [
           "**📃 • General**",
-          `Version **${version}** • *Heijun*`,
+          `Version **${version}${commit ? `+[\`${commit.sha.slice(0, 6)}\`](${commit.html_url})` : ""}** • *Heijun*`,
           `**${members.toLocaleString("en-US")}** ${pluralOrNot("member", members)} • **${guilds.size.toLocaleString("en-US")}** ${pluralOrNot(
             "guild",
             guilds.size,

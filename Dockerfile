@@ -2,8 +2,7 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
-COPY package.json bun.lock tsconfig.json CHANGELOG.md ./
-
+COPY package.json bun.lock tsconfig.json CHANGELOG.md bunfig.toml ./
 RUN bun install
 
 COPY cli ./cli

@@ -92,17 +92,6 @@ export default defineConfig(
       "@typescript-eslint/no-this-alias": "error",
       "@typescript-eslint/no-import-type-side-effects": "error",
       "unicorn/no-useless-undefined": "error",
-      "unicorn/prevent-abbreviations": [
-        "error",
-        {
-          replacements: {
-            db: false,
-            mod: false,
-            def: false,
-            res: false,
-          },
-        },
-      ],
       "unicorn/import-style": [
         "error",
         {

@@ -2,13 +2,24 @@ import { Api } from "@top-gg/sdk";
 import { Chart, registerables } from "chart.js";
 import { updateDatabase } from "database/index";
 import { getUserSettingsTable, setUserSetting } from "database/userSettings";
-import { ActivityType, Client, Partials } from "discord.js";
+import {
+  ActivityType,
+  Client,
+  codeBlock,
+  ContainerBuilder,
+  Partials,
+  TextDisplayBuilder,
+} from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import ms from "enhanced-ms";
 import { registerGuildCommands } from "handlers/commands";
 import { loadEasterEggs, loadEvents } from "handlers/events";
-import { safeUser } from "utils/safeThings";
+import { safeAlertChannel, safeUser } from "utils/safeThings";
 import { rescheduleUnbans } from "utils/unbanScheduler";
+import { CANARY } from "./canary";
+import type { GHCommit } from "utils/types";
+import { mention } from "utils/mention";
+import { colorize, Sokolors } from "utils/colorize";
 
 export const client = new Client({
   presence: {
@@ -74,8 +85,65 @@ client.once("clientReady", async () => {
     registerGuildCommands(client),
     rescheduleUnbans(client),
   ]).then(() => {
-    console.log(Math.random() < 0.002 ? "こんにちは! (konichi whats upppppppp)" : "ちーっす！");
+    console.log(
+      Math.random() < 0.002
+        ? "こんにちは! (konichi whats upppppppp)"
+        : (CANARY
+          ? "ちーっす Canary!"
+          : "ちーっす！"),
+    );
   });
+
+  if (CANARY) {
+    // 43200000 is 12 h in ms
+    const yesterday = new Date(Date.now() - 1_209_600_000);
+    const response = await fetch(
+      `https://api.github.com/repos/SokoraDesu/Sokora/commits?since=${yesterday.toISOString()}&until=${new Date().toISOString()}`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2026-03-10",
+        },
+      },
+    );
+    const log = (await response.json()) as GHCommit[];
+    const dump = log
+      .map(
+        c =>
+          `${c.commit.message
+            .trim()
+            .split("\n")
+            .map(s => "+ " + s)
+            .join("\n")}\n^ by ${c.commit.author.name} in \`${c.sha}\`\n`,
+      )
+      .join("\n");
+
+    await Promise.all(
+      client.guilds.cache.values().map(
+        async guild =>
+          await safeAlertChannel(guild).send({
+            components: [
+              new ContainerBuilder()
+                .setAccentColor(
+                  await colorize({
+                    user: client.user,
+                    avatar: client.user.displayAvatarURL(),
+                    hue: Sokolors.Yellow,
+                  }),
+                )
+                .addTextDisplayComponents(
+                  new TextDisplayBuilder().setContent(
+                    log.length > 0
+                      ? `## Sokora Canary pulled updates!\nHello! This scheduled restart brought changes. We don't maintain a formal changelog for these quick patches, so here's a developer commit log, messages should be clear enough:\n${codeBlock("diff", dump)}\n**Enjoy testing, and thanks for using Sokora Canary!**\n-# By the way, get pinged, ${mention(guild.ownerId, "USER")}!`
+                      : "## Sokora Canary restarted, though there's nothing new\nHello! This scheduled restart brought no new updates.\nWe'll hopefully have something new soon.\n\nThanks for using Sokora Canary!",
+                  ),
+                ),
+            ],
+            flags: "IsComponentsV2",
+          }),
+      ),
+    );
+  }
 
   // if you want to register/remove guild/global commands, replace registerGuildCommands() with:
   // removeGuildCommands(client)

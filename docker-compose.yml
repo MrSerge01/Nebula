@@ -1,13 +1,21 @@
 services:
   app:
     build: .
-    container_name: sokora
+    container_name: sokora # rename to something else if ur on canary
     restart: always
     volumes:
       - ./data.db:/app/data.db
       - ./.env:/app/.env
     env_file:
       - .env
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: ./app/src
+          initial_sync: true
+          ignore:
+            - node_modules/
     depends_on:
       db:
         condition: service_healthy
@@ -19,8 +27,13 @@ services:
       POSTGRES_DB: sokora-db
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sokora -d sokora-db"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+volumes:
+  pgdata:
