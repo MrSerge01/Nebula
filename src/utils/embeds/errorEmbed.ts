@@ -90,7 +90,7 @@ export async function errorEmbed(options: {
           stack
             ? stack.length <= 4096
               ? codeBlock(stack)
-              : "The error stacktrace is an attachment below this embed due to it being too large."
+              : "The error stacktrace is an attachment below due to it being too large."
             : "No error stacktrace.",
         ].join("\n"),
       ),

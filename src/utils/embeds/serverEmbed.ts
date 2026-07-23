@@ -30,7 +30,9 @@ type Options = {
   };
   roles?: boolean;
   disableButtons?: boolean;
-} & ({ page: number; pages: number } | { page: undefined; pages: undefined });
+  page?: number;
+  pages?: number;
+};
 
 /**
  * Gives you a CONTAINER containing information about the guild.

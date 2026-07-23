@@ -126,7 +126,7 @@ export async function run(
       new TextDisplayBuilder().setContent(`## ${title}`),
       new TextDisplayBuilder().setContent(body),
       new TextDisplayBuilder().setContent(
-        `-# Edited news post from ${guild.name} • ID: ${news.id} • ${mention(news.updatedAt.toDateString() ?? news.createdAt.toDateString(), "DETAILED_TIMESTAMP")}`,
+        `-# Edited news post from ${guild.name} • ID: ${news.id} • ${mention(news.updatedAt.toDateString() ?? news.createdAt.toDateString(), "DEFAULT_TIMESTAMP")}`,
       ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));

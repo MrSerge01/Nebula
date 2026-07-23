@@ -1,7 +1,9 @@
 import { createCase, editCase, getCase, type ModType } from "database/moderation";
 import {
   ContainerBuilder,
+  SectionBuilder,
   TextDisplayBuilder,
+  ThumbnailBuilder,
   type ChatInputCommandInteraction,
   type InteractionResponse,
   type Message,
@@ -36,7 +38,6 @@ type ErrorOptions = Options & {
     allErrors: boolean;
     botError: boolean;
     channelError?: boolean;
-    ownerError?: boolean;
     outsideError?: boolean;
     banCheckError?: boolean;
   };
@@ -47,8 +48,7 @@ export async function errorCheck(
   options: ErrorOptions,
 ): Promise<Message | InteractionResponse | undefined> {
   const { interaction, user, channel, action, errorOptions } = options;
-  const { allErrors, botError, channelError, ownerError, outsideError, banCheckError } =
-    errorOptions;
+  const { allErrors, botError, channelError, outsideError, banCheckError } = errorOptions;
 
   const guild = interaction.guild;
   if (!guild) return;
@@ -134,11 +134,17 @@ export async function errorCheck(
   if (target.id == interaction.client.user.id)
     return await errorEmbed({ interaction, title: `You can't ${action.toLowerCase()} Sokora.` });
 
-  if (!target.manageable)
+  if (!target.moderatable)
     return await errorEmbed({
       interaction,
       title: `You can't ${action.toLowerCase()} ${name}.`,
-      reason: "The member has a higher (or the same) role position than Sokora.",
+      reason: [
+        "The member cannot be moderated by Sokora.\n",
+        "**There are three reasons as to why this error might occur:**",
+        "- The member has a higher role position than the bot;",
+        "- The member is an administrator;",
+        "- The member is the owner of the server.",
+      ].join("\n"),
     });
 
   if (highestModPos <= highestTargetPos && member.id != guild.ownerId) {
@@ -149,13 +155,6 @@ export async function errorCheck(
       reason: `The member has ${same ? "the same" : "a higher"} role position ${same ? "as" : "than"} you.`,
     });
   }
-
-  if (ownerError && target.id == guild.ownerId)
-    return await errorEmbed({
-      interaction,
-      title: `You can't ${action.toLowerCase()} ${name}.`,
-      reason: "The member owns the server.",
-    });
 }
 
 export async function modEmbed(
@@ -178,6 +177,8 @@ export async function modEmbed(
   const guild = interaction.guild;
   if (!guild) throw new Error("Cannot create modEmbed without a guild!");
   const generalValues = [`**Moderator**: ${interaction.user.displayName}`];
+  const serverAvatar = (guild.icon ? guild.iconURL() : undefined) ?? undefined;
+  const avatar = user ? user.displayAvatarURL() : serverAvatar;
   let author = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""} ${mention(user.id, "USER")}`;
 
   if (reason) generalValues.push(`**Reason**: ${reason}`);
@@ -242,12 +243,16 @@ export async function modEmbed(
   }
 
   const container = new ContainerBuilder()
-    .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`## ${customText?.logTitle ?? author}`),
-      new TextDisplayBuilder().setContent(generalValues.join("\n")),
-      new TextDisplayBuilder().setContent(
-        `-# ${user ? `User ID: ${user.id}` : `Channel ID: ${channel}`} • ${mention(Date.now(), "DETAILED_TIMESTAMP")}`,
-      ),
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`**${customText?.logTitle ?? author}**`),
+          new TextDisplayBuilder().setContent(generalValues.join("\n")),
+          new TextDisplayBuilder().setContent(
+            `-# ${user ? `User ID: ${user.id}` : `Channel ID: ${channel}`} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
+          ),
+        )
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Green }));
 
@@ -273,12 +278,10 @@ export async function modEmbed(
           new ContainerBuilder()
             .addTextDisplayComponents(
               new TextDisplayBuilder().setContent(
-                customText?.dmTitle ?? `You got ${action?.toLowerCase()} from ${guild.name}`,
+                customText?.dmTitle ?? `**You got ${action?.toLowerCase()} from ${guild.name}**`,
               ),
               new TextDisplayBuilder().setContent(generalValues.join("\n")),
-              new TextDisplayBuilder().setContent(
-                `-# ${mention(Date.now(), "DETAILED_TIMESTAMP")}`,
-              ),
+              new TextDisplayBuilder().setContent(`-# ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`),
             )
             .setAccentColor(await colorize({ hue: Sokolors.Red })),
         ],

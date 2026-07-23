@@ -7,12 +7,18 @@ import {
   setUserXp,
 } from "database/leveling";
 import { getSetting } from "database/settings";
-import { EmbedBuilder, PermissionsBitField, type TextChannel } from "discord.js";
+import {
+  ContainerBuilder,
+  PermissionsBitField,
+  SectionBuilder,
+  TextDisplayBuilder,
+  ThumbnailBuilder,
+  type TextChannel,
+} from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { easterEggs } from "handlers/events";
 import { channelCheck } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { kominator } from "utils/kominator";
 import { mention } from "utils/mention";
 import { safeChannel, safeMember, safeRole } from "utils/safeThings";
@@ -131,19 +137,21 @@ export default (async function run(message) {
         );
     }
 
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${author.displayName} leveled up!`,
-      iconURL: avatar,
-    })
-    .setDescription(
-      [
-        ...messageContent,
-        `You need **${(await getXpForNextLevel(guild.id, author.id)).toLocaleString("en-US")}** XP to level up again.`,
-      ].join("\n"),
+  const container = new ContainerBuilder()
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`## ${mention(author.id, "USER")} has leveled up!`),
+          new TextDisplayBuilder().setContent(
+            [
+              ...messageContent,
+              `You need **${(await getXpForNextLevel(guild.id, author.id)).toLocaleString("en-US")}** XP to level up again.`,
+            ].join("\n"),
+          ),
+        )
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
     )
-    .setTimestamp()
-    .setColor(await colorize({ user: author, avatar, hue: Sokolors.Green }));
+    .setAccentColor(await colorize({ user: author, avatar, hue: Sokolors.Green }));
 
   if (levelChannelId) {
     const channel = (await safeChannel(guild, `${levelChannelId}`)) as TextChannel;
@@ -155,6 +163,6 @@ export default (async function run(message) {
         setting: { category: "leveling", setting: "channel" },
       })
     )
-      await channel.send({ embeds: [embed], content: mention(author.id, "USER") });
+      await channel.send({ components: [container], flags: "IsComponentsV2" });
   }
 } as Event<"messageCreate">);

@@ -8,6 +8,6 @@ export const data = new SlashCommandBuilder()
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   if (!interaction.guild) return;
-  const embed = await serverEmbed({ guild: interaction.guild, roles: true });
-  await interaction.reply({ components: [embed], flags: "IsComponentsV2" });
+  const container = await serverEmbed({ guild: interaction.guild, roles: true });
+  await interaction.reply({ components: [container], flags: "IsComponentsV2" });
 }
