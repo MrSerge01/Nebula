@@ -187,7 +187,6 @@ export async function modEmbed(
   if (reason) generalValues.push(`**Reason**: ${reason}`);
   if (duration) generalValues.push(`**Duration**: ${ms(duration, "fullPrecision")}`);
   if (channel) generalValues.push(`**Channel**: ${mention(channel, "CHANNEL")}`);
-
   if (previousID) {
     const previousCase = await getCase(guild.id, previousID);
     if (

@@ -1,5 +1,5 @@
 services:
-  app:
+  sokora:
     build: .
     container_name: sokora # rename to something else if ur on canary
     restart: always

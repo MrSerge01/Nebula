@@ -32,6 +32,14 @@
   - Instead of "adding" news, you "post" news.
 - Colors from the profile picture not working reliably (especially when the picture's dominant color is grayscale.)
 
+## 0.3.3 - 07/07/2026
+
+## Fixed
+
+- _No reason provided_ in some embeds that don't have any way to provide a reason (thanks fishy)
+- Flipped 2FA value in /server and /serverboard (i.e when the server has 2FA, it shows as "No 2FA") (thanks fishy)
+- /ping fix + CV2
+
 ## 0.3.2 - 26/08/2025
 
 ### Changed
