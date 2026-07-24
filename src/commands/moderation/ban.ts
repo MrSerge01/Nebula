@@ -61,12 +61,7 @@ export async function run(
       interaction,
       user,
       action: "Ban",
-      errorOptions: {
-        allErrors: userOrMember,
-        banCheckError: true,
-        botError: true,
-        ownerError: true,
-      },
+      errorOptions: { allErrors: userOrMember, banCheckError: true, botError: true },
     })
   )
     return;

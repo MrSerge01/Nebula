@@ -54,7 +54,7 @@ export async function run(
       interaction,
       user,
       action: "Mute",
-      errorOptions: { allErrors: true, botError: true, ownerError: true, outsideError: true },
+      errorOptions: { allErrors: true, botError: true, outsideError: true },
     })
   )
     return;

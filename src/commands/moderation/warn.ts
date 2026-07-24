@@ -28,7 +28,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       interaction,
       user,
       action: "Warn",
-      errorOptions: { allErrors: true, botError: false, ownerError: true, outsideError: true },
+      errorOptions: { allErrors: true, botError: false, outsideError: true },
     }))
   )
     return;

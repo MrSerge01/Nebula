@@ -572,6 +572,7 @@ export async function settingsEmbed(
 
     collector.resetTimer({ time: 60_000 });
     const cID = selectInteraction.customId;
+    if (cID == "please") return;
 
     // Special buttons (navigation)
     switch (cID.replace("obj", "")) {

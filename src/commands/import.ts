@@ -148,6 +148,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         ),
     );
 
+  // [TODO] reduce this to one container.
   const container = new ContainerBuilder().addSectionComponents(containerComponents);
   const reply = await safeReply({
     interaction,
@@ -160,7 +161,10 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
     collector.resetTimer({ time: 60_000 });
-    const cID = buttonInteraction.customId as keyof typeof SupportedBots;
+    let cID = buttonInteraction.customId;
+    if (cID == "please") return;
+
+    cID = buttonInteraction.customId as keyof typeof SupportedBots;
     const bots = {
       name: cID === "MEE6" ? cID.toUpperCase() : cID,
       data: [

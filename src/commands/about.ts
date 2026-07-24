@@ -21,7 +21,7 @@ export const data = new SlashCommandBuilder()
   .setDescription("Shows information about Sokora.")
   .setContexts(0);
 
-export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function run(interaction: ChatInputCommandInteraction) {
   const client = interaction.client;
   const user = await client.user.fetch(true);
   const guilds = client.guilds.cache;

@@ -100,12 +100,13 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const collector = reply.createMessageComponentCollector({ time: 60_000 });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-    collector.resetTimer({ time: 60_000 });
 
-    const split = buttonInteraction.customId.replace("-", "").split("+");
-    const newVersion = ["Added", "Changed", "Fixed", "Removed"].some(s =>
-      buttonInteraction.customId.startsWith(s + "+"),
-    )
+    collector.resetTimer({ time: 60_000 });
+    const cID = buttonInteraction.customId;
+    if (cID == "please") return;
+
+    const split = cID.replace("-", "").split("+");
+    const newVersion = ["Added", "Changed", "Fixed", "Removed"].some(s => cID.startsWith(s + "+"))
       ? split[1]
       : split[0];
 

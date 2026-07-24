@@ -82,17 +82,16 @@ export async function run(
     if (await buttonCheck({ i: buttonInteraction, interaction, reply, noExecuteError: true }))
       return;
 
+    const cID = buttonInteraction.customId;
+    if (cID == "please") return;
+
     if (buttonInteraction.user.id != opponent.id && buttonInteraction.user.id != user.id)
       return await errorEmbed({
         interaction: buttonInteraction,
         title: "You aren't participating.",
       });
 
-    playerChoices.set(
-      buttonInteraction.user.id,
-      buttonInteraction.customId.split("_")[1] as RPSChoice,
-    );
-
+    playerChoices.set(buttonInteraction.user.id, cID.split("_")[1] as RPSChoice);
     if (opponent.bot) collector.stop("game-complete");
     else {
       await buttonInteraction.reply({

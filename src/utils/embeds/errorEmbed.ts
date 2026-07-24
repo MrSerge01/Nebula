@@ -175,7 +175,6 @@ export async function errorEmbed(options: {
       replyOptions: { components: [container], files, flags: ["Ephemeral", "IsComponentsV2"] },
     });
 
-    // todo: fix this mf
     const collector = reply.createMessageComponentCollector({ time: 240_000 });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
       const modal = new ModalBuilder()
@@ -322,8 +321,7 @@ export async function buttonCheck(options: {
         "For some reason, this click would've caused the bot to error. Thankfully, this message right here prevents that.",
     });
 
-  if (noExecuteError) return;
-  if (i.user.id != interaction.user.id)
+  if (!noExecuteError && i.user.id != interaction.user.id)
     return await errorEmbed({
       interaction: i,
       title: "You are not the person who executed this command.",
