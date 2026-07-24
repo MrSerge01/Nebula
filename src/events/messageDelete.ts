@@ -89,7 +89,7 @@ export default (async function run(message) {
 
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `-# Author ID: ${author.id} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
+        `-# User ID: ${author.id} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
       ),
     );
 

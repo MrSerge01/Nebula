@@ -1,10 +1,20 @@
+// [TODO] fix updating
+
 import { getSetting } from "database/settings";
 import { getStarred, setStarred } from "database/starboard";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ContainerBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  TextDisplayBuilder,
+} from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { channelCheck } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
+import { mention } from "utils/mention";
 import { safeChannel } from "utils/safeThings";
 import type { Event } from "utils/types";
 
@@ -39,13 +49,13 @@ export default (async function run(reaction, user) {
     }
 
   const message = await reaction.message.fetch();
-  const guild = message.guild;
+  const { guild, author, content, createdAt, url, id, attachments } = message;
   if (!guild) return;
 
   const starEmoji = ((await getSetting(guild.id, "starboard", "emoji")) as string) || "⭐";
   if (reaction.emoji.name != starEmoji) return;
   if (!(await getSetting(guild.id, "starboard", "enabled"))) return;
-  if (!message.content && message.attachments.size === 0) return;
+  if (!content && attachments.size === 0) return;
 
   const starboardChannelId = (await getSetting(guild.id, "starboard", "channel")) as string;
   if (!starboardChannelId) return;
@@ -63,69 +73,80 @@ export default (async function run(reaction, user) {
   )
     return;
 
-  const starCount = reaction.count ?? 0;
-  const threshold =
-    Number.parseInt((await getSetting(guild.id, "starboard", "threshold")) as string) || 3;
+  let starCount = reaction.count ?? 0;
+  const threshold = Number((await getSetting(guild.id, "starboard", "threshold")) as string) || 3;
+  if (reaction.users.valueOf().has(user.id)) starCount--;
   if (starCount < threshold) return;
 
   const existingStarred = await getStarred(guild.id, message.id);
-  const author = message.author;
-  const avatar = author.displayAvatarURL();
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${author.displayName}  •  ${starCount} ${starEmoji}`,
-      iconURL: avatar,
-    })
-    .setDescription(message.content)
-    .setTimestamp(message.createdAt)
-    .setFooter({ text: `Message ID: ${message.id}` })
-    .setColor(await colorize({ hue: Sokolors.Yellow }));
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`## ${author.displayName}  •  ${starCount} ${starEmoji}`),
+      new TextDisplayBuilder().setContent(content),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Yellow }));
 
   const reference = message.reference ? await message.fetchReference() : null;
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setLabel(`•  Jump to ${reference ? "starred " : ""}`)
-      .setURL(message.url)
-      .setEmoji("🔗")
-      .setStyle(ButtonStyle.Link),
-  );
-
-  const embeds = [];
-  if (reference) {
-    row.addComponents(
-      new ButtonBuilder()
-        .setLabel("•  Jump to replied")
-        .setURL(reference.url)
-        .setEmoji("🔗")
-        .setStyle(ButtonStyle.Link),
+  const containers = [];
+  if (reference)
+    containers.push(
+      new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${reference.author.displayName}  •  Replied by starred message**`,
+          ),
+          new TextDisplayBuilder().setContent(reference.content),
+        )
+        .addActionRowComponents(
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setLabel("•  Jump to")
+              .setURL(reference.url)
+              .setEmoji("🔗")
+              .setStyle(ButtonStyle.Link),
+          ),
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `-# ${mention(reference.createdAt.toDateString(), "DEFAULT_TIMESTAMP")}`,
+          ),
+        )
+        .setAccentColor(await colorize({ hue: Sokolors.Blue })),
     );
-    const avatar = reference.author.displayAvatarURL();
-    embeds.push(
-      new EmbedBuilder()
-        .setAuthor({
-          name: `${dotCheck({ string: avatar, doubleSpace: true })}${reference.author.displayName}  •  Replied by starred message`,
-          iconURL: avatar,
-        })
-        .setDescription(reference.content)
-        .setTimestamp(reference.createdAt)
-        .setFooter({ text: `Message ID: ${reference.id}` })
-        .setColor(await colorize({ hue: Sokolors.Blue })),
-    );
-  }
 
-  embeds.push(embed);
-  const attachment = message.attachments.first();
-  if (attachment?.contentType?.startsWith("image/")) embed.setImage(attachment.url);
+  const attachment = attachments.first();
+  if (attachment?.contentType?.startsWith("image/"))
+    container.addMediaGalleryComponents(
+      new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(attachment.url)),
+    );
+
+  container
+    .addActionRowComponents(
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setLabel(`•  Jump to ${reference ? "starred " : ""}`)
+          .setURL(url)
+          .setEmoji("🔗")
+          .setStyle(ButtonStyle.Link),
+      ),
+    )
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `-# ${mention(createdAt.toDateString(), "DEFAULT_TIMESTAMP")}`,
+      ),
+    );
+
+  containers.push(container);
   try {
     if (!existingStarred) {
       await setStarred(
         guild.id,
-        message.id,
+        id,
         message.channel.id,
         author.id,
-        (await starboardChannel.send({ embeds, components: [row] })).id,
+        (await starboardChannel.send({ components: containers, flags: "IsComponentsV2" })).id,
         starCount,
-        message.content || "",
+        content || "",
         new Date(message.createdTimestamp),
       );
       return;
@@ -133,15 +154,15 @@ export default (async function run(reaction, user) {
 
     await (
       await starboardChannel.messages.fetch(existingStarred.message)
-    ).edit({ embeds, components: [row] });
+    ).edit({ components: containers });
     await setStarred(
       guild.id,
-      message.id,
+      id,
       existingStarred.channel,
       author.id,
       existingStarred.message,
       starCount,
-      message.content || "",
+      content || "",
       new Date(message.createdTimestamp),
     );
   } catch (error) {

@@ -2,7 +2,7 @@ import eslint from "@eslint/js";
 import unicorn from "eslint-plugin-unicorn";
 import { defineConfig, globalIgnores } from "eslint/config";
 import tseslint from "typescript-eslint";
-import bracketlessNewline from "./ql/bracketless-newline.ts";
+import { bracketlessNewline } from "./ql/bracketless-newline.ts";
 
 export default defineConfig(
   globalIgnores(["eslint.config.js"]),
@@ -92,6 +92,17 @@ export default defineConfig(
       "@typescript-eslint/no-this-alias": "error",
       "@typescript-eslint/no-import-type-side-effects": "error",
       "unicorn/no-useless-undefined": "error",
+      "unicorn/prevent-abbreviations": [
+        "error",
+        {
+          replacements: {
+            db: false,
+            mod: false,
+            def: false,
+            res: false,
+          },
+        },
+      ],
       "unicorn/import-style": [
         "error",
         {

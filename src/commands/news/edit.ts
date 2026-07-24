@@ -122,7 +122,7 @@ export async function run(
 
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`**${news.author}**`),
+      new TextDisplayBuilder().setContent(`**Posted by ${news.author}**`),
       new TextDisplayBuilder().setContent(`## ${title}`),
       new TextDisplayBuilder().setContent(body),
       new TextDisplayBuilder().setContent(

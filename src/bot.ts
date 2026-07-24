@@ -14,12 +14,12 @@ import { errorEmbed } from "embeds/errorEmbed";
 import ms from "enhanced-ms";
 import { registerGuildCommands } from "handlers/commands";
 import { loadEasterEggs, loadEvents } from "handlers/events";
+import { colorize, Sokolors } from "utils/colorize";
+import { mention } from "utils/mention";
 import { safeAlertChannel, safeUser } from "utils/safeThings";
+import type { GHCommit } from "utils/types";
 import { rescheduleUnbans } from "utils/unbanScheduler";
 import { CANARY } from "./canary";
-import type { GHCommit } from "utils/types";
-import { mention } from "utils/mention";
-import { colorize, Sokolors } from "utils/colorize";
 
 export const client = new Client({
   presence: {
@@ -88,14 +88,15 @@ client.once("clientReady", async () => {
     console.log(
       Math.random() < 0.002
         ? "こんにちは! (konichi whats upppppppp)"
-        : (CANARY
+        : CANARY
           ? "ちーっす Canary!"
-          : "ちーっす！"),
+          : "ちーっす！",
     );
   });
 
   if (CANARY) {
     // 43200000 is 12 h in ms
+    const user = client.user;
     const yesterday = new Date(Date.now() - 1_209_600_000);
     const response = await fetch(
       `https://api.github.com/repos/SokoraDesu/Sokora/commits?since=${yesterday.toISOString()}&until=${new Date().toISOString()}`,
@@ -124,19 +125,15 @@ client.once("clientReady", async () => {
           await safeAlertChannel(guild).send({
             components: [
               new ContainerBuilder()
-                .setAccentColor(
-                  await colorize({
-                    user: client.user,
-                    avatar: client.user.displayAvatarURL(),
-                    hue: Sokolors.Yellow,
-                  }),
-                )
                 .addTextDisplayComponents(
                   new TextDisplayBuilder().setContent(
                     log.length > 0
                       ? `## Sokora Canary pulled updates!\nHello! This scheduled restart brought changes. We don't maintain a formal changelog for these quick patches, so here's a developer commit log, messages should be clear enough:\n${codeBlock("diff", dump)}\n**Enjoy testing, and thanks for using Sokora Canary!**\n-# By the way, get pinged, ${mention(guild.ownerId, "USER")}!`
                       : "## Sokora Canary restarted, though there's nothing new\nHello! This scheduled restart brought no new updates.\nWe'll hopefully have something new soon.\n\nThanks for using Sokora Canary!",
                   ),
+                )
+                .setAccentColor(
+                  await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Green }),
                 ),
             ],
             flags: "IsComponentsV2",

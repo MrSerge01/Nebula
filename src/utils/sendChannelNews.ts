@@ -1,7 +1,10 @@
 import { getNews, postNews, updateNews } from "database/news";
 import { getSetting } from "database/settings";
 import {
-  EmbedBuilder,
+  ContainerBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  TextDisplayBuilder,
   type ChatInputCommandInteraction,
   type Guild,
   type Role,
@@ -9,7 +12,6 @@ import {
 } from "discord.js";
 import { channelCheck } from "./channelCheck";
 import { colorize, Sokolors } from "./colorize";
-import { dotCheck } from "./dotCheck";
 import { mention } from "./mention";
 import { safeChannel, safeRole } from "./safeThings";
 
@@ -37,20 +39,28 @@ export async function sendChannelNews(
   const { title, body, author, authorPFP, imageURL, id } = newsOptions;
   const role = (await getSetting(guild.id, "news", "role")) as string;
   const roleToSend: Role | null = role ? await safeRole(guild, role) : null;
-
   const news = await getNews(guild.id, id);
-  const avatar = authorPFP;
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${author}`,
-      iconURL: avatar,
-    })
-    .setTitle(title)
-    .setDescription(body)
-    .setImage(edit ? (news?.imageURL ?? null) : (imageURL ?? null))
-    .setTimestamp(edit ? news?.createdAt : new Date())
-    .setFooter({ text: `Latest news from ${guild.name} • ID: ${id}` })
-    .setColor(await colorize({ hue: Sokolors.Blue }));
+  const image = edit ? (news?.imageURL ?? null) : (imageURL ?? null);
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `**Posted by ${author}${roleToSend ? `for ${roleToSend}` : ""}**`,
+      ),
+      new TextDisplayBuilder().setContent(`## ${title}`),
+      new TextDisplayBuilder().setContent(body),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+
+  if (image)
+    container.addMediaGalleryComponents(
+      new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(image)),
+    );
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `-# Latest from ${guild.name} • ID: ${id} • ${mention(edit ? news?.createdAt.toDateString()! : Date.now(), "DEFAULT_TIMESTAMP")}`,
+    ),
+  );
 
   const channel = (await safeChannel(
     guild,
@@ -67,15 +77,10 @@ export async function sendChannelNews(
   )
     return;
 
-  const message = await channel.send({
-    embeds: [embed],
-    content: roleToSend ? mention(roleToSend.id, "ROLE") : undefined,
-  });
-
+  const message = await channel.send({ components: [container], flags: "IsComponentsV2" });
   if (edit) {
     await updateNews(guild.id, id, title, body, message.id);
     return;
   }
   await postNews(guild.id, title, body, author, authorPFP, message.id, imageURL, id);
 }
-// We should have some sort of a middleware folder where we place all functions like this (interacts with the db but looks like it comes from a command file)
