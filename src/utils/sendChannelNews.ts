@@ -58,7 +58,7 @@ export async function sendChannelNews(
 
   container.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      `-# Latest from ${guild.name} • ID: ${id} • ${mention(edit ? news?.createdAt.toDateString()! : Date.now(), "DEFAULT_TIMESTAMP")}`,
+      `-# Latest from ${guild.name} • ID: ${id} • ${mention(edit ? news?.createdAt.valueOf()! : Date.now(), "DEFAULT_TIMESTAMP")}`,
     ),
   );
 

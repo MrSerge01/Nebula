@@ -1,3 +1,5 @@
+import { errorEmbed } from "embeds/errorEmbed";
+import { client } from "src/bot";
 import type { Satisfies } from "utils/types";
 import { db, values } from ".";
 import type { TableDefinition, TypeOfDefinition } from "./types";
@@ -13,7 +15,6 @@ type Def = Satisfies<
       author: "TEXT";
       star_message: "TEXT";
       stars: "INTEGER";
-      content: "TEXT";
       timestamp: "TIMESTAMP";
     };
   }
@@ -37,7 +38,6 @@ export async function setStarred(
   authorID: string,
   starMessageID: string,
   stars: number,
-  content: string,
   timestamp: Date,
 ): Promise<void> {
   const insObject = {
@@ -47,7 +47,6 @@ export async function setStarred(
     author: authorID,
     star_message: starMessageID,
     stars,
-    content,
     timestamp,
   };
   // [TODO] TypeError: Binding expected string, TypedArray, boolean, number, bigint or null
@@ -55,4 +54,18 @@ export async function setStarred(
     await tx`DELETE FROM starboard WHERE "guild" = ${guildID} AND "message" = ${messageID};`;
     await tx`INSERT INTO starboard ${db(insObject)};`;
   });
+}
+
+export async function deleteStarred(guildID: string, messageID: string) {
+  try {
+    await db`DELETE FROM starboard WHERE "guild" = ${guildID} AND "message" = ${messageID}`;
+  } catch (error) {
+    return await errorEmbed({
+      client,
+      error,
+      log: true,
+      forward: true,
+      fileName: "database/settings.ts",
+    });
+  }
 }

@@ -64,7 +64,7 @@ export async function run(
 
     return container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `-# ID: ${id} • ${mention(updatedAt?.toDateString() ?? createdAt.toDateString(), "DEFAULT_TIMESTAMP")}`,
+        `-# ID: ${id} • ${mention(updatedAt?.valueOf() ?? createdAt.valueOf(), "DEFAULT_TIMESTAMP")}`,
       ),
     );
   }

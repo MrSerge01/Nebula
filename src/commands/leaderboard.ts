@@ -78,7 +78,7 @@ export async function run(
 
     await safeReply({
       interaction: buttonInteraction,
-      editOptions: { components: [await generateContainer(false)], flags: "IsComponentsV2" },
+      editOptions: { components: [await generateContainer(false)] },
     });
   });
 

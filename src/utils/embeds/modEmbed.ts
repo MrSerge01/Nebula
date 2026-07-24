@@ -179,7 +179,7 @@ export async function modEmbed(
   const generalValues = [`**Moderator**: ${interaction.user.displayName}`];
   const serverAvatar = (guild.icon ? guild.iconURL() : undefined) ?? undefined;
   const avatar = user ? user.displayAvatarURL() : serverAvatar;
-  let author = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""} ${mention(user.id, "USER")}`;
+  let title = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""}${user ? mention(user.id, "USER") : ""}`;
 
   if (reason) generalValues.push(`**Reason**: ${reason}`);
   if (duration) generalValues.push(`**Duration**: ${ms(duration, "fullPrecision")}`);
@@ -207,7 +207,7 @@ export async function modEmbed(
         fileName: "modEmbed.ts",
       });
     }
-    author += `  •  #${previousID}`;
+    title += `  •  #${previousID}`;
   }
 
   if (dbAction) {
@@ -229,7 +229,7 @@ export async function modEmbed(
         reason ?? undefined,
         expiresAt ?? undefined,
       );
-      author += `  •  #${id}`;
+      title += `  •  #${id}`;
     } catch (error) {
       return await errorEmbed({
         interaction,
@@ -241,19 +241,22 @@ export async function modEmbed(
     }
   }
 
-  const container = new ContainerBuilder()
-    .addSectionComponents(
+  const textDisplayComponents = [
+    new TextDisplayBuilder().setContent(`**${customText?.logTitle ?? title}**`),
+    new TextDisplayBuilder().setContent(generalValues.join("\n")),
+    new TextDisplayBuilder().setContent(
+      `-# ${user ? `User ID: ${user.id}` : `Channel ID: ${channel}`} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
+    ),
+  ];
+
+  const container = new ContainerBuilder().setAccentColor(await colorize({ hue: Sokolors.Green }));
+  if (avatar)
+    container.addSectionComponents(
       new SectionBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(`**${customText?.logTitle ?? author}**`),
-          new TextDisplayBuilder().setContent(generalValues.join("\n")),
-          new TextDisplayBuilder().setContent(
-            `-# ${user ? `User ID: ${user.id}` : `Channel ID: ${channel}`} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
-          ),
-        )
+        .addTextDisplayComponents(textDisplayComponents)
         .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
-    )
-    .setAccentColor(await colorize({ hue: Sokolors.Green }));
+    );
+  else container.addTextDisplayComponents(textDisplayComponents);
 
   async function replier(): Promise<Awaited<ReturnType<typeof safeReply>>> {
     if (silent)
@@ -269,24 +272,34 @@ export async function modEmbed(
   }
 
   await Promise.all([
-    logChannel(guild, { components: [container], flags: "IsComponentsV2" }, dm, {
-      silent: silent ?? false,
-      user,
-      options: {
-        components: [
-          new ContainerBuilder()
-            .addTextDisplayComponents(
-              new TextDisplayBuilder().setContent(
-                customText?.dmTitle ?? `**You got ${action?.toLowerCase()} from ${guild.name}**`,
-              ),
-              new TextDisplayBuilder().setContent(generalValues.join("\n")),
-              new TextDisplayBuilder().setContent(`-# ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`),
-            )
-            .setAccentColor(await colorize({ hue: Sokolors.Red })),
-        ],
-        flags: "IsComponentsV2",
-      },
-    }),
+    logChannel(
+      guild,
+      { components: [container], flags: "IsComponentsV2" },
+      dm,
+      user
+        ? {
+            silent: silent ?? false,
+            user,
+            options: {
+              components: [
+                new ContainerBuilder()
+                  .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent(
+                      customText?.dmTitle ??
+                        `**You got ${action?.toLowerCase()} from ${guild.name}**`,
+                    ),
+                    new TextDisplayBuilder().setContent(generalValues.join("\n")),
+                    new TextDisplayBuilder().setContent(
+                      `-# ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
+                    ),
+                  )
+                  .setAccentColor(await colorize({ hue: Sokolors.Red })),
+              ],
+              flags: "IsComponentsV2",
+            },
+          }
+        : undefined,
+    ),
     replier(),
   ]);
 }

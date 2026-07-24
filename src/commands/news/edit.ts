@@ -122,11 +122,13 @@ export async function run(
 
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`**Posted by ${news.author}**`),
+      new TextDisplayBuilder().setContent(
+        `**Posted by ${news.author}${roleToSend ? `for ${roleToSend}` : ""}**`,
+      ),
       new TextDisplayBuilder().setContent(`## ${title}`),
       new TextDisplayBuilder().setContent(body),
       new TextDisplayBuilder().setContent(
-        `-# Edited news post from ${guild.name} • ID: ${news.id} • ${mention(news.updatedAt.toDateString() ?? news.createdAt.toDateString(), "DEFAULT_TIMESTAMP")}`,
+        `-# Edited news post from ${guild.name} • ID: ${news.id} • ${mention(news.updatedAt?.valueOf() ?? news.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}`,
       ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
@@ -136,15 +138,12 @@ export async function run(
     ((await getSetting(guild.id, "news", "channel")) as string) ?? interaction.channel?.id,
   )) as TextChannel;
 
-  await channel.messages.edit(news.messageID, {
-    content: roleToSend ? mention(roleToSend.id, "ROLE") : undefined,
-    components: [container],
-    flags: "IsComponentsV2",
-  });
-
-  await updateNews(guild.id, id, title, body);
-  await modalInteraction.reply({
-    components: [editedContainer],
-    flags: ["Ephemeral", "IsComponentsV2"],
-  });
+  await Promise.all([
+    channel.messages.edit(news.messageID, { components: [container], flags: "IsComponentsV2" }),
+    updateNews(guild.id, id, title, body),
+    modalInteraction.reply({
+      components: [editedContainer],
+      flags: ["Ephemeral", "IsComponentsV2"],
+    }),
+  ]);
 }

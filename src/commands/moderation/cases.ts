@@ -7,6 +7,7 @@ import {
 } from "database/moderation";
 import type { TypeOfDefinition } from "database/types";
 import {
+  Client,
   ContainerBuilder,
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
@@ -27,6 +28,7 @@ import { randomize } from "utils/randomize";
 import { safeMember, safeReply, safeUser } from "utils/safeThings";
 
 async function generateContainer(options: {
+  client: Client<boolean>;
   cases: TypeOfDefinition<Case>[];
   page: number;
   type: ModType | null;
@@ -35,7 +37,7 @@ async function generateContainer(options: {
   id: number | null;
   disabled: boolean;
 }): Promise<ContainerBuilder> {
-  const { cases, page, type, guildID, user, id, disabled } = options;
+  const { client, cases, page, type, guildID, user, id, disabled } = options;
   const actionsEmojis: Record<ModType, string> = {
     WARN: "⚠️",
     MUTE: "🔇",
@@ -57,7 +59,6 @@ async function generateContainer(options: {
   const displayedCases = cases.toSorted((a, b) => b.id - a.id).slice(start, start + casesPerPage);
   let fields = await Promise.all(
     displayedCases.map(async c => {
-      const client = user.client;
       const value = [
         `**Moderator**: ${(await safeUser(client, c.moderator)).username}`,
         c.reason ? `**Reason**: ${c.reason}` : "*No reason provided*",
@@ -165,6 +166,7 @@ export async function run(
       reason: "You need the **Moderate Members** permission.",
     });
 
+  const client = interaction.client;
   const guildID = guild.id;
   const user = interaction.options.getUser("user");
   const modType = interaction.options.getString("type") as ModType;
@@ -180,6 +182,7 @@ export async function run(
   const reply = await interaction.reply({
     components: [
       await generateContainer({
+        client,
         cases,
         page,
         guildID,
@@ -189,7 +192,7 @@ export async function run(
         disabled: false,
       }),
     ],
-    flags: "IsComponentsV2",
+    flags: ["Ephemeral", "IsComponentsV2"],
   });
 
   if (pages <= 1) return;
@@ -204,6 +207,7 @@ export async function run(
       editOptions: {
         components: [
           await generateContainer({
+            client,
             cases,
             page,
             guildID,
@@ -213,7 +217,6 @@ export async function run(
             disabled: false,
           }),
         ],
-        flags: "IsComponentsV2",
       },
     });
   });
@@ -223,6 +226,7 @@ export async function run(
       await interaction.editReply({
         components: [
           await generateContainer({
+            client,
             cases,
             page,
             guildID,

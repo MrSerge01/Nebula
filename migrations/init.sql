@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS starboard (
   "author" TEXT,
   "star_message" TEXT,
   "stars" INTEGER,
-  "content" TEXT,
   "timestamp" TIMESTAMP
 );
 
