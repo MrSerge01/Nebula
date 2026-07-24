@@ -1,10 +1,11 @@
 import { getNews, updateNews } from "database/news";
 import { getSetting } from "database/settings";
 import {
-  EmbedBuilder,
+  ContainerBuilder,
   LabelBuilder,
   ModalBuilder,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   TextInputBuilder,
   TextInputStyle,
   type ChatInputCommandInteraction,
@@ -15,7 +16,6 @@ import {
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { mention } from "utils/mention";
 import { modalSubmit } from "utils/modalSubmit";
 import { safeChannel, safeMember, safeRole } from "utils/safeThings";
@@ -97,9 +97,9 @@ export async function run(
   const title = modalInteraction.fields.getTextInputValue("title");
   const body = modalInteraction.fields.getTextInputValue("body");
   const avatar = news.authorPFP;
-  const editedEmbed = new EmbedBuilder()
-    .setTitle("News post edited.")
-    .setColor(await colorize({ hue: Sokolors.Green }));
+  const editedContainer = new ContainerBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post edited."))
+    .setAccentColor(await colorize({ hue: Sokolors.Green }));
 
   if (!(await getSetting(guild.id, "news", "edit_original_message"))) {
     await sendChannelNews(
@@ -114,19 +114,22 @@ export async function run(
       },
       true,
     );
-    return await modalInteraction.reply({ embeds: [editedEmbed], flags: "Ephemeral" });
+    return await modalInteraction.reply({
+      components: [editedContainer],
+      flags: ["Ephemeral", "IsComponentsV2"],
+    });
   }
 
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${news.author}`,
-      iconURL: avatar,
-    })
-    .setTitle(title)
-    .setDescription(body)
-    .setTimestamp(news.updatedAt ?? news.createdAt)
-    .setFooter({ text: `Edited news post from ${guild.name} • ID: ${news.id}` })
-    .setColor(await colorize({ hue: Sokolors.Blue }));
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`**${news.author}**`),
+      new TextDisplayBuilder().setContent(`## ${title}`),
+      new TextDisplayBuilder().setContent(body),
+      new TextDisplayBuilder().setContent(
+        `-# Edited news post from ${guild.name} • ID: ${news.id} • ${mention(news.updatedAt.toDateString() ?? news.createdAt.toDateString(), "DEFAULT_TIMESTAMP")}`,
+      ),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
   const channel = (await safeChannel(
     guild,
@@ -134,10 +137,14 @@ export async function run(
   )) as TextChannel;
 
   await channel.messages.edit(news.messageID, {
-    embeds: [embed],
     content: roleToSend ? mention(roleToSend.id, "ROLE") : undefined,
+    components: [container],
+    flags: "IsComponentsV2",
   });
 
   await updateNews(guild.id, id, title, body);
-  await modalInteraction.reply({ embeds: [editedEmbed], flags: "Ephemeral" });
+  await modalInteraction.reply({
+    components: [editedContainer],
+    flags: ["Ephemeral", "IsComponentsV2"],
+  });
 }

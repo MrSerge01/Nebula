@@ -1,9 +1,9 @@
 import { getPendingBans, removeCase } from "database/moderation";
-import { type Client, EmbedBuilder } from "discord.js";
+import { type Client, ContainerBuilder, TextDisplayBuilder } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "./colorize";
-import { dotCheck } from "./dotCheck";
 import { logChannel } from "./logChannel";
+import { mention } from "./mention";
 import { safeGuild, safeMember } from "./safeThings";
 
 // eslint-disable-next-line @typescript-eslint/require-await
@@ -49,19 +49,17 @@ export async function scheduleUnban(
             fileName: "unbanScheduler.ts",
           });
 
-        const avatar = user.displayAvatarURL();
-        const embed = new EmbedBuilder()
-          .setAuthor({
-            name: `${dotCheck({ string: avatar, doubleSpace: true })}Unbanned ${user.displayName}`,
-            iconURL: avatar,
-          })
-          .setDescription(
-            [`**Moderator**: ${moderator.displayName}`, "*Temporary ban has expired*"].join("\n"),
+        const container = new ContainerBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(`## Unbanned ${mention(user.id, "USER")}`),
+            new TextDisplayBuilder().setContent(
+              [`**Moderator**: ${moderator.displayName}`, "*Temporary ban has expired*"].join("\n"),
+            ),
+            new TextDisplayBuilder().setContent(`-# User ID: ${user.id}`),
           )
-          .setFooter({ text: `User ID: ${user.id}` })
-          .setColor(await colorize({ hue: Sokolors.Green }));
+          .setAccentColor(await colorize({ hue: Sokolors.Green }));
 
-        await logChannel(guild, { embeds: [embed] });
+        await logChannel(guild, { components: [container], flags: "IsComponentsV2" });
         await guild.members.unban(userID, "Temporary ban has expired");
       } catch (error) {
         return await errorEmbed({

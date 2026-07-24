@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { errorCheck, modEmbed } from "embeds/modEmbed";
+import { mention } from "utils/mention";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("delwarn")
@@ -44,7 +45,6 @@ export async function run(
         "You somehow ran the command without a user being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
     });
 
-  const name = user.username;
   const id = interaction.options.getNumber("id");
   if (!id)
     return await errorEmbed({
@@ -90,7 +90,7 @@ export async function run(
     user,
     dm: true,
     customText: {
-      logTitle: `Removed a warning from ${name}`,
+      logTitle: `Removed a warning from ${mention(user.id, "USER")}`,
       dmTitle: "Your warning has been removed",
     },
     silent,

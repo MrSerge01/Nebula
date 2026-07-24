@@ -102,17 +102,16 @@ export async function safeReply(options: {
   editOptions?: string | MessagePayload | InteractionEditReplyOptions;
 }): Promise<Message | InteractionResponse> {
   const { interaction, replyOptions, editOptions } = options;
-  const reply = replyOptions ?? editOptions;
 
   if (interaction.replied || interaction.deferred) {
     if (editOptions) return await interaction.editReply(editOptions);
-    return await interaction.followUp(reply);
+    if (replyOptions) return await interaction.followUp(replyOptions);
   }
 
   if (interaction.isButton() || interaction.isAnySelectMenu())
     return await interaction.update((replyOptions ?? editOptions) as InteractionUpdateOptions);
 
-  return await interaction.reply(reply);
+  if (replyOptions) return await interaction.reply(replyOptions);
 }
 
 /**

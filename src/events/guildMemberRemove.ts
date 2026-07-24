@@ -1,8 +1,13 @@
 import { getSetting } from "database/settings";
-import { EmbedBuilder, type TextChannel } from "discord.js";
+import {
+  ContainerBuilder,
+  SectionBuilder,
+  TextDisplayBuilder,
+  ThumbnailBuilder,
+  type TextChannel,
+} from "discord.js";
 import { channelCheck } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { replaceVariables } from "utils/replace";
 import { safeChannel } from "utils/safeThings";
 import type { Event } from "utils/types";
@@ -20,20 +25,23 @@ export default (async function run(member) {
   const user = member.user;
   const avatar = user.displayAvatarURL();
   const channel = (await safeChannel(guild, id)) as TextChannel;
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${user.displayName} left`,
-      iconURL: avatar,
-    })
-    .setDescription(
-      await replaceVariables(
-        (await getSetting(guildID, "welcome", "leave_text")) as string,
-        guild,
-        user,
-      ),
+  const container = new ContainerBuilder()
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`## ${user.displayName} left`),
+          new TextDisplayBuilder().setContent(
+            await replaceVariables(
+              (await getSetting(guildID, "welcome", "leave_text")) as string,
+              guild,
+              user,
+            ),
+          ),
+          new TextDisplayBuilder().setContent(`-# User ID: ${user.id}`),
+        )
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
     )
-    .setFooter({ text: `User ID: ${user.id}` })
-    .setColor(await colorize({ user, avatar, hue: Sokolors.Blue }));
+    .setAccentColor(await colorize({ user, avatar, hue: Sokolors.Yellow }));
 
   if (
     await channelCheck({
@@ -43,5 +51,5 @@ export default (async function run(member) {
       setting: { category: "welcome", setting: "leave_channel" },
     })
   )
-    await channel.send({ embeds: [embed] });
+    await channel.send({ components: [container], flags: "IsComponentsV2" });
 } as Event<"guildMemberRemove">);

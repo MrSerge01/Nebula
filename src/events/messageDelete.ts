@@ -1,11 +1,20 @@
 import { getSetting } from "database/settings";
-import { AttachmentBuilder, EmbedBuilder } from "discord.js";
+import {
+  AttachmentBuilder,
+  ContainerBuilder,
+  FileBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  Message,
+  TextDisplayBuilder,
+} from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { client } from "src/bot";
+import { checkForS } from "utils/checkForS";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { logChannel } from "utils/logChannel";
 import { fetchMedia } from "utils/media";
+import { mention } from "utils/mention";
 import type { Event } from "utils/types";
 
 export default (async function run(message) {
@@ -31,9 +40,9 @@ export default (async function run(message) {
     if (!(await getSetting(guild.id, "moderation", "events"))?.toString().includes("messageDelete"))
       return;
 
-    let media;
+    let media: { image: string | null; video: string | null; thumbnail: string | null };
     try {
-      media = await fetchMedia(message);
+      media = await fetchMedia(message as Message<boolean>);
     } catch (error) {
       return await errorEmbed({
         client,
@@ -45,32 +54,50 @@ export default (async function run(message) {
     }
 
     const { image, video, thumbnail } = media;
-    const avatar = author.displayAvatarURL();
     const content = message.content;
-    const embed = new EmbedBuilder()
-      .setAuthor({
-        name: `${dotCheck({ string: avatar, doubleSpace: true })}${author.username} deleted a message`,
-        iconURL: avatar,
-      })
-      .setDescription(
-        content.length <= 1024
-          ? (content && content.length > 0
-            ? content
-            : "*Empty message*")
-          : "*The deleted message is an attachment below this embed due to it being too large.*",
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `**${checkForS(author.username)} message got deleted**`,
+        ),
+        new TextDisplayBuilder().setContent(
+          content.length <= 4096
+            ? content && content.length > 0
+              ? content
+              : "*Empty message*"
+            : "*The deleted message is an attachment below due to it being too large.*",
+        ),
       )
-      .setThumbnail(thumbnail)
-      .setImage(image)
-      .setTimestamp(new Date())
-      .setFooter({ text: `Author ID: ${author.id}` })
-      .setColor(await colorize({ hue: Sokolors.Red }));
+      .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
     const files: AttachmentBuilder[] = [];
-    if (content.length >= 1024)
+    if (content.length > 4096) {
       files.push(new AttachmentBuilder(Buffer.from(content, "utf8"), { name: "message.txt" }));
+      container.addFileComponents(new FileBuilder().setURL("attachment://message.txt"));
+    }
 
-    if (video) files.push(new AttachmentBuilder(video, { name: "tenor.mp4" }));
-    return await logChannel(guild, { embeds: [embed], files });
+    const mediaFiles = [];
+    if (thumbnail != null) mediaFiles.push(thumbnail);
+    if (image != null) mediaFiles.push(image);
+    if (video != null) mediaFiles.push(video);
+    if (mediaFiles.length >= 1)
+      container.addMediaGalleryComponents(
+        new MediaGalleryBuilder().addItems(
+          mediaFiles.map(url => new MediaGalleryItemBuilder().setURL(url)),
+        ),
+      );
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `-# Author ID: ${author.id} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
+      ),
+    );
+
+    return await logChannel(guild, {
+      components: [container],
+      files,
+      flags: "IsComponentsV2",
+    });
   } catch (error) {
     return await errorEmbed({
       client,

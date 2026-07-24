@@ -2,25 +2,23 @@ import { resetSetting } from "database/settings";
 import {
   ChannelType,
   ContainerBuilder,
-  EmbedBuilder,
   GuildMFALevel,
   GuildNSFWLevel,
   GuildVerificationLevel,
   SectionBuilder,
   SeparatorBuilder,
+  TextChannel,
   TextDisplayBuilder,
   ThumbnailBuilder,
   type Guild,
   type NewsChannel,
   type StageChannel,
-  type TextChannel,
   type VoiceChannel,
 } from "discord.js";
 import { logChannel } from "utils/logChannel";
 import { pagedButtons } from "utils/pagination";
 import { safeChannel, safeMember } from "utils/safeThings";
 import { colorize, Sokolors } from "../colorize";
-import { dotCheck } from "../dotCheck";
 import { mention } from "../mention";
 import { pluralOrNot } from "../pluralOrNot";
 
@@ -32,7 +30,9 @@ type Options = {
   };
   roles?: boolean;
   disableButtons?: boolean;
-} & ({ page: number; pages: number } | { page: undefined; pages: undefined });
+  page?: number;
+  pages?: number;
+};
 
 /**
  * Gives you a CONTAINER containing information about the guild.
@@ -53,7 +53,6 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
   const rolesLength = sortedRoles.length;
 
   const channels = guild.channels.cache;
-
   const channelSizes = {
     text: channels.filter(
       channel =>
@@ -115,7 +114,6 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
       }`,
     );
 
-  const dot = dotCheck({ string: icon, doubleSpace: true });
   const container = new ContainerBuilder();
   const start = new TextDisplayBuilder().setContent(
     [
@@ -148,28 +146,28 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
     ): Promise<ContainerBuilder> {
       await resetSetting(guild.id, "serverboard", "server_invite");
       await resetSetting(guild.id, "serverboard", "invite_channel");
-      const errorEmbed = new EmbedBuilder()
-        .setAuthor({
-          name: `${dot}Serverboard is misconfigured in your server!`,
-          iconURL: icon,
-        })
-        .setFields({
-          name: "⁉️ • What happened",
-          value: [
-            "Sokora does not have the **Create Invite** and **Manage Server** permissions to create an invitation, but `serverboard.server_invite` is enabled.",
-            `Please give Sokora the permission${channel ? ` for ${channel.name}` : ""} and enable the settings again in **/settings serverboard**.`,
-          ].join("\n"),
-        })
-        .setColor(await colorize({ hue: Sokolors.Yellow }));
+      const errorContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent("## Serverboard is misconfigured in your server!"),
+          new TextDisplayBuilder().setContent(
+            [
+              "⁉️ • What happened",
+              [
+                "Sokora does not have the **Create Invite** and **Manage Server** permissions to create an invitation, but `serverboard.server_invite` is enabled.",
+                `Please give Sokora the permission${channel ? ` for ${channel.name}` : ""} and enable the settings again in **/settings serverboard**.`,
+              ].join("\n"),
+            ].join("\n"),
+          ),
+          new TextDisplayBuilder().setContent(
+            `This is coming from ${guild.name} • ID: ${guild.id}`,
+          ),
+        )
+        .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
-      await logChannel(guild, { embeds: [errorEmbed] }, true, {
+      await logChannel(guild, { components: [errorContainer], flags: "IsComponentsV2" }, true, {
         silent: false,
         user: owner.user,
-        options: {
-          embeds: [
-            errorEmbed.setFooter({ text: `This is coming from ${guild.name} • ID: ${guild.id}` }),
-          ],
-        },
+        options: { components: [container], flags: "IsComponentsV2" },
       });
 
       return container;
