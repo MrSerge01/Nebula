@@ -70,7 +70,7 @@ export default (async function run(reaction, user) {
 
   let starCount = reaction.count ?? 0;
   const threshold = Number((await getSetting(guild.id, "starboard", "threshold")) as string);
-  // if (reaction.users.valueOf().has(user.id)) starCount--;
+  if (reaction.users.valueOf().has(user.id)) starCount--;
   if (starCount < threshold) return;
 
   const existingStarred = await getStarred(guild.id, message.id);

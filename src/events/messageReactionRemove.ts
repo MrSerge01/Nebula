@@ -69,7 +69,7 @@ export default (async function run(reaction, user) {
     return;
 
   let starCount = reaction.count ?? 0;
-  // if (reaction.users.valueOf().has(user.id)) starCount--;
+  if (reaction.users.valueOf().has(user.id)) starCount--;
 
   const existingStarred = await getStarred(guild.id, message.id);
   const container = new ContainerBuilder()
