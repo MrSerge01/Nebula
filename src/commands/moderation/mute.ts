@@ -98,6 +98,6 @@ export async function run(
       await safeMember(guild, user.id)
     )?.edit({ communicationDisabledUntil: time, reason: reason ?? undefined });
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "mute.ts" });
+    await errorEmbed({ interaction, error, forward: true, fileName: "mute" });
   }
 }

@@ -204,7 +204,7 @@ export async function modEmbed(
         error,
         log: true,
         forward: true,
-        fileName: "modEmbed.ts",
+        fileName: "modEmbed",
       });
     }
     title += `  •  #${previousID}`;
@@ -236,7 +236,7 @@ export async function modEmbed(
         error,
         log: true,
         forward: true,
-        fileName: "modEmbed.ts",
+        fileName: "modEmbed",
       });
     }
   }

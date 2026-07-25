@@ -108,12 +108,7 @@ export async function run(
         });
     }
   } catch (error) {
-    return await errorEmbed({
-      interaction,
-      error,
-      forward: true,
-      fileName: "clear.ts",
-    });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "clear" });
   }
 
   await modEmbed({

@@ -115,13 +115,12 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
     );
 
   const container = new ContainerBuilder();
-  const start = new TextDisplayBuilder().setContent(
-    [
-      `## ${pages && pages > 1 ? `#${page + 1}  •  ` : ""}${guild.name}`,
-      generalValues,
-      safetyValues.join(" • "),
-    ].join("\n"),
-  );
+  const start = [
+    new TextDisplayBuilder().setContent(
+      `## ${page && pages && pages > 1 ? `#${page + 1}  •  ` : ""}${guild.name}`,
+    ),
+    new TextDisplayBuilder().setContent([generalValues, safetyValues.join(" • ")].join("\n")),
+  ];
 
   if (icon)
     container.addSectionComponents(

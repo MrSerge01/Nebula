@@ -43,7 +43,7 @@ export default (async function run(oldMessage, newMessage) {
         error,
         title: "Error fetching meta image.",
         forward: true,
-        fileName: "messageUpdate.ts",
+        fileName: "messageUpdate",
       });
     }
 
@@ -102,18 +102,14 @@ export default (async function run(oldMessage, newMessage) {
       ),
     );
 
-    return await logChannel(guild, {
-      components: [container],
-      files,
-      flags: "IsComponentsV2",
-    });
+    return await logChannel(guild, { components: [container], files, flags: "IsComponentsV2" });
   } catch (error) {
     return await errorEmbed({
       client: oldMessage.client,
       error,
       log: true,
       forward: true,
-      fileName: "messageDelete.ts",
+      fileName: "messageUpdate",
     });
   }
 } as Event<"messageUpdate">);

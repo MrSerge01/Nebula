@@ -25,7 +25,7 @@ export default (async function run(reaction, user) {
         title: "Error fetching reaction.",
         log: true,
         forward: true,
-        fileName: "messageReactionRemove.ts",
+        fileName: "messageReactionRemove",
       });
     }
 
@@ -39,7 +39,7 @@ export default (async function run(reaction, user) {
         title: "Error fetching user.",
         log: true,
         forward: true,
-        fileName: "messageReactionRemove.ts",
+        fileName: "messageReactionRemove",
       });
     }
 
@@ -137,7 +137,7 @@ export default (async function run(reaction, user) {
       title: "Error handling starboard message.",
       log: true,
       forward: true,
-      fileName: "messageReactionRemove.ts",
+      fileName: "messageReactionRemove",
     });
   }
 } as Event<"messageReactionRemove">);

@@ -62,12 +62,6 @@ export default (async function run(guild) {
     if (!welcomeChannel.permissionsFor(guild.client.user)?.has("SendMessages")) return;
     await welcomeChannel.send({ components: [container], flags: "IsComponentsV2" });
   } catch (error) {
-    return await errorEmbed({
-      client,
-      error,
-      log: true,
-      forward: true,
-      fileName: "guildCreate.ts",
-    });
+    return await errorEmbed({ client, error, log: true, forward: true, fileName: "guildCreate" });
   }
 } as Event<"guildCreate">);

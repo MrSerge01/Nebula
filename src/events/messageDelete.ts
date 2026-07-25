@@ -49,7 +49,7 @@ export default (async function run(message) {
         error,
         title: "Error fetching meta image.",
         forward: true,
-        fileName: "messageDelete.ts",
+        fileName: "messageDelete",
       });
     }
 
@@ -99,12 +99,6 @@ export default (async function run(message) {
       flags: "IsComponentsV2",
     });
   } catch (error) {
-    return await errorEmbed({
-      client,
-      error,
-      log: true,
-      forward: true,
-      fileName: "messageDelete.ts",
-    });
+    return await errorEmbed({ client, error, log: true, forward: true, fileName: "messageDelete" });
   }
 } as Event<"messageDelete">);

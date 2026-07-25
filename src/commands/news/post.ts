@@ -69,7 +69,7 @@ export async function run(
   try {
     await interaction.showModal(newsModal);
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "post.ts" });
+    await errorEmbed({ interaction, error, forward: true, fileName: "post" });
   }
 
   const modalInteraction = await modalSubmit(interaction);
@@ -97,7 +97,7 @@ export async function run(
       id: ((await getLatestNews(guild.id))[0]?.id ?? 0) + 1,
     });
   } catch (error) {
-    return await errorEmbed({ interaction, error, forward: true, fileName: "post.ts" });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "post" });
   }
 
   await modalInteraction.reply({

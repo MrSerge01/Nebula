@@ -96,7 +96,7 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`## You're viewing page ${functionPage + 1}.`),
           )
-          .setAccentColor(await colorize({ hue: Sokolors.Green }));
+          .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
   await safeReply({
     interaction: modalInteraction,

@@ -298,7 +298,7 @@ export async function getSetting<
       title: `Setting ${key}.${setting} does not exist in the database. Guild: ${guildID}.`,
       log: true,
       forward: true,
-      fileName: "database/settings.ts",
+      fileName: "database/settings",
     });
     return null;
   }
@@ -425,7 +425,7 @@ export async function deletePublicServer(
       error,
       log: true,
       forward: true,
-      fileName: "database/settings.ts",
+      fileName: "database/settings",
     });
   }
 }

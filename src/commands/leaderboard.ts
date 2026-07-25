@@ -39,27 +39,24 @@ export async function run(
     return b.level == a.level ? b.xp - a.xp : b.level - a.level;
   });
 
-  const usersPerPage = 6;
+  const usersPerPage = 10;
   const pages = Math.ceil(leaderboardData.length / usersPerPage);
   let page = Math.max(0, Math.min(interaction.options.getNumber("page") ?? 0, pages) - 1);
 
   const generateContainer = async (disabled: boolean): Promise<ContainerBuilder> => {
     const start = page * usersPerPage;
     const pageData = leaderboardData.slice(start, start + usersPerPage);
+    const content = [];
     const container = new ContainerBuilder()
       .addTextDisplayComponents(new TextDisplayBuilder().setContent("## Leaderboard"))
       .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
     for (const [index, userData] of pageData.entries())
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          [
-            `**#${start + index + 1} • ${(await safeUser(interaction.client, userData.userID)).tag}**`,
-            `Level **${Math.floor(userData.level)}** • **${Math.floor(userData.xp)}** XP`,
-          ].join("\n"),
-        ),
+      content.push(
+        `**#${start + index + 1}** • ${(await safeUser(interaction.client, userData.userID)).tag} • Level **${Math.floor(userData.level)}** @ **${Math.floor(userData.xp)}** XP`,
       );
 
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content.join("\n")));
     if (pages > 1) container.addActionRowComponents(pagedButtons(pages, page, disabled));
     return container;
   };

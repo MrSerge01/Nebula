@@ -71,6 +71,6 @@ export async function run(
     );
     await target?.edit({ communicationDisabledUntil: null });
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "unmute.ts" });
+    await errorEmbed({ interaction, error, forward: true, fileName: "unmute" });
   }
 }

@@ -54,7 +54,7 @@ export async function loadEasterEggs(): Promise<Message | InteractionResponse | 
         title: `Error loading easter egg ${easterEggFile}.`,
         log: true,
         forward: true,
-        fileName: "events.ts",
+        fileName: "events",
       });
     }
   }

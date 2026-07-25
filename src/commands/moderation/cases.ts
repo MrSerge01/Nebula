@@ -64,16 +64,12 @@ async function generateContainer(options: {
         c.reason ? `**Reason**: ${c.reason}` : "*No reason provided*",
         `**Time of action**: ${mention(c.timestamp.valueOf(), "SIMPLE_TIMESTAMP")}`,
       ];
+      let title = `**${actionsEmojis[c.type as ModType]} • ${capitalize(c.type.toLowerCase())} #${c.id}**`;
 
-      if (!user) value.unshift(`**User**: ${await safeUser(client, c.userID)}`);
+      if (!user) title += ` • ${await safeUser(client, c.userID)}`;
       if (c.expiresAt) value.push(`**Duration**: ${ms(Number(c.expiresAt), "fullPrecision")}`);
 
-      return new TextDisplayBuilder().setContent(
-        [
-          `**${actionsEmojis[c.type as ModType]} • ${capitalize(c.type.toLowerCase())} #${c.id}**`,
-          value.join("\n"),
-        ].join("\n"),
-      );
+      return new TextDisplayBuilder().setContent([title, value.join("\n")].join("\n"));
     }),
   );
 

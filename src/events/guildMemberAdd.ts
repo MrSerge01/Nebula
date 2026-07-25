@@ -86,7 +86,7 @@ export default (async function run(member) {
       error,
       log: true,
       forward: true,
-      fileName: "guildMemberAdd.ts",
+      fileName: "guildMemberAdd",
     });
   }
 } as Event<"guildMemberAdd">);

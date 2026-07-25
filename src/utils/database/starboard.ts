@@ -65,7 +65,7 @@ export async function deleteStarred(guildID: string, messageID: string) {
       error,
       log: true,
       forward: true,
-      fileName: "database/settings.ts",
+      fileName: "database/starboard",
     });
   }
 }

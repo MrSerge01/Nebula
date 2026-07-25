@@ -85,7 +85,7 @@ export async function run(
   try {
     await interaction.showModal(editModal);
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "edit.ts" });
+    await errorEmbed({ interaction, error, forward: true, fileName: "edit" });
   }
 
   const modalInteraction = await modalSubmit(interaction);
@@ -123,7 +123,7 @@ export async function run(
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `**Posted by ${news.author}${roleToSend ? `for ${roleToSend}` : ""}**`,
+        `**Posted by ${news.author}${roleToSend ? ` for ${roleToSend}` : ""}**`,
       ),
       new TextDisplayBuilder().setContent(`## ${title}`),
       new TextDisplayBuilder().setContent(body),

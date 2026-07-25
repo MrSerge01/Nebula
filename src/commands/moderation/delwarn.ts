@@ -73,12 +73,7 @@ export async function run(
   try {
     await removeCase(guild.id, id);
   } catch (error) {
-    return await errorEmbed({
-      interaction,
-      error,
-      forward: true,
-      fileName: "delwarn.ts",
-    });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "delwarn" });
   }
 
   const silent =

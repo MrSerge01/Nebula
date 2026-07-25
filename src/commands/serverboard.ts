@@ -42,7 +42,7 @@ export async function run(
             title: "Serverboard error.",
             log: true,
             forward: true,
-            fileName: "serverboard.ts",
+            fileName: "serverboard",
           });
           return null;
         }

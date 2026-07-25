@@ -27,6 +27,7 @@ async function genChangelog(
   changelog: ReturnType<typeof getChangelog>,
   viewing: Label,
   list: ReturnType<typeof getVersions>,
+  madeWithEmoji: string,
 ): Promise<ContainerBuilder> {
   return new ContainerBuilder()
     .addTextDisplayComponents(
@@ -67,7 +68,7 @@ async function genChangelog(
     )
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `-# Use the buttons above to view categories (like what we added or changed) or view other versions.\n-# Released ${changelog.date} • ${replace("(madeWith)")}`,
+        `-# Use the buttons above to view categories (like what we added or changed) or view other versions.\n-# Released ${changelog.date} • ${madeWithEmoji}`,
       ),
     )
     .setAccentColor(
@@ -86,11 +87,13 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const user = interaction.client.user;
   const logList = getVersions();
   const changelog = getChangelog(logList[0].ver);
+  const madeWithEmoji = replace("(madeWith)");
   const container = await genChangelog(
     user,
     changelog,
     getDefaultCategoryToView(changelog),
     logList.slice(0, 5),
+    madeWithEmoji,
   );
 
   const reply = await interaction.reply({
@@ -120,6 +123,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           log,
           split[1] ? (split[0] as Label) : getDefaultCategoryToView(log),
           logList.slice(indexToSliceOn, indexToSliceOn + 5).filter(v => v !== undefined),
+          madeWithEmoji,
         ),
       ],
     });

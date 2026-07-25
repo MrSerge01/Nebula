@@ -50,7 +50,7 @@ export default (async function run(message) {
             title: `Error running easter egg ${easterEgg.name}.`,
             log: true,
             forward: true,
-            fileName: "messageCreate.ts",
+            fileName: "messageCreate",
           });
         }
       }

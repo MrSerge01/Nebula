@@ -78,11 +78,6 @@ export async function run(
       ),
     ]);
   } catch (error) {
-    return await errorEmbed({
-      interaction,
-      error,
-      forward: true,
-      fileName: "lock.ts",
-    });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "lock" });
   }
 }

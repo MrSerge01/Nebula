@@ -50,8 +50,8 @@ export async function run(
       new TextDisplayBuilder().setContent("## An invitation to play!"),
       new TextDisplayBuilder().setContent(
         opponent.bot
-          ? "Choose your weapon!"
-          : `**${user.displayName}** has challenged **${opponent.displayName}** to a game!\nBoth players, make your choice!`,
+          ? "**Choose your weapon!**"
+          : `**${user.displayName}** has challenged **${opponent.displayName}** to a game!\n**Both players, make your choice!**`,
       ),
     )
     .addActionRowComponents(
@@ -134,9 +134,11 @@ export async function run(
             [
               `**${user.displayName}** ${rpsEmojis[p1Choice]} vs ${rpsEmojis[p2Choice]} **${opponent.displayName}**\n`,
               {
-                0: "**It's a tie!**",
-                1: `**${user.displayName}**, you win!`,
-                2: opponent.bot ? `**Sokora** wins!` : `**${opponent.displayName}**, you win!`,
+                0: "## **It's a tie!**",
+                1: `## **${user.displayName}**, you win!`,
+                2: opponent.bot
+                  ? `## **Sokora** wins!`
+                  : `## **${opponent.displayName}**, you win!`,
               }[winner],
             ].join("\n"),
           ),

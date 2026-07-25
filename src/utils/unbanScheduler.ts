@@ -35,7 +35,7 @@ export async function scheduleUnban(
             reason: "User not found in the guild's ban list's cache.",
             log: true,
             forward: true,
-            fileName: "unbanScheduler.ts",
+            fileName: "unbanScheduler",
           });
 
         const moderator = await safeMember(guild, modID);
@@ -46,7 +46,7 @@ export async function scheduleUnban(
             reason: "Moderator not found in the guild cache.",
             log: true,
             forward: true,
-            fileName: "unbanScheduler.ts",
+            fileName: "unbanScheduler",
           });
 
         const container = new ContainerBuilder()
@@ -68,7 +68,7 @@ export async function scheduleUnban(
           title: `Failed to unban user ${userID} in guild ${guildID}.`,
           log: true,
           forward: true,
-          fileName: "unbanScheduler.ts",
+          fileName: "unbanScheduler",
         });
       }
     },
@@ -90,7 +90,7 @@ export async function rescheduleUnbans(client: Client): Promise<void> {
         title: `Invalid expiresAt value for ban: ${ban.expiresAt}.`,
         log: true,
         forward: true,
-        fileName: "unbanScheduler.ts",
+        fileName: "unbanScheduler",
       });
       continue;
     }

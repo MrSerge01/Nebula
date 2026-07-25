@@ -125,6 +125,6 @@ export async function run(
       deleteMessageSeconds: delSec ?? undefined,
     });
   } catch (error) {
-    return await errorEmbed({ interaction, error, forward: true, fileName: "ban.ts" });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "ban" });
   }
 }

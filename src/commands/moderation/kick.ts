@@ -62,6 +62,6 @@ export async function run(
     );
     await (await safeMember(guild, user.id)).kick(reason ?? undefined);
   } catch (error) {
-    return await errorEmbed({ interaction, error, forward: true, fileName: "kick.ts" });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "kick" });
   }
 }

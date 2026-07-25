@@ -72,7 +72,7 @@ client.once("clientReady", async () => {
             title: "top.gg reminding error.",
             log: true,
             forward: true,
-            fileName: "bot.ts",
+            fileName: "bot",
           });
           await setUserSetting(user, "topgg", "remind", false);
         }
@@ -115,30 +115,52 @@ client.once("clientReady", async () => {
             .trim()
             .split("\n")
             .map(s => "+ " + s)
-            .join("\n")}\n^ by ${c.commit.author.name} in \`${c.sha}\`\n`,
+            .join("\n")}\n^ by ${c.commit.author?.name} in \`${c.sha}\`\n`,
       )
       .join("\n");
 
     await Promise.all(
-      client.guilds.cache.values().map(
-        async guild =>
-          await safeAlertChannel(guild).send({
-            components: [
-              new ContainerBuilder()
-                .addTextDisplayComponents(
-                  new TextDisplayBuilder().setContent(
-                    log.length > 0
-                      ? `## Sokora Canary pulled updates!\nHello! This scheduled restart brought changes. We don't maintain a formal changelog for these quick patches, so here's a developer commit log, messages should be clear enough:\n${codeBlock("diff", dump)}\n**Enjoy testing, and thanks for using Sokora Canary!**\n-# By the way, get pinged, ${mention(guild.ownerId, "USER")}!`
-                      : "## Sokora Canary restarted, though there's nothing new\nHello! This scheduled restart brought no new updates.\nWe'll hopefully have something new soon.\n\nThanks for using Sokora Canary!",
-                  ),
-                )
-                .setAccentColor(
-                  await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Green }),
+      client.guilds.cache.values().map(async guild => {
+        if (!user) return;
+        const textDisplayComponents =
+          log.length > 0
+            ? [
+                new TextDisplayBuilder().setContent("## Sokora Canary pulled updates!"),
+                new TextDisplayBuilder().setContent(
+                  "Hello! This scheduled restart brought changes. We don't maintain a formal changelog for these quick patches, so here's a developer commit log, messages should be clear enough.",
                 ),
-            ],
-            flags: "IsComponentsV2",
-          }),
-      ),
+                new TextDisplayBuilder().setContent(codeBlock("diff", dump)),
+                new TextDisplayBuilder().setContent(
+                  [
+                    "**Enjoy testing, and thanks for using Sokora Canary!**",
+                    `-# By the way, get pinged, ${mention(guild.ownerId, "USER")}!`,
+                  ].join("\n"),
+                ),
+              ]
+            : [
+                new TextDisplayBuilder().setContent(
+                  "## Sokora Canary restarted, though there's nothing new",
+                ),
+                new TextDisplayBuilder().setContent(
+                  [
+                    "Hello! This scheduled restart brought no new updates.",
+                    "We'll hopefully have something new soon.",
+                    "Thanks for using Sokora Canary!",
+                  ].join("\n"),
+                ),
+              ];
+
+        await safeAlertChannel(guild).send({
+          components: [
+            new ContainerBuilder()
+              .addTextDisplayComponents(textDisplayComponents)
+              .setAccentColor(
+                await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Green }),
+              ),
+          ],
+          flags: "IsComponentsV2",
+        });
+      }),
     );
   }
 

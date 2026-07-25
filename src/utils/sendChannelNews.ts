@@ -44,7 +44,7 @@ export async function sendChannelNews(
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `**Posted by ${author}${roleToSend ? `for ${roleToSend}` : ""}**`,
+        `**Posted by ${author}${roleToSend ? ` for ${roleToSend}` : ""}**`,
       ),
       new TextDisplayBuilder().setContent(`## ${title}`),
       new TextDisplayBuilder().setContent(body),

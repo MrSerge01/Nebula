@@ -1,8 +1,10 @@
 import { listAllNews } from "database/news";
+import { getSetting } from "database/settings";
 import {
   ContainerBuilder,
   MediaGalleryBuilder,
   MediaGalleryItemBuilder,
+  Role,
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
   type ButtonInteraction,
@@ -14,7 +16,7 @@ import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { handlePages, pagedButtons } from "utils/pagination";
-import { safeReply } from "utils/safeThings";
+import { safeReply, safeRole } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("view")
@@ -26,15 +28,18 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
-  if (!interaction.guild)
+  const guild = interaction.guild;
+  if (!guild)
     return await errorEmbed({
       interaction,
       title: "Error viewing a news post.",
       reason: "This command can only be used in a server.",
     });
 
-  const news = await listAllNews(interaction.guild.id);
+  const news = await listAllNews(guild.id);
   const pages = news.length;
+  const role = (await getSetting(guild.id, "news", "role")) as string;
+  const roleToSend: Role | null = role ? await safeRole(guild, role) : null;
   let page = Math.max(0, Math.min(interaction.options.getNumber("page") ?? 0, pages) - 1);
 
   if (!news?.length)
@@ -49,7 +54,9 @@ export async function run(
     const { author, title, body, id, updatedAt, createdAt, imageURL } = currentNews;
     const container = new ContainerBuilder()
       .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`**Posted by ${author}**`),
+        new TextDisplayBuilder().setContent(
+          `**Posted by ${author}${roleToSend ? ` for ${roleToSend}` : ""}**`,
+        ),
         new TextDisplayBuilder().setContent(`## ${title}`),
         new TextDisplayBuilder().setContent(body),
       )
