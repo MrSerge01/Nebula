@@ -30,12 +30,17 @@ import { safeChannel, safeReply } from "utils/safeThings";
 import { errorType } from "../errorType";
 
 /**
- * Sends the embed containing an error.
+ * Sends a container containing an error.
  * @param interaction The interaction (slash command).
- * @param title The error.
+ * @param client The client, use when interaction is unavailable.
+ * @param error The error object.
+ * @param title Short description of the error.
  * @param reason The reason of the error.
- * @param forward Whether or not should the error embed be forwarded to the error log channel.
- * @returns Embed with the error description.
+ * @param log Logs the error in the console.
+ * @param forward Forwards the error to the error log channel.
+ * @param fileName The name of the file from where the error is coming from.
+ * @param dmOwner DMs the owner with this error.
+ * @returns Container with the error description.
  */
 export async function errorEmbed(options: {
   interaction?: ChatInputCommandInteraction | ButtonInteraction | AnySelectMenuInteraction;
@@ -301,14 +306,22 @@ export async function errorEmbed(options: {
   }
 }
 
+/**
+ * Checks buttons (or select menus) for common errors.
+ * @param i The component to check.
+ * @param reply The reply that will be checked against the original message.
+ * @param interaction The interaction that will have its user checked against the button's interaction
+ * @param noExecuteError Makes the function not check user IDs.
+ * @returns An errorEmbed if something goes wrong.
+ */
 export async function buttonCheck(options: {
   i: ButtonInteraction | AnySelectMenuInteraction;
-  interaction:
+  reply: Message | InteractionResponse;
+  interaction?:
     | ChatInputCommandInteraction
     | ButtonInteraction
     | ModalSubmitInteraction
     | AnySelectMenuInteraction;
-  reply: Message | InteractionResponse;
   noExecuteError?: boolean;
 }): Promise<Awaited<ReturnType<typeof errorEmbed>>> {
   const { i, interaction, reply, noExecuteError } = options;
@@ -321,7 +334,7 @@ export async function buttonCheck(options: {
         "For some reason, this click would've caused the bot to error. Thankfully, this message right here prevents that.",
     });
 
-  if (!noExecuteError && i.user.id != interaction.user.id)
+  if (!noExecuteError && interaction && i.user.id != interaction.user.id)
     return await errorEmbed({
       interaction: i,
       title: "You are not the person who executed this command.",

@@ -27,7 +27,6 @@ export function replace(
 
 /**
  * Takes a string with dynamic `(variables)` and replaces them with the string they represent.
- *
  * @param {string} text String to have its variables replaced.
  * @param {Guild} guild Guild.
  * @param {User} user User.

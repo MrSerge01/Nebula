@@ -1,6 +1,5 @@
 import {
   ChannelType,
-  type TextChannel,
   type AnySelectMenuInteraction,
   type BaseFetchOptions,
   type ButtonInteraction,
@@ -18,6 +17,7 @@ import {
   type MessagePayload,
   type ModalSubmitInteraction,
   type Role,
+  type TextChannel,
   type User,
 } from "discord.js";
 
@@ -100,7 +100,7 @@ export async function safeReply(options: {
     | ModalSubmitInteraction;
   replyOptions?: string | MessagePayload | InteractionReplyOptions;
   editOptions?: string | MessagePayload | InteractionEditReplyOptions;
-}): Promise<Message | InteractionResponse> {
+}): Promise<Message | InteractionResponse | undefined> {
   const { interaction, replyOptions, editOptions } = options;
 
   if (interaction.replied || interaction.deferred) {
@@ -108,20 +108,22 @@ export async function safeReply(options: {
     if (replyOptions) return await interaction.followUp(replyOptions);
   }
 
-  if (interaction.isButton() || interaction.isAnySelectMenu())
-    return await interaction.update((replyOptions ?? editOptions) as InteractionUpdateOptions);
+  if (interaction.isButton() || interaction.isAnySelectMenu()) {
+    if (editOptions)
+      return await interaction.update((replyOptions ?? editOptions) as InteractionUpdateOptions);
+
+    if (replyOptions) return await interaction.reply(replyOptions);
+  }
 
   if (replyOptions) return await interaction.reply(replyOptions);
 }
 
 /**
  * Finds a channel to send important stuff to. **This should be used as a fallback,** i.e. prioritize log channel. This is only for things like welcome, canary updates, or important alerts when the server owner is not DM-able.
- *
  * It does not check for logChannel, whether this should change will be checked.
- *
  * @param guild Guild to find a channel in.
  */
-export function safeAlertChannel(guild: Guild): TextChannel {
+export function safeAlertChannel(guild: Guild): TextChannel | undefined {
   return (
     guild.systemChannel ??
     guild.channels.cache

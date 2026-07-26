@@ -200,9 +200,9 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
 
           await safeReply({
             interaction: buttonInteraction,
-            replyOptions: {
+            editOptions: {
               components: [await containerHelper(checkContainer, { buttons: true, json: true })],
-              files: files,
+              files,
             },
           });
           break;
@@ -210,7 +210,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         case "return": {
           await safeReply({
             interaction: buttonInteraction,
-            replyOptions: { components: [switchContainer] },
+            editOptions: { components: [switchContainer] },
           });
           break;
         }
@@ -220,7 +220,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           const res = [];
           await safeReply({
             interaction: buttonInteraction,
-            replyOptions: {
+            editOptions: {
               components: [await containerHelper(new ContainerBuilder(), { content })],
             },
           });
@@ -253,7 +253,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           content = `## Done!\n${res.join("\n")}`;
           await safeReply({
             interaction: buttonInteraction,
-            replyOptions: {
+            editOptions: {
               components: [await containerHelper(new ContainerBuilder(), { content })],
             },
           });

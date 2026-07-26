@@ -43,6 +43,12 @@ type ErrorOptions = Options & {
   };
 };
 
+/**
+ * Checks for errors in moderation commands.
+ * @param permissionAction The permission that the command requires. If the bot doesn't have it, it errors.
+ * @param options Error options.
+ * @returns An errorEmbed if something goes wrong.
+ */
 export async function errorCheck(
   permissionAction: string,
   options: ErrorOptions,
@@ -157,6 +163,12 @@ export async function errorCheck(
   }
 }
 
+/**
+ * Sends a container containing information about a moderation action.
+ * @param options Options
+ * @param reason Reason for the moderation action.
+ * @returns A container with action info (or an errorEmbed if something goes wrong).
+ */
 export async function modEmbed(
   options: Options & { silent?: boolean },
   reason?: string | null,

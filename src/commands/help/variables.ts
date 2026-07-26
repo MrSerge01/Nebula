@@ -18,12 +18,11 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const user = interaction.user;
   if (!user) return;
 
-  const example = "Welcome to (servername), **(name)**!";
-  const exampleTwo =
-    "Hi **(username)**! Thanks for joining *(servername)* at (currentdate, simple), **(serverowner)** and the ***(count)*** members are happy to meet you!";
-
-  const exampleThree =
-    "Thank you so much to (725985503177867295, user) for making this announcement the (1770053619077, detailed_timestamp). We love you!";
+  const examples = [
+    "Welcome to (servername), **(name)**!",
+    "Hi **(username)**! Thanks for joining *(servername)* at (currentdate, simple), **(serverowner)** and the ***(count)*** members are happy to meet you!",
+    "Thank you so much to (725985503177867295, user) for making this announcement the (1770053619077, detailed_timestamp). We love you!",
+  ];
 
   const firstContainer = new ContainerBuilder()
     .addTextDisplayComponents(
@@ -39,14 +38,14 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new TextDisplayBuilder().setContent("## 🎛 • Examples"),
       new TextDisplayBuilder().setContent(
         [
-          `A simple example: \`${example}\` will result in:`,
-          `> ${await replaceVariables(example, guild, user)}`,
+          `A simple example: \`${examples[0]}\` will result in:`,
+          `> ${await replaceVariables(examples[0], guild, user)}`,
         ].join("\n"),
       ),
       new TextDisplayBuilder().setContent(
         [
-          `Adding more stuff:\n\`${exampleTwo}\`\nwill result in:`,
-          `> ${await replaceVariables(exampleTwo, guild, user)}`,
+          `Adding more stuff:\n\`${examples[1]}\`\nwill result in:`,
+          `> ${await replaceVariables(examples[1], guild, user)}`,
         ].join("\n"),
       ),
     )
@@ -57,8 +56,8 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new TextDisplayBuilder().setContent("## 🛜 • Dynamic mentioning"),
       new TextDisplayBuilder().setContent(
         [
-          `You can use a similar syntax to mention specific users, roles, channels, or timestamps, since Discord disallows this natively:\n\`${exampleThree}\`\nwill result in:`,
-          `> ${await replaceVariables(exampleThree, guild, user)}`,
+          `You can use a similar syntax to mention specific users, roles, channels, or timestamps, since Discord disallows this natively:\n\`${examples[3]}\`\nwill result in:`,
+          `> ${await replaceVariables(examples[2], guild, user)}`,
         ].join("\n"),
       ),
     )

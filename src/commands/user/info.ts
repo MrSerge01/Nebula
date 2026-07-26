@@ -95,7 +95,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
 
   const createdText = `<:discord:${replace("(discord)")}> **${mention(user.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}**${
     (await safeMembers(guild)).has(user.id)
-      ? `• **${mention((await safeMember(guild, user.id)).joinedAt?.valueOf() ?? 0, "DEFAULT_TIMESTAMP")}**`
+      ? ` • **${mention((await safeMember(guild, user.id)).joinedAt?.valueOf() ?? 0, "DEFAULT_TIMESTAMP")}**`
       : ""
   }`;
   const start = [

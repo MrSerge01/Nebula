@@ -21,22 +21,35 @@ export const data = new SlashCommandBuilder()
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const user = interaction.client.user;
   const madeWithEmoji = replace("(madeWith)");
+  const color = await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Purple });
   let isPastView = false;
 
   async function construct(pastView: boolean) {
     return new ContainerBuilder()
       .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent("## Entities involved"),
+        new TextDisplayBuilder().setContent(
+          `## Entities involved${pastView ? " in the past" : ""}`,
+        ),
         new TextDisplayBuilder().setContent(
           pastView
-            ? ["# idk man we'll add someone here later lmfaos"].join("\n")
+            ? [
+                "**Developers**: itsakuro, Kalze, Littie, Mart *(+ translator lead)*, Pigpot, Spectrum, Sungi *(+ translator)*, **ThyTonyStank *(the reason Sokora exists!)***, underscored *(+ tester)*, Zayaan AR",
+                "**Designers**: ArtyH, pibayar, proJM, Slider_on_the_black",
+                "**Translators**: SaFire",
+                "**Testers**: astol",
+                "\n> I thank everyone that was in the team and helped shape the project into what it is today. I hope that you'll have a bright future ahead of you.",
+                "\\- *Goos*",
+                "\n-# If you're on this list and wish to remove/change your name, please contact us via contact@sokora.org",
+              ].join("\n")
             : [
                 "**Founder**: Goos",
-                "**Developers**: Froxcey, Golem64, Koslz, Meqr, Nikkerudon, ZakaHaceCosas",
-                "**Designers**: Pjanda, trvhz, ZakaHaceCosas",
+                "**Developers**: Froxcey, Golem64 *(+ translator)*, Meqr, Nikkerudon *(+ translator)*, ZakaHaceCosas *(+ designer, social relations, translator)*",
+                "**Designers**: Pjanda, trvhz",
                 "**Social relations**: Spoon",
-                "**Translators**: Dimkauzh, flojo, Golem64, GraczNet, Nikkerudon, TrulyBlue, ZakaHaceCosas",
-                "**Testers**: Blaze, fishy, Trynera",
+                "**Translators**: Dimkauzh, GraczNet, TrulyBlue",
+                "**Testers**: Blaze, fishy, flojo, Trynera",
+                "\n> I'm grateful for everyone's presence in the Sokora team. With every contribution and every idea, you help Sokora improve to one day be one of the best bots out there. Thank you.",
+                "\\- *Goos*",
               ].join("\n"),
         ),
       )
@@ -44,14 +57,12 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
             .setCustomId("team")
-            .setLabel(pastView ? "View the current team" : "View the past team members")
+            .setLabel(pastView ? "View the current team" : "View past team members")
             .setStyle(ButtonStyle.Secondary),
         ),
       )
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${madeWithEmoji}`))
-      .setAccentColor(
-        await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Purple }),
-      );
+      .setAccentColor(color);
   }
 
   const reply = await interaction.reply({

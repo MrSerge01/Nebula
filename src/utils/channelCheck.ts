@@ -14,17 +14,9 @@ import { colorize, Sokolors } from "./colorize";
 import { mention } from "./mention";
 
 /** Checks if a channel that the user specified as the value of any setting (moderation.channel for example) is valid.
- *
  * "Valid" = Exists, is either a Text or News channel, and Sokora has the requested permissions for it (either send, view, or both).
- * @param {{
-    channel: Channel | GuildBasedChannel | null;
-    setting: {
-      category: string;
-      setting: string;
-    };
-    permType: "View" | "Send";
-    guild: Guild;
- }} options Options.
+ * @param options Options.
+ * @returns Status of the channel. (if the bot can view it/send in it or not)
  */
 export async function channelCheck(options: {
   channel: Channel | GuildBasedChannel | null;

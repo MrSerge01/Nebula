@@ -1,12 +1,6 @@
 /**
  * Checks if there is or not a profile picture/emoji to the side, to add (or not) a "•" dot.
- *
- * @param {{
-   string: string | undefined | null;
-   includeString?: boolean;
-   doubleSpace?: boolean;
-   twoSides?: boolean;
- }} options Options.
+ * @param options Options.
  * @returns {string} String to be placed aside.
  */
 export function dotCheck(options: {

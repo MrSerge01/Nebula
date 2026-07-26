@@ -36,7 +36,7 @@ type Options = {
 
 /**
  * Gives you a CONTAINER containing information about the guild.
- * @param options Options of the embed.
+ * @param options Options of the container.
  * @returns Container that contains the guild info.
  */
 export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
