@@ -1,5 +1,11 @@
 import type { Message } from "discord.js";
 
+/**
+ * Fetches media from a message.
+ * Requires the ENABLE_MEDIA_FETCHING environment variable to be on.
+ * @param message Message to fetch media from.
+ * @returns Message's media: an image, video (or a gif) or a thumbnail
+ */
 export async function fetchMedia(
   message: Message,
 ): Promise<{ image: string | null; video: string | null; thumbnail: string | null }> {
@@ -19,19 +25,19 @@ export async function fetchMedia(
       otherwise, if you have the appropriate security measures in place, you can leave it enabled.
 
       WITH GREAT POWER COMES GREAT RESPONSIBILITY (or smth).
-    */
+  */
 
   // --
 
   if (message.content && url && process.env.ENABLE_MEDIA_FETCHING == "true") {
     const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url);
     const isVideo = /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
-    const isTenor = /tenor\.com\/view\//i.test(url);
-    const isWebsite = !isImage && !isTenor && !isVideo;
+    const isGif = /tenor\.com\/view\//i.test(url) && /klipy\.com\/view\//i.test(url);
+    const isWebsite = !isImage && !isGif && !isVideo;
 
     if (isImage) image = url;
     else if (isVideo) video = url;
-    else if (isTenor || isWebsite) {
+    else if (isGif || isWebsite) {
       const content = await (await fetch(url)).text();
       const metaContentMatch =
         /<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i.exec(content) ??
@@ -42,7 +48,7 @@ export async function fetchMedia(
 
       const metaContent = metaContentMatch ? metaContentMatch[1] : undefined;
       if (metaContent)
-        if (isTenor) video = metaContent;
+        if (isGif) video = metaContent;
         else if (isWebsite) thumbnail = metaContent;
     }
   }

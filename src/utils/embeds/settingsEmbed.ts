@@ -572,6 +572,7 @@ export async function settingsEmbed(
 
     collector.resetTimer({ time: 60_000 });
     const cID = selectInteraction.customId;
+    if (cID == "please") return;
 
     // Special buttons (navigation)
     switch (cID.replace("obj", "")) {
@@ -662,7 +663,7 @@ export async function settingsEmbed(
               new TextInputBuilder()
                 .setCustomId("setting")
                 .setPlaceholder("Type in the value")
-                .setMaxLength(4000)
+                .setMaxLength(3800)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true)
                 .setValue(`${await getSettingPlease(id, key, cID, table)}`),
@@ -679,7 +680,7 @@ export async function settingsEmbed(
         const value = modalInteraction.fields.getTextInputValue("setting");
         const length = value.length;
         let settingText = `**${dotCheck({ string: settingsObject[cID].emoji, twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`;
-        let valueText = `The ${value.length < 50 ? "value" : "**value**"} has been set ${length >= 500 ? "successfully." : (length >= 50 ? `to ${value}` : `to **${value}**`)}`;
+        let valueText = `The ${value.length < 50 ? "value" : "**value**"} has been set ${length >= 500 ? "successfully." : length >= 50 ? `to ${value}` : `to **${value}**`}`;
         let hue = Sokolors.Blue;
 
         if (isValueValid(value, settingsObject[cID].type))

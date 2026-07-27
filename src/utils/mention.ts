@@ -2,7 +2,6 @@ import type { Mentionable } from "./types";
 
 /**
  * Handles role mentions, channel mentions, timestamps, and more.
- *
  * @param {string | number} who Who to mention? If it's a timestamp, pass `Date.now()`.
  * @param {string} type What to mention?
  * @returns {string} A `<MENTION>` string.

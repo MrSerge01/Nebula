@@ -1,17 +1,9 @@
-import { getNews, postNews, updateNews } from "database/news";
+import { postNews, updateNews } from "database/news";
 import { getSetting } from "database/settings";
-import {
-  EmbedBuilder,
-  type ChatInputCommandInteraction,
-  type Guild,
-  type Role,
-  type TextChannel,
-} from "discord.js";
+import type { ChatInputCommandInteraction, Guild, TextChannel } from "discord.js";
+import { newsEmbed } from "embeds/newsEmbed";
 import { channelCheck } from "./channelCheck";
-import { colorize, Sokolors } from "./colorize";
-import { dotCheck } from "./dotCheck";
-import { mention } from "./mention";
-import { safeChannel, safeRole } from "./safeThings";
+import { safeChannel } from "./safeThings";
 
 /**
  * Sends news to a channel.
@@ -28,29 +20,12 @@ export async function sendChannelNews(
     title: string;
     body: string;
     author: string;
-    authorPFP?: string;
     id: number;
     imageURL?: string | null;
   },
   edit?: boolean,
 ): Promise<void> {
-  const { title, body, author, authorPFP, imageURL, id } = newsOptions;
-  const role = (await getSetting(guild.id, "news", "role")) as string;
-  const roleToSend: Role | null = role ? await safeRole(guild, role) : null;
-
-  const news = await getNews(guild.id, id);
-  const avatar = authorPFP;
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${author}`,
-      iconURL: avatar,
-    })
-    .setTitle(title)
-    .setDescription(body)
-    .setImage(edit ? (news?.imageURL ?? null) : (imageURL ?? null))
-    .setTimestamp(edit ? news?.createdAt : new Date())
-    .setFooter({ text: `Latest news from ${guild.name} • ID: ${id}` })
-    .setColor(await colorize({ hue: Sokolors.Blue }));
+  const { title, body, author, id, imageURL } = newsOptions;
 
   const channel = (await safeChannel(
     guild,
@@ -68,14 +43,12 @@ export async function sendChannelNews(
     return;
 
   const message = await channel.send({
-    embeds: [embed],
-    content: roleToSend ? mention(roleToSend.id, "ROLE") : undefined,
+    components: [await newsEmbed(guild, { title, body, author, id, imageURL })],
+    flags: "IsComponentsV2",
   });
-
   if (edit) {
     await updateNews(guild.id, id, title, body, message.id);
     return;
   }
-  await postNews(guild.id, title, body, author, authorPFP, message.id, imageURL, id);
+  await postNews(guild.id, title, body, author, message.id, imageURL, id);
 }
-// We should have some sort of a middleware folder where we place all functions like this (interacts with the db but looks like it comes from a command file)

@@ -1,9 +1,9 @@
 import { getPendingBans, removeCase } from "database/moderation";
-import { type Client, EmbedBuilder } from "discord.js";
+import { type Client, ContainerBuilder, TextDisplayBuilder } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "./colorize";
-import { dotCheck } from "./dotCheck";
 import { logChannel } from "./logChannel";
+import { mention } from "./mention";
 import { safeGuild, safeMember } from "./safeThings";
 
 // eslint-disable-next-line @typescript-eslint/require-await
@@ -35,7 +35,7 @@ export async function scheduleUnban(
             reason: "User not found in the guild's ban list's cache.",
             log: true,
             forward: true,
-            fileName: "unbanScheduler.ts",
+            fileName: "unbanScheduler",
           });
 
         const moderator = await safeMember(guild, modID);
@@ -46,22 +46,20 @@ export async function scheduleUnban(
             reason: "Moderator not found in the guild cache.",
             log: true,
             forward: true,
-            fileName: "unbanScheduler.ts",
+            fileName: "unbanScheduler",
           });
 
-        const avatar = user.displayAvatarURL();
-        const embed = new EmbedBuilder()
-          .setAuthor({
-            name: `${dotCheck({ string: avatar, doubleSpace: true })}Unbanned ${user.displayName}`,
-            iconURL: avatar,
-          })
-          .setDescription(
-            [`**Moderator**: ${moderator.displayName}`, "*Temporary ban has expired*"].join("\n"),
+        const container = new ContainerBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(`## Unbanned ${mention(user.id, "USER")}`),
+            new TextDisplayBuilder().setContent(
+              [`**Moderator**: ${moderator.displayName}`, "*Temporary ban has expired*"].join("\n"),
+            ),
+            new TextDisplayBuilder().setContent(`-# User ID: ${user.id}`),
           )
-          .setFooter({ text: `User ID: ${user.id}` })
-          .setColor(await colorize({ hue: Sokolors.Green }));
+          .setAccentColor(await colorize({ hue: Sokolors.Green }));
 
-        await logChannel(guild, { embeds: [embed] });
+        await logChannel(guild, { components: [container], flags: "IsComponentsV2" });
         await guild.members.unban(userID, "Temporary ban has expired");
       } catch (error) {
         return await errorEmbed({
@@ -70,7 +68,7 @@ export async function scheduleUnban(
           title: `Failed to unban user ${userID} in guild ${guildID}.`,
           log: true,
           forward: true,
-          fileName: "unbanScheduler.ts",
+          fileName: "unbanScheduler",
         });
       }
     },
@@ -92,7 +90,7 @@ export async function rescheduleUnbans(client: Client): Promise<void> {
         title: `Invalid expiresAt value for ban: ${ban.expiresAt}.`,
         log: true,
         forward: true,
-        fileName: "unbanScheduler.ts",
+        fileName: "unbanScheduler",
       });
       continue;
     }

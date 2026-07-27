@@ -63,7 +63,7 @@ export async function getUserSettingsTable<K extends keyof typeof settingsDefini
       title: `Setting ${key}.${setting} does not exist in the database at all.`,
       log: true,
       forward: true,
-      fileName: "database/userSettings.ts",
+      fileName: "database/userSettings",
     });
     return null;
   }
@@ -87,7 +87,7 @@ export async function getUserSetting<
       title: `Setting ${key}.${setting} does not exist in the database. User: ${userID}.`,
       log: true,
       forward: true,
-      fileName: "database/userSettings.ts",
+      fileName: "database/userSettings",
     });
     return null;
   }

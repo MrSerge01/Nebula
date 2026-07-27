@@ -1,9 +1,17 @@
 import { getSetting } from "database/settings";
-import { EmbedBuilder, type TextChannel } from "discord.js";
+import {
+  ContainerBuilder,
+  DMChannel,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  SectionBuilder,
+  TextDisplayBuilder,
+  ThumbnailBuilder,
+  type TextChannel,
+} from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { channelCheck } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { kominator } from "utils/kominator";
 import { replaceVariables } from "utils/replace";
 import { safeChannel } from "utils/safeThings";
@@ -20,20 +28,38 @@ export default (async function run(member) {
   const roles = await getSetting(guildID, "welcome", "roles");
   const user = member.user;
   const avatar = user.displayAvatarURL();
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${user.displayName} joined`,
-      iconURL: avatar,
-    })
-    .setDescription(
-      await replaceVariables(
-        (await getSetting(guildID, "welcome", "join_text")) as string,
-        guild,
-        user,
-      ),
-    )
-    .setFooter({ text: `User ID: ${user.id}` })
-    .setColor(await colorize({ user, avatar, hue: Sokolors.Blue }));
+  const banner = user.bannerURL({ size: 512 });
+
+  async function welcomeContainer(dm: boolean) {
+    const container = new ContainerBuilder();
+    if (banner)
+      container.addMediaGalleryComponents(
+        new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(banner)),
+      );
+
+    return container
+      .addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(`## ${user.displayName} joined`),
+            new TextDisplayBuilder().setContent(
+              dm
+                ? await replaceVariables(
+                    (await getSetting(guildID, "welcome", "dm_text")) as string,
+                    guild,
+                    user,
+                  )
+                : await replaceVariables(
+                    (await getSetting(guildID, "welcome", "join_text")) as string,
+                    guild,
+                    user,
+                  ),
+            ),
+          )
+          .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
+      )
+      .setAccentColor(await colorize({ user, avatar, hue: Sokolors.Blue }));
+  }
 
   const channel = (await safeChannel(guild, id)) as TextChannel;
   if (
@@ -45,30 +71,22 @@ export default (async function run(member) {
     })
   ) {
     if (roles && !user.bot) await member.roles.add([...kominator(roles as string)]);
-    await channel.send({ embeds: [embed] });
+    await channel.send({ components: [await welcomeContainer(false)], flags: "IsComponentsV2" });
   }
 
   if (!(await getSetting(guildID, "welcome", "join_dm"))) return;
-  const dmChannel = await user.createDM().catch(() => null);
+  const dmChannel: DMChannel = await user.createDM().catch(() => null);
   if (!dmChannel || user.bot) return;
 
-  embed.setDescription(
-    await replaceVariables(
-      (await getSetting(guildID, "welcome", "dm_text")) as string,
-      guild,
-      user,
-    ),
-  );
-
   try {
-    await dmChannel.send({ embeds: [embed] });
+    await dmChannel.send({ components: [await welcomeContainer(true)], flags: "IsComponentsV2" });
   } catch (error) {
     return await errorEmbed({
       client: member.client,
       error,
       log: true,
       forward: true,
-      fileName: "guildMemberAdd.ts",
+      fileName: "guildMemberAdd",
     });
   }
 } as Event<"guildMemberAdd">);

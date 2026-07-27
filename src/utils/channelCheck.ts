@@ -1,7 +1,8 @@
 import { resetSetting } from "database/settings";
 import {
   ChannelType,
-  EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
   type Channel,
   type Guild,
   type GuildBasedChannel,
@@ -10,21 +11,12 @@ import {
   type TextChannel,
 } from "discord.js";
 import { colorize, Sokolors } from "./colorize";
-import { dotCheck } from "./dotCheck";
 import { mention } from "./mention";
 
 /** Checks if a channel that the user specified as the value of any setting (moderation.channel for example) is valid.
- *
  * "Valid" = Exists, is either a Text or News channel, and Sokora has the requested permissions for it (either send, view, or both).
- * @param {{
-    channel: Channel | GuildBasedChannel | null;
-    setting: {
-      category: string;
-      setting: string;
-    };
-    permType: "View" | "Send";
-    guild: Guild;
- }} options Options.
+ * @param options Options.
+ * @returns Status of the channel. (if the bot can view it/send in it or not)
  */
 export async function channelCheck(options: {
   channel: Channel | GuildBasedChannel | null;
@@ -38,7 +30,7 @@ export async function channelCheck(options: {
   const { channel, permType, guild, setting } = options;
 
   async function reset(): Promise<boolean> {
-    await dm?.send({ embeds: [embed] });
+    await dm?.send({ components: [container], flags: "IsComponentsV2" });
     await resetSetting(guild.id, setting.category, setting.setting);
     return false;
   }
@@ -47,23 +39,19 @@ export async function channelCheck(options: {
     return channel.type == ChannelType.GuildText || channel.type == ChannelType.GuildAnnouncement;
   }
 
-  const user = guild.client.user;
-  const avatar = user.displayAvatarURL();
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}A channel is misconfigured in your server!`,
-      iconURL: avatar,
-    })
-    .setFields({
-      name: "⁉️ • What happened",
-      value: channel
-        ? (isValid(channel)
-          ? `Sokora needs ${permType == "View" ? "**View Channel**" : "both **View Channel** and **Send Messages**"} permission in ${mention(channel.id, "CHANNEL")}, requested by setting \`${setting.category}.${setting.setting}\`, but it doesn't have it anymore. **This setting has been reset to default.**`
-          : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that is neither a text nor an announcements channel! We cannot send messages to ${mention(channel.id, "CHANNEL")}. **This setting has been reset to default.**`)
-        : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that no longer exists! **This setting has been reset to default.**`,
-    })
-    .setFooter({ text: `This is coming from ${guild.name} • ID: ${guild.id}` })
-    .setColor(await colorize({ hue: Sokolors.Red }));
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## A channel is misconfigured in your server!"),
+      new TextDisplayBuilder().setContent(
+        channel
+          ? isValid(channel)
+            ? `Sokora needs ${permType == "View" ? "**View Channel**" : "both **View Channel** and **Send Messages**"} permission in ${mention(channel.id, "CHANNEL")}, requested by setting \`${setting.category}.${setting.setting}\`, but it doesn't have it anymore. **This setting has been reset to default.**`
+            : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that is neither a text nor an announcements channel! We cannot send messages to ${mention(channel.id, "CHANNEL")}. **This setting has been reset to default.**`
+          : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that no longer exists! **This setting has been reset to default.**`,
+      ),
+      new TextDisplayBuilder().setContent(`-# This is coming from ${guild.name} • ID: ${guild.id}`),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
   const dm = await (await guild.fetchOwner())?.createDM().catch(() => null);
   if (!channel || !isValid(channel)) return await reset();

@@ -2,7 +2,6 @@ import {
   ActionRowBuilder,
   AttachmentBuilder,
   ButtonBuilder,
-  type ButtonInteraction,
   ButtonStyle,
   codeBlock,
   ContainerBuilder,
@@ -17,6 +16,7 @@ import {
   TextInputBuilder,
   TextInputStyle,
   type AnySelectMenuInteraction,
+  type ButtonInteraction,
   type ChatInputCommandInteraction,
   type Client,
   type InteractionResponse,
@@ -30,15 +30,24 @@ import { safeChannel, safeReply } from "utils/safeThings";
 import { errorType } from "../errorType";
 
 /**
- * Sends the embed containing an error.
+ * Sends a container containing an error.
  * @param interaction The interaction (slash command).
- * @param title The error.
+ * @param client The client, use when interaction is unavailable.
+ * @param error The error object.
+ * @param title Short description of the error.
  * @param reason The reason of the error.
- * @param forward Whether or not should the error embed be forwarded to the error log channel.
- * @returns Embed with the error description.
+ * @param log Logs the error in the console.
+ * @param forward Forwards the error to the error log channel.
+ * @param fileName The name of the file from where the error is coming from.
+ * @param dmOwner DMs the owner with this error.
+ * @returns Container with the error description.
  */
 export async function errorEmbed(options: {
-  interaction?: ChatInputCommandInteraction | ButtonInteraction | AnySelectMenuInteraction;
+  interaction?:
+    | ChatInputCommandInteraction
+    | ButtonInteraction
+    | AnySelectMenuInteraction
+    | ModalSubmitInteraction;
   client?: Client;
   error?: unknown;
   title?: string;
@@ -88,9 +97,9 @@ export async function errorEmbed(options: {
         [
           emojis ? "**📜 • Error stack**" : "**error stack**",
           stack
-            ? (stack.length <= 4096
+            ? stack.length <= 2048
               ? codeBlock(stack)
-              : "The error stacktrace is an attachment below this embed due to it being too large.")
+              : "The error stacktrace is an attachment below due to it being too large."
             : "No error stacktrace.",
         ].join("\n"),
       ),
@@ -133,7 +142,7 @@ export async function errorEmbed(options: {
       );
 
   const files: AttachmentBuilder[] = [];
-  if (stack && stack.length >= 4096) {
+  if (stack && stack.length >= 2048) {
     files.push(new AttachmentBuilder(Buffer.from(stack, "utf8"), { name: "error.txt" }));
     container.addFileComponents(new FileBuilder().setURL("attachment://error.txt"));
   }
@@ -164,9 +173,9 @@ export async function errorEmbed(options: {
       container.addActionRowComponents(
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
+            .setCustomId("please")
             .setLabel("Report")
-            .setStyle(ButtonStyle.Primary)
-            .setCustomId("please"),
+            .setStyle(ButtonStyle.Primary),
         ),
       );
 
@@ -177,10 +186,6 @@ export async function errorEmbed(options: {
 
     const collector = reply.createMessageComponentCollector({ time: 240_000 });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-      if (buttonInteraction.customId != "please") {
-        collector.stop();
-        return;
-      }
       const modal = new ModalBuilder()
         .setCustomId("modalpls")
         .setTitle("•  Report the issue pretty please")
@@ -191,7 +196,7 @@ export async function errorEmbed(options: {
               new TextInputBuilder()
                 .setCustomId("description")
                 .setPlaceholder("Pleasepleasepleasepleasepleasplesae 🥹")
-                .setMaxLength(3900)
+                .setMaxLength(3800)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true),
             ),
@@ -201,7 +206,7 @@ export async function errorEmbed(options: {
               new TextInputBuilder()
                 .setCustomId("explanation")
                 .setPlaceholder("Now how the hell did you reproduce the issue…? please say ❤️‍🩹")
-                .setMaxLength(3900)
+                .setMaxLength(3800)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(false),
             ),
@@ -246,9 +251,7 @@ export async function errorEmbed(options: {
         const actualMediaGallery = media
           .filter(
             item =>
-              item.contentType == "image/jpeg" ||
-              item.contentType == "image/png" ||
-              item.contentType == "video/mp4",
+              item.contentType?.startsWith("image/") || item.contentType?.startsWith("video/"),
           )
           .map(image => new MediaGalleryItemBuilder().setURL(image.url))
           .toReversed();
@@ -295,19 +298,34 @@ export async function errorEmbed(options: {
     });
 
     collector.on("end", async () => {
-      await interaction.deleteReply();
+      try {
+        await interaction.deleteReply();
+      } catch (error) {
+        if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
+        throw error;
+      }
     });
+
+    return reply;
   }
 }
 
+/**
+ * Checks buttons (or select menus) for common errors.
+ * @param i The component to check.
+ * @param reply The reply that will be checked against the original message.
+ * @param interaction The interaction that will have its user checked against the button's interaction
+ * @param noExecuteError Makes the function not check user IDs.
+ * @returns An errorEmbed if something goes wrong.
+ */
 export async function buttonCheck(options: {
   i: ButtonInteraction | AnySelectMenuInteraction;
-  interaction:
+  reply: Message | InteractionResponse;
+  interaction?:
     | ChatInputCommandInteraction
     | ButtonInteraction
     | ModalSubmitInteraction
     | AnySelectMenuInteraction;
-  reply: Message | InteractionResponse;
   noExecuteError?: boolean;
 }): Promise<Awaited<ReturnType<typeof errorEmbed>>> {
   const { i, interaction, reply, noExecuteError } = options;
@@ -320,8 +338,7 @@ export async function buttonCheck(options: {
         "For some reason, this click would've caused the bot to error. Thankfully, this message right here prevents that.",
     });
 
-  if (noExecuteError) return;
-  if (i.user.id != interaction.user.id)
+  if (!noExecuteError && interaction && i.user.id != interaction.user.id)
     return await errorEmbed({
       interaction: i,
       title: "You are not the person who executed this command.",

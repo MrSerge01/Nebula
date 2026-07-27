@@ -46,7 +46,7 @@ export async function run(
       interaction,
       user,
       action: "Kick",
-      errorOptions: { allErrors: true, botError: true, ownerError: true, outsideError: true },
+      errorOptions: { allErrors: true, botError: true, outsideError: true },
     })
   )
     return;
@@ -62,6 +62,6 @@ export async function run(
     );
     await (await safeMember(guild, user.id)).kick(reason ?? undefined);
   } catch (error) {
-    return await errorEmbed({ interaction, error, forward: true, fileName: "kick.ts" });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "kick" });
   }
 }

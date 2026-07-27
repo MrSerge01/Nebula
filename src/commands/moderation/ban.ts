@@ -61,12 +61,7 @@ export async function run(
       interaction,
       user,
       action: "Ban",
-      errorOptions: {
-        allErrors: userOrMember,
-        banCheckError: true,
-        botError: true,
-        ownerError: true,
-      },
+      errorOptions: { allErrors: userOrMember, banCheckError: true, botError: true },
     })
   )
     return;
@@ -130,6 +125,6 @@ export async function run(
       deleteMessageSeconds: delSec ?? undefined,
     });
   } catch (error) {
-    return await errorEmbed({ interaction, error, forward: true, fileName: "ban.ts" });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "ban" });
   }
 }

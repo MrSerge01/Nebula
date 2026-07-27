@@ -27,6 +27,7 @@ async function genChangelog(
   changelog: ReturnType<typeof getChangelog>,
   viewing: Label,
   list: ReturnType<typeof getVersions>,
+  madeWithEmoji: string,
 ): Promise<ContainerBuilder> {
   return new ContainerBuilder()
     .addTextDisplayComponents(
@@ -39,8 +40,8 @@ async function genChangelog(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...Object.keys(changelog.body).map(v =>
           new ButtonBuilder()
-            .setLabel(v)
             .setCustomId(v + "+" + changelog.ver)
+            .setLabel(v)
             .setStyle(
               {
                 Fixed: ButtonStyle.Secondary,
@@ -58,8 +59,8 @@ async function genChangelog(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...list.map(v =>
           new ButtonBuilder()
-            .setLabel(v.ver)
             .setCustomId(v.ver)
+            .setLabel(v.ver)
             .setStyle(v.minor ? ButtonStyle.Primary : ButtonStyle.Secondary)
             .setDisabled(v.ver === changelog.ver),
         ),
@@ -67,7 +68,7 @@ async function genChangelog(
     )
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `-# Use the buttons above to view categories (like what we added or changed) or view other versions.\n-# Released ${changelog.date} • ${replace("(madeWith)")}`,
+        `-# Use the buttons above to view categories (like what we added or changed) or view other versions.\n-# Released ${changelog.date} • ${madeWithEmoji}`,
       ),
     )
     .setAccentColor(
@@ -86,11 +87,13 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const user = interaction.client.user;
   const logList = getVersions();
   const changelog = getChangelog(logList[0].ver);
+  const madeWithEmoji = replace("(madeWith)");
   const container = await genChangelog(
     user,
     changelog,
     getDefaultCategoryToView(changelog),
     logList.slice(0, 5),
+    madeWithEmoji,
   );
 
   const reply = await interaction.reply({
@@ -100,12 +103,13 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const collector = reply.createMessageComponentCollector({ time: 60_000 });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-    collector.resetTimer({ time: 60_000 });
 
-    const split = buttonInteraction.customId.replace("-", "").split("+");
-    const newVersion = ["Added", "Changed", "Fixed", "Removed"].some(s =>
-      buttonInteraction.customId.startsWith(s + "+"),
-    )
+    collector.resetTimer({ time: 60_000 });
+    const cID = buttonInteraction.customId;
+    if (cID == "please") return;
+
+    const split = cID.replace("-", "").split("+");
+    const newVersion = ["Added", "Changed", "Fixed", "Removed"].some(s => cID.startsWith(s + "+"))
       ? split[1]
       : split[0];
 
@@ -119,6 +123,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           log,
           split[1] ? (split[0] as Label) : getDefaultCategoryToView(log),
           logList.slice(indexToSliceOn, indexToSliceOn + 5).filter(v => v !== undefined),
+          madeWithEmoji,
         ),
       ],
     });

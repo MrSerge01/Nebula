@@ -15,6 +15,11 @@ export const data = new SlashCommandBuilder()
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const sent = await interaction.reply({ content: "a", withResponse: true });
+  if (!sent.resource) return;
+
+  const message = sent.resource.message;
+  if (!message) return;
+
   const client = interaction.client;
   const user = client.user;
   const container = new ContainerBuilder()
@@ -22,7 +27,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new TextDisplayBuilder().setContent("## Pong!"),
       new TextDisplayBuilder().setContent(
         [
-          `\`Latency\` **${sent.resource.message.createdTimestamp - interaction.createdTimestamp}ms**.`,
+          `\`Latency\` **${message.createdTimestamp - interaction.createdTimestamp}ms**.`,
           `\`WebSocket heartbeat\` **${client.ws.ping}ms**.`,
           `\`Bot uptime\` **${ms(client.uptime, "short")}**.`,
         ].join("\n"),

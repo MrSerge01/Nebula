@@ -24,6 +24,14 @@ interface HandlePagesOptions {
   collector: InteractionCollector<ButtonInteraction | AnySelectMenuInteraction>;
 }
 
+/**
+ * Pagination buttons.
+ * Includes: button to go left, button to jump to a page (modal!), button to go right.
+ * @param pages Total amount of pages.
+ * @param argumentPage Page to skip to.
+ * @param disabled Disables the buttons if true.
+ * @returns Action row containing the pagination buttons.
+ */
 export function pagedButtons(
   pages: number,
   argumentPage?: number,
@@ -48,6 +56,12 @@ export function pagedButtons(
   );
 }
 
+/**
+ * Function that handles page switching.
+ * Notes: requires a collector. Pages start from 0.
+ * @param options Options.
+ * @returns The resulting page.
+ */
 export async function handlePages(options: HandlePagesOptions): Promise<number> {
   const { i, page, pages, collector } = options;
   const noErrorPages = pages - 1;
@@ -96,7 +110,7 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`## You're viewing page ${functionPage + 1}.`),
           )
-          .setAccentColor(await colorize({ hue: Sokolors.Green }));
+          .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
   await safeReply({
     interaction: modalInteraction,

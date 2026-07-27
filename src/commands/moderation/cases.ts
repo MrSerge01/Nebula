@@ -7,8 +7,10 @@ import {
 } from "database/moderation";
 import type { TypeOfDefinition } from "database/types";
 import {
-  EmbedBuilder,
+  Client,
+  ContainerBuilder,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type InteractionResponse,
@@ -17,25 +19,25 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import ms from "enhanced-ms";
-import { client } from "src/bot";
 import { capitalize } from "utils/capitalize";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { mention } from "utils/mention";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { randomize } from "utils/randomize";
-import { safeGuild, safeMember, safeReply } from "utils/safeThings";
+import { safeMember, safeReply, safeUser } from "utils/safeThings";
 
-async function generateEmbed(options: {
+async function generateContainer(options: {
+  client: Client<boolean>;
   cases: TypeOfDefinition<Case>[];
   page: number;
   type: ModType | null;
   guildID: string;
   user: User | null;
   id: number | null;
-}): Promise<EmbedBuilder> {
-  const { cases, page, type, guildID, user, id } = options;
+  disabled: boolean;
+}): Promise<ContainerBuilder> {
+  const { client, cases, page, type, guildID, user, id, disabled } = options;
   const actionsEmojis: Record<ModType, string> = {
     WARN: "⚠️",
     MUTE: "🔇",
@@ -55,47 +57,55 @@ async function generateEmbed(options: {
   const casesPerPage = 5;
   const start = page * casesPerPage;
   const displayedCases = cases.toSorted((a, b) => b.id - a.id).slice(start, start + casesPerPage);
-  const avatar = user ? user.avatarURL() : (await safeGuild(client, guildID))?.iconURL();
-  let fields = displayedCases.map(c => {
-    const value = [
-      `**Moderator**: ${mention(c.moderator, "USER")}`,
-      c.reason ? `**Reason**: ${c.reason}` : "*No reason provided*",
-      `**Time of action**: ${mention(c.timestamp.valueOf(), "SIMPLE_TIMESTAMP")}`,
-    ];
+  let fields = await Promise.all(
+    displayedCases.map(async c => {
+      const value = [
+        `**Moderator**: ${(await safeUser(client, c.moderator)).username}`,
+        c.reason ? `**Reason**: ${c.reason}` : "*No reason provided*",
+        `**Time of action**: ${mention(c.timestamp.valueOf(), "SIMPLE_TIMESTAMP")}`,
+      ];
+      let title = `**${actionsEmojis[c.type as ModType]} • ${capitalize(c.type.toLowerCase())} #${c.id}**`;
 
-    if (!user) value.unshift(`**User**: ${mention(c.userID, "USER")}`);
-    if (c.expiresAt) value.push(`**Duration**: ${ms(Number(c.expiresAt), "fullPrecision")}`);
+      if (!user) title += ` • ${await safeUser(client, c.userID)}`;
+      if (c.expiresAt) value.push(`**Duration**: ${ms(Number(c.expiresAt), "fullPrecision")}`);
 
-    return {
-      name: `${actionsEmojis[c.type as ModType]} • ${capitalize(c.type.toLowerCase())} #${c.id}`,
-      value: value.join("\n"),
-    };
-  });
+      return new TextDisplayBuilder().setContent([title, value.join("\n")].join("\n"));
+    }),
+  );
 
   if (cases.length === 0)
     fields = [
-      {
-        name: `💨 • ${randomize(nothingMessage)}`,
-        value: type
-          ? `*No ${type.toLowerCase()}s were made in the entire server!*`
-          : "*No actions were taken in the entire server. How clean!*",
-      },
+      new TextDisplayBuilder().setContent(
+        [
+          `**💨 • ${randomize(nothingMessage)}**`,
+          type
+            ? `*No ${type.toLowerCase()}s were made in the entire server!*`
+            : "*No actions were taken in the entire server. How clean!*",
+        ].join("\n"),
+      ),
     ];
 
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${id ? capitalize(displayedCases[0].type?.toLowerCase()) : (type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length))} ${id ? `#${id}` : (user ? `of ${user.username}` : "in the server")}`,
-      iconURL: avatar ?? undefined,
-    })
-    .setFooter({
-      text: user ? `User ID: ${user.id} • Server ID: ${guildID}` : `Server ID: ${guildID}`,
-    })
-    .setColor(await colorize({ hue: Sokolors.Blue }));
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `## ${id ? capitalize(displayedCases[0].type?.toLowerCase()) : type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length)} ${id ? `#${id}` : user ? `of ${user.username}` : "in the server"}`,
+      ),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
-  if (id) embed.setDescription(fields[0].value);
-  else embed.setFields(fields);
+  if (id) container.addTextDisplayComponents(fields[0]);
+  else container.addTextDisplayComponents(fields);
 
-  return embed;
+  const pages = Math.ceil(cases.length / 5);
+  if (pages > 1) container.addActionRowComponents(pagedButtons(pages, page, disabled));
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      user ? `-# User ID: ${user.id} • Server ID: ${guildID}` : `-# Server ID: ${guildID}`,
+    ),
+  );
+
+  return container;
 }
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -152,6 +162,7 @@ export async function run(
       reason: "You need the **Moderate Members** permission.",
     });
 
+  const client = interaction.client;
   const guildID = guild.id;
   const user = interaction.options.getUser("user");
   const modType = interaction.options.getString("type") as ModType;
@@ -165,8 +176,19 @@ export async function run(
   const pages = Math.ceil(cases.length / 5);
   let page = Math.max(0, Math.min(interaction.options.getNumber("page") ?? 0, pages) - 1);
   const reply = await interaction.reply({
-    embeds: [await generateEmbed({ cases, page, guildID, type: modType, user, id: actionID })],
-    components: pages > 1 ? [pagedButtons(pages, page)] : [],
+    components: [
+      await generateContainer({
+        client,
+        cases,
+        page,
+        guildID,
+        type: modType,
+        user,
+        id: actionID,
+        disabled: false,
+      }),
+    ],
+    flags: ["Ephemeral", "IsComponentsV2"],
   });
 
   if (pages <= 1) return;
@@ -174,20 +196,44 @@ export async function run(
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
     collector.resetTimer({ time: 60_000 });
-    page = await handlePages({ i: buttonInteraction, page, pages, collector });
+    if (buttonInteraction.customId == "please") return;
 
+    page = await handlePages({ i: buttonInteraction, page, pages, collector });
     await safeReply({
       interaction: buttonInteraction,
       editOptions: {
-        embeds: [await generateEmbed({ cases, page, guildID, type: modType, user, id: actionID })],
-        components: [pagedButtons(pages, page)],
+        components: [
+          await generateContainer({
+            client,
+            cases,
+            page,
+            guildID,
+            type: modType,
+            user,
+            id: actionID,
+            disabled: false,
+          }),
+        ],
       },
     });
   });
 
   collector.on("end", async () => {
     try {
-      await interaction.editReply({ components: [] });
+      await interaction.editReply({
+        components: [
+          await generateContainer({
+            client,
+            cases,
+            page,
+            guildID,
+            type: modType,
+            user,
+            id: actionID,
+            disabled: true,
+          }),
+        ],
+      });
     } catch (error) {
       if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
       throw error;

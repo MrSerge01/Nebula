@@ -1,10 +1,10 @@
 import {
-  EmbedBuilder,
+  ContainerBuilder,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { replaceVariables } from "utils/replace";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -18,48 +18,56 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const user = interaction.user;
   if (!user) return;
 
-  const example = "Welcome to (servername), **(name)**!";
-  const exampleTwo =
-    "Hi **(username)**! Thanks for joining *(servername)* at (currentdate, simple), **(serverowner)** and the ***(count)*** members are happy to meet you!";
+  const examples = [
+    "Welcome to (servername), **(name)**!",
+    "Hi **(username)**! Thanks for joining *(servername)* at (currentdate, simple), **(serverowner)** and the ***(count)*** members are happy to meet you!",
+    "Thank you so much to (725985503177867295, user) for making this announcement the (1770053619077, detailed_timestamp). We love you!",
+  ];
 
-  const exampleThree =
-    "Thank you so much to (725985503177867295, user) for making this announcement the (1770053619077, detailed_timestamp). We love you!";
-
-  const avatar = interaction.client.user.displayAvatarURL();
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}Dynamic (variables)`,
-      iconURL: avatar,
-    })
-    .setDescription(
-      "You can write the following variables in some places to dynamically show certain pieces of data. Data like 'current time' or 'member count' always refer to what that value is at the moment of sending the specific message. Dynamic variables are currently supported for **join messages, leave messages, join DMs, and news.**",
+  const firstContainer = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## Dynamic (variables)"),
+      new TextDisplayBuilder().setContent(
+        "You can write the following variables in some places to dynamically show certain pieces of data. Data like 'current time' or 'member count' always refer to what that value is at the moment of sending the specific message. Dynamic variables are currently supported for **join messages, leave messages, join DMs, and news.**",
+      ),
     )
-    .setColor(await colorize({ hue: Sokolors.Blue }))
-    .setFields([
-      {
-        name: "👀 • Simple example",
-        value: [
-          `A simple example: \`${example}\` will result in:`,
-          `> ${await replaceVariables(example, guild, user)}`,
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+
+  const exampleContainer = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## 🎛 • Examples"),
+      new TextDisplayBuilder().setContent(
+        [
+          `A simple example: \`${examples[0]}\` will result in:`,
+          `> ${await replaceVariables(examples[0], guild, user)}`,
         ].join("\n"),
-      },
-      {
-        name: "🎛 • Another example",
-        value: [
-          `Adding more stuff:\n\`${exampleTwo}\`\nwill result in:`,
-          `> ${await replaceVariables(exampleTwo, guild, user)}`,
+      ),
+      new TextDisplayBuilder().setContent(
+        [
+          `Adding more stuff:\n\`${examples[1]}\`\nwill result in:`,
+          `> ${await replaceVariables(examples[1], guild, user)}`,
         ].join("\n"),
-      },
-      {
-        name: "🛜 • Dynamic mentioning",
-        value: [
-          `You can use a similar syntax to mention specific users, roles, channels, or timestamps, since Discord disallows this natively:\n\`${exampleThree}\`\nwill result in:`,
-          `> ${await replaceVariables(exampleThree, guild, user)}`,
+      ),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+
+  const mentionContainer = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## 🛜 • Dynamic mentioning"),
+      new TextDisplayBuilder().setContent(
+        [
+          `You can use a similar syntax to mention specific users, roles, channels, or timestamps, since Discord disallows this natively:\n\`${examples[3]}\`\nwill result in:`,
+          `> ${await replaceVariables(examples[2], guild, user)}`,
         ].join("\n"),
-      },
-      {
-        name: "📜 • All variables",
-        value: [
+      ),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+
+  const variableContainer = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## 📜 • All variables"),
+      new TextDisplayBuilder().setContent(
+        [
           "`(name)` - display name of the user who joined",
           "`(username)` - username of the user who joined",
           "`(count)` - member count",
@@ -73,8 +81,12 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           "`(<id>, user | role | channel)` - given an ID, allows you to mention/link it (Discord modals don't let you do this natively)",
           "`(<timestamp>, default_timestamp | simple_timestamp | detailed_timestamp)` - given a timestamp, formats it as a date",
         ].join("\n"),
-      },
-    ]);
+      ),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
-  await interaction.reply({ embeds: [embed], flags: "Ephemeral" });
+  await interaction.reply({
+    components: [firstContainer, exampleContainer, mentionContainer, variableContainer],
+    flags: ["Ephemeral", "IsComponentsV2"],
+  });
 }

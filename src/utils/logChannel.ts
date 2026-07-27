@@ -64,8 +64,7 @@ export async function logChannel(
 
   if (dm)
     try {
-      if (!dmOptions) return;
-      if (dmOptions.silent) return;
+      if (!dmOptions || dmOptions.silent) return;
 
       channel = await dmOptions.user.createDM().catch(() => null);
       if (!channel || !(await safeMember(guild, dmOptions.user.id)) || dmOptions.user.bot) return;

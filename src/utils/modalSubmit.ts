@@ -5,13 +5,18 @@ import type {
   ModalSubmitInteraction,
 } from "discord.js";
 
+/**
+ * Collects a modal submit interaction.
+ * @param interaction Either a command, a button or a select menu that triggered the modal.
+ * @returns The modal.
+ */
 export async function modalSubmit(
-  index: ChatInputCommandInteraction | ButtonInteraction | AnySelectMenuInteraction,
+  interaction: ChatInputCommandInteraction | ButtonInteraction | AnySelectMenuInteraction,
 ): Promise<ModalSubmitInteraction | undefined> {
   try {
-    return await index.awaitModalSubmit({
-      time: 60_000,
-      filter: m => m.user.id === index.user.id,
+    return await interaction.awaitModalSubmit({
+      time: 240_000,
+      filter: m => m.user.id === interaction.user.id,
     });
   } catch {
     /* In case of timeout */

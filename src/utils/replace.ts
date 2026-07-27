@@ -15,8 +15,8 @@ export function replace(
 ): string {
   for (const mention of replaceText ?? [
     { text: "(madeWith)", replacement: `Made with ${randomize(emojis)} by the Sokora team` },
-    { text: "(leftArrow)", replacement: "1298708251256291379" },
-    { text: "(rightArrow)", replacement: "1298708281493160029" },
+    { text: "(leftArrow)", replacement: "1527734899841171456" },
+    { text: "(rightArrow)", replacement: "1527735966855598231" },
     { text: "(discord)", replacement: "1266797021126459423" },
   ])
     if (text.includes(mention.text))
@@ -27,7 +27,6 @@ export function replace(
 
 /**
  * Takes a string with dynamic `(variables)` and replaces them with the string they represent.
- *
  * @param {string} text String to have its variables replaced.
  * @param {Guild} guild Guild.
  * @param {User} user User.

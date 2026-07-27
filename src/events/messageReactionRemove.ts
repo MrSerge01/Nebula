@@ -1,5 +1,5 @@
 import { getSetting } from "database/settings";
-import { getStarred, setStarred } from "database/starboard";
+import { deleteStarred, getStarred, setStarred } from "database/starboard";
 import {
   ContainerBuilder,
   MediaGalleryBuilder,
@@ -25,7 +25,7 @@ export default (async function run(reaction, user) {
         title: "Error fetching reaction.",
         log: true,
         forward: true,
-        fileName: "messageReactionAdd",
+        fileName: "messageReactionRemove",
       });
     }
 
@@ -39,7 +39,7 @@ export default (async function run(reaction, user) {
         title: "Error fetching user.",
         log: true,
         forward: true,
-        fileName: "messageReactionAdd",
+        fileName: "messageReactionRemove",
       });
     }
 
@@ -69,9 +69,7 @@ export default (async function run(reaction, user) {
     return;
 
   let starCount = reaction.count ?? 0;
-  const threshold = Number((await getSetting(guild.id, "starboard", "threshold")) as string);
-  if (reaction.users.valueOf().has(message.author.id)) starCount--;
-  if (starCount < threshold) return;
+  if (reaction.users.valueOf().has(user.id)) starCount--;
 
   const existingStarred = await getStarred(guild.id, message.id);
   const container = new ContainerBuilder()
@@ -112,21 +110,16 @@ export default (async function run(reaction, user) {
     );
 
   try {
-    if (!existingStarred) {
-      await setStarred(
-        guild.id,
-        id,
-        message.channel.id,
-        author.id,
-        (await starboardChannel.send({ components: containers, flags: "IsComponentsV2" })).id,
-        starCount,
-        new Date(message.createdTimestamp),
-      );
-      return;
-    }
+    if (!existingStarred) return;
 
     const starMessage = await starboardChannel.messages.fetch(existingStarred.star_message);
     if (starMessage.partial) await starMessage.fetch();
+    if (starCount == 0) {
+      await starMessage.delete();
+      await deleteStarred(guild.id, id);
+      return;
+    }
+
     await starMessage.edit({ components: containers, flags: "IsComponentsV2" });
     await setStarred(
       guild.id,
@@ -144,7 +137,7 @@ export default (async function run(reaction, user) {
       title: "Error handling starboard message.",
       log: true,
       forward: true,
-      fileName: "messageReactionAdd",
+      fileName: "messageReactionRemove",
     });
   }
-} as Event<"messageReactionAdd">);
+} as Event<"messageReactionRemove">);

@@ -1,24 +1,20 @@
 import { getNews, updateNews } from "database/news";
 import { getSetting } from "database/settings";
 import {
-  EmbedBuilder,
-  LabelBuilder,
-  ModalBuilder,
+  ContainerBuilder,
   SlashCommandSubcommandBuilder,
-  TextInputBuilder,
-  TextInputStyle,
+  TextDisplayBuilder,
   type ChatInputCommandInteraction,
   type InteractionResponse,
   type Message,
-  type Role,
   type TextChannel,
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
+import { newsEmbed } from "embeds/newsEmbed";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
-import { mention } from "utils/mention";
 import { modalSubmit } from "utils/modalSubmit";
-import { safeChannel, safeMember, safeRole } from "utils/safeThings";
+import { newsModal } from "utils/newsModal";
+import { safeChannel, safeMember } from "utils/safeThings";
 import { sendChannelNews } from "utils/sendChannelNews";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -56,88 +52,43 @@ export async function run(
   if (!news)
     return await errorEmbed({ interaction, title: "The specified news post doesn't exist." });
 
-  const editModal = new ModalBuilder()
-    .setCustomId("editnews")
-    .setTitle(`•  Edit news post: ${news.title}`)
-    .addLabelComponents(
-      new LabelBuilder()
-        .setLabel("Title")
-        .setTextInputComponent(
-          new TextInputBuilder()
-            .setCustomId("title")
-            .setMaxLength(30)
-            .setStyle(TextInputStyle.Short)
-            .setValue(news.title)
-            .setRequired(true),
-        ),
-      new LabelBuilder()
-        .setLabel("Content (supports Markdown)")
-        .setTextInputComponent(
-          new TextInputBuilder()
-            .setCustomId("body")
-            .setMaxLength(4000)
-            .setStyle(TextInputStyle.Paragraph)
-            .setValue(news.body)
-            .setRequired(true),
-        ),
-    );
-
   try {
-    await interaction.showModal(editModal);
+    await interaction.showModal(newsModal(news));
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "edit.ts" });
+    await errorEmbed({ interaction, error, forward: true, fileName: "edit" });
   }
 
   const modalInteraction = await modalSubmit(interaction);
   if (!modalInteraction) return;
 
-  const role = (await getSetting(guild.id, "news", "role")) as string;
-  const roleToSend: Role | null = role ? await safeRole(guild, role) : null;
-
   const title = modalInteraction.fields.getTextInputValue("title");
   const body = modalInteraction.fields.getTextInputValue("body");
-  const avatar = news.authorPFP;
-  const editedEmbed = new EmbedBuilder()
-    .setTitle("News post edited.")
-    .setColor(await colorize({ hue: Sokolors.Green }));
+  const editedContainer = new ContainerBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post edited."))
+    .setAccentColor(await colorize({ hue: Sokolors.Green }));
 
   if (!(await getSetting(guild.id, "news", "edit_original_message"))) {
-    await sendChannelNews(
-      guild,
-      interaction,
-      {
-        title,
-        body,
-        author: news.author,
-        authorPFP: avatar,
-        id,
-      },
-      true,
-    );
-    return await modalInteraction.reply({ embeds: [editedEmbed], flags: "Ephemeral" });
+    await sendChannelNews(guild, interaction, { title, body, author: news.author, id }, true);
+    return await modalInteraction.reply({
+      components: [editedContainer],
+      flags: ["Ephemeral", "IsComponentsV2"],
+    });
   }
-
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${news.author}`,
-      iconURL: avatar,
-    })
-    .setTitle(title)
-    .setDescription(body)
-    .setTimestamp(news.updatedAt ?? news.createdAt)
-    .setFooter({ text: `Edited news post from ${guild.name} • ID: ${news.id}` })
-    .setColor(await colorize({ hue: Sokolors.Blue }));
 
   const channel = (await safeChannel(
     guild,
     ((await getSetting(guild.id, "news", "channel")) as string) ?? interaction.channel?.id,
   )) as TextChannel;
 
-  await channel.messages.edit(news.messageID, {
-    embeds: [embed],
-    content: roleToSend ? mention(roleToSend.id, "ROLE") : undefined,
-  });
-
-  await updateNews(guild.id, id, title, body);
-  await modalInteraction.reply({ embeds: [editedEmbed], flags: "Ephemeral" });
+  await Promise.all([
+    channel.messages.edit(news.messageID, {
+      components: [await newsEmbed(guild, { title, body, author: news.author, id }, true)],
+      flags: "IsComponentsV2",
+    }),
+    updateNews(guild.id, id, title, body),
+    modalInteraction.reply({
+      components: [editedContainer],
+      flags: ["Ephemeral", "IsComponentsV2"],
+    }),
+  ]);
 }

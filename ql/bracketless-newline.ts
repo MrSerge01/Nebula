@@ -1,6 +1,6 @@
 import type { Rule } from "eslint";
 
-const rule: Rule.RuleModule = {
+export const rule: Rule.RuleModule = {
   meta: {
     type: "layout",
     fixable: "whitespace",
@@ -40,5 +40,3 @@ const rule: Rule.RuleModule = {
     };
   },
 };
-
-export default rule;

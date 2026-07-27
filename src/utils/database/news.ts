@@ -11,7 +11,6 @@ type Def = Satisfies<
       title: "TEXT";
       body: "TEXT";
       author: "TEXT";
-      authorPFP: "mTEXT";
       createdAt: "TIMESTAMP";
       updatedAt: "mTIMESTAMP";
       messageID: "TEXT";
@@ -26,7 +25,6 @@ const sendQuery = async (
   title: string,
   body: string,
   author: string,
-  authorPFP: string | undefined,
   createdAt: Date,
   updatedAt: Date | null,
   messageID: string,
@@ -34,18 +32,7 @@ const sendQuery = async (
   id: number,
   sql_: Bun.SQL = db, // what's this supposed to do?
 ): Promise<void> => {
-  const insObject = {
-    guildID,
-    title,
-    body,
-    author,
-    authorPFP,
-    createdAt,
-    updatedAt,
-    messageID,
-    imageURL,
-    id,
-  };
+  const insObject = { guildID, title, body, author, createdAt, updatedAt, messageID, imageURL, id };
   await sql_`INSERT INTO news ${db(insObject)};`;
 };
 
@@ -67,23 +54,11 @@ export async function postNews(
   title: string,
   body: string,
   author: string,
-  authorPFP: string | undefined,
   messageID: string,
   imageURL: string | null | undefined,
   id: number,
 ): Promise<void> {
-  await sendQuery(
-    guildID,
-    title,
-    body,
-    author,
-    authorPFP,
-    new Date(),
-    null,
-    messageID,
-    imageURL,
-    id,
-  );
+  await sendQuery(guildID, title, body, author, new Date(), null, messageID, imageURL, id);
 }
 
 export async function getNews(guildID: string, id: number): Promise<TypeOfDefinition<Def> | null> {
@@ -113,7 +88,6 @@ export async function updateNews(
       title ?? lastElement.title,
       body ?? lastElement.body,
       lastElement.author,
-      lastElement.authorPFP,
       lastElement.createdAt,
       new Date(),
       messageID ?? lastElement.messageID,

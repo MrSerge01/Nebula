@@ -1,7 +1,12 @@
 import { listAllNews } from "database/news";
+import { getSetting } from "database/settings";
 import {
-  EmbedBuilder,
+  ContainerBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  Role,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type InteractionResponse,
@@ -9,9 +14,9 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
+import { mention } from "utils/mention";
 import { handlePages, pagedButtons } from "utils/pagination";
-import { safeReply } from "utils/safeThings";
+import { safeReply, safeRole } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("view")
@@ -23,15 +28,18 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
-  if (!interaction.guild)
+  const guild = interaction.guild;
+  if (!guild)
     return await errorEmbed({
       interaction,
       title: "Error viewing a news post.",
       reason: "This command can only be used in a server.",
     });
 
-  const news = await listAllNews(interaction.guild.id);
+  const news = await listAllNews(guild.id);
   const pages = news.length;
+  const role = (await getSetting(guild.id, "news", "role")) as string;
+  const roleToSend: Role | null = role ? await safeRole(guild, role) : null;
   let page = Math.max(0, Math.min(interaction.options.getNumber("page") ?? 0, pages) - 1);
 
   if (!news?.length)
@@ -41,44 +49,55 @@ export async function run(
       reason: "Admins can post news with the **/news post** command.",
     });
 
-  async function getEmbed(): Promise<EmbedBuilder> {
+  async function getContainer(disabled: boolean): Promise<ContainerBuilder> {
     const currentNews = news[page];
-    const avatar = currentNews.authorPFP;
-    return new EmbedBuilder()
-      .setAuthor({
-        name: `${dotCheck({ string: avatar, doubleSpace: true })}${currentNews.author}`,
-        iconURL: avatar,
-      })
-      .setTitle(currentNews.title)
-      .setDescription(currentNews.body)
-      .setImage(currentNews.imageURL ?? null)
-      .setTimestamp(currentNews.updatedAt ?? currentNews.createdAt)
-      .setFooter({ text: `ID: ${currentNews.id}` })
-      .setColor(await colorize({ hue: Sokolors.Blue }));
+    const { author, title, body, id, updatedAt, createdAt, imageURL } = currentNews;
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `**Posted by ${author}${roleToSend ? ` for ${roleToSend}` : ""}**`,
+        ),
+        new TextDisplayBuilder().setContent(`## ${title}`),
+        new TextDisplayBuilder().setContent(body),
+      )
+      .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+
+    if (imageURL)
+      container.addMediaGalleryComponents(
+        new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(imageURL)),
+      );
+
+    if (pages > 1) container.addActionRowComponents(pagedButtons(pages, page, disabled));
+
+    return container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `-# ID: ${id} • ${mention(updatedAt?.valueOf() ?? createdAt.valueOf(), "DEFAULT_TIMESTAMP")}`,
+      ),
+    );
   }
 
   const reply = await interaction.reply({
-    embeds: [await getEmbed()],
-    components: pages > 1 ? [pagedButtons(pages, page)] : [],
+    components: [await getContainer(false)],
+    flags: "IsComponentsV2",
   });
 
   if (pages <= 1) return;
   const collector = reply.createMessageComponentCollector({ time: 60_000 });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-
     collector.resetTimer({ time: 60_000 });
-    page = await handlePages({ i: buttonInteraction, page, pages, collector });
+    if (buttonInteraction.customId == "please") return;
 
+    page = await handlePages({ i: buttonInteraction, page, pages, collector });
     await safeReply({
       interaction: buttonInteraction,
-      editOptions: { embeds: [await getEmbed()], components: [pagedButtons(pages, page)] },
+      editOptions: { components: [await getContainer(false)] },
     });
   });
 
   collector.on("end", async () => {
     try {
-      await interaction.deleteReply();
+      await interaction.editReply({ components: [await getContainer(true)] });
     } catch (error) {
       if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
       throw error;

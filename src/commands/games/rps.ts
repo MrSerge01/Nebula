@@ -2,8 +2,9 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  EmbedBuilder,
+  ContainerBuilder,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type InteractionResponse,
@@ -11,7 +12,6 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { randomize } from "utils/randomize";
 
 type RPSChoice = "rock" | "paper" | "scissors";
@@ -45,27 +45,26 @@ export async function run(
   let opponent = interaction.options.getUser("opponent");
   opponent ??= interaction.client.user;
   const user = interaction.user;
-  const userAvatar = user.displayAvatarURL();
-  const optionsRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    ...rpsChoices.map((choice: RPSChoice) =>
-      new ButtonBuilder()
-        .setCustomId(`rps_${choice}`)
-        .setEmoji(rpsEmojis[choice])
-        .setStyle(ButtonStyle.Primary),
-    ),
-  );
-
-  const baseEmbed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: userAvatar, doubleSpace: true })}An invitation to play!`,
-      iconURL: userAvatar,
-    })
-    .setDescription(
-      opponent.bot
-        ? "Choose your weapon!"
-        : `${user.username} has challenged ${opponent.username} to a game!\nBoth players, make your choice!`,
+  const baseContainer = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("## An invitation to play!"),
+      new TextDisplayBuilder().setContent(
+        opponent.bot
+          ? "**Choose your weapon!**"
+          : `**${user.displayName}** has challenged **${opponent.displayName}** to a game!\n**Both players, make your choice!**`,
+      ),
     )
-    .setColor(await colorize({ hue: Sokolors.Yellow }));
+    .addActionRowComponents(
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        ...rpsChoices.map((choice: RPSChoice) =>
+          new ButtonBuilder()
+            .setCustomId(`rps_${choice}`)
+            .setEmoji(rpsEmojis[choice])
+            .setStyle(ButtonStyle.Primary),
+        ),
+      ),
+    )
+    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
   if (opponent.id == user.id)
     return await errorEmbed({
@@ -74,7 +73,7 @@ export async function run(
       reason: "You cannot play against yourself.",
     });
 
-  const reply = await interaction.reply({ embeds: [baseEmbed], components: [optionsRow] });
+  const reply = await interaction.reply({ components: [baseContainer], flags: "IsComponentsV2" });
   const playerChoices = new Map<string, RPSChoice>();
   const collector = reply.createMessageComponentCollector({ time: 60_000 });
 
@@ -83,26 +82,25 @@ export async function run(
     if (await buttonCheck({ i: buttonInteraction, interaction, reply, noExecuteError: true }))
       return;
 
+    const cID = buttonInteraction.customId;
+    if (cID == "please") return;
+
     if (buttonInteraction.user.id != opponent.id && buttonInteraction.user.id != user.id)
       return await errorEmbed({
         interaction: buttonInteraction,
         title: "You aren't participating.",
       });
 
-    playerChoices.set(
-      buttonInteraction.user.id,
-      buttonInteraction.customId.split("_")[1] as RPSChoice,
-    );
-
+    playerChoices.set(buttonInteraction.user.id, cID.split("_")[1] as RPSChoice);
     if (opponent.bot) collector.stop("game-complete");
     else {
       await buttonInteraction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle("Choice recorded!")
-            .setColor(await colorize({ hue: Sokolors.Green })),
+        components: [
+          new ContainerBuilder()
+            .addTextDisplayComponents(new TextDisplayBuilder().setContent("## Choice recorded!"))
+            .setAccentColor(await colorize({ hue: Sokolors.Green })),
         ],
-        flags: "Ephemeral",
+        flags: ["Ephemeral", "IsComponentsV2"],
       });
       if (playerChoices.size == 2) collector.stop("game-complete");
     }
@@ -112,13 +110,16 @@ export async function run(
     try {
       if (reason == "time")
         return await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setAuthor({ name: "Game timed out" })
-              .setDescription("The game has been canceled due to inactivity.")
-              .setColor(await colorize({ hue: Sokolors.Red })),
+          components: [
+            new ContainerBuilder()
+              .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent("## Game timed out"),
+                new TextDisplayBuilder().setContent(
+                  "The game has been canceled due to inactivity.",
+                ),
+              )
+              .setAccentColor(await colorize({ hue: Sokolors.Red })),
           ],
-          components: [],
         });
 
       const p1Choice = playerChoices.get(user.id);
@@ -126,34 +127,34 @@ export async function run(
       if (!p1Choice || !p2Choice) return;
 
       const winner = getWinner(p1Choice, p2Choice);
-      const avatar = winner == 1 ? userAvatar : opponent.displayAvatarURL();
-      const resultEmbed = new EmbedBuilder()
-        .setAuthor({
-          name: `${dotCheck({ string: avatar, doubleSpace: true })}Game results`,
-          iconURL: avatar,
-        })
-        .setDescription(
-          [
-            `**${user.username}** ${rpsEmojis[p1Choice]} vs ${rpsEmojis[p2Choice]} **${opponent.username}**\n`,
-            {
-              0: "**It's a tie!**",
-              1: `**${user.username}**, you win!`,
-              2: opponent.bot ? `**Sokora** wins!` : `**${opponent.username}**, you win!`,
-            }[winner],
-          ].join("\n"),
+      const resultContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent("## Game results"),
+          new TextDisplayBuilder().setContent(
+            [
+              `**${user.displayName}** ${rpsEmojis[p1Choice]} vs ${rpsEmojis[p2Choice]} **${opponent.displayName}**\n`,
+              {
+                0: "## **It's a tie!**",
+                1: `## **${user.displayName}**, you win!`,
+                2: opponent.bot
+                  ? `## **Sokora** wins!`
+                  : `## **${opponent.displayName}**, you win!`,
+              }[winner],
+            ].join("\n"),
+          ),
         )
-        .setColor(
+        .setAccentColor(
           await colorize({
             hue:
               winner == 0
-                ? Sokolors.Yellow
-                : (winner == 2 && opponent.bot
+                ? Sokolors.Blue
+                : winner == 2 && opponent.bot
                   ? Sokolors.Red
-                  : Sokolors.Green),
+                  : Sokolors.Green,
           }),
         );
 
-      await interaction.editReply({ embeds: [resultEmbed], components: [] });
+      await interaction.editReply({ components: [resultContainer] });
     } catch (error) {
       if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
       throw error;

@@ -1,8 +1,9 @@
 import { deleteNews, getNews } from "database/news";
 import { getSetting } from "database/settings";
 import {
-  EmbedBuilder,
+  ContainerBuilder,
   SlashCommandSubcommandBuilder,
+  TextDisplayBuilder,
   type ChatInputCommandInteraction,
   type InteractionResponse,
   type Message,
@@ -54,11 +55,11 @@ export async function run(
   if (newsChannel && news.messageID) await newsChannel.messages.delete(news.messageID);
   await deleteNews(guild.id, id);
   await interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setTitle("News post removed.")
-        .setColor(await colorize({ hue: Sokolors.Green })),
+    components: [
+      new ContainerBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post removed."))
+        .setAccentColor(await colorize({ hue: Sokolors.Green })),
     ],
-    flags: "Ephemeral",
+    flags: ["Ephemeral", "IsComponentsV2"],
   });
 }

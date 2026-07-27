@@ -31,13 +31,14 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const guild = interaction.guild;
   if (!guild) return;
   const user = await (interaction.options.getUser("user") ?? interaction.user).fetch(true);
-  const name = user.displayName;
+  let name = user.displayName;
   let avatar = user.displayAvatarURL();
   let banner = user.bannerURL({ size: 512 });
   let serverInfo;
 
   if ((await safeMembers(guild)).has(user.id)) {
     const target = await safeMember(guild, user.id);
+    name = target.nickname ?? user.displayName;
     avatar = target.displayAvatarURL();
     banner = target.displayBannerURL({ size: 512 });
     serverInfo = [];
@@ -52,8 +53,6 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     const nextLevelXp = await getXpForNextLevel(guild.id, user.id);
     const difficulty = (await getSetting(guild.id, "leveling", "difficulty")) as number;
     const level = calculateLevel({ difficulty, xp });
-
-    if (target.nickname) serverInfo.push(`**${target.nickname}** in the server`);
 
     if (target.premiumSinceTimestamp)
       serverInfo.push(
@@ -94,15 +93,23 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(banner)),
     );
 
-  const createdText = [
-    `<:discord:${replace("(discord)")}> ${mention(user.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}`,
+  const createdText = `<:discord:${replace("(discord)")}> **${mention(user.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}**${
     (await safeMembers(guild)).has(user.id)
-      ? `• ${mention((await safeMember(guild, user.id)).joinedAt?.valueOf() ?? 0, "DEFAULT_TIMESTAMP")}`
-      : "",
-  ].join(" ");
-  const start = new TextDisplayBuilder().setContent(
-    [`## ${name}`, `@${user.username}`, "**Member since**", createdText].join("\n"),
-  );
+      ? ` • **${mention((await safeMember(guild, user.id)).joinedAt?.valueOf() ?? 0, "DEFAULT_TIMESTAMP")}**`
+      : ""
+  }`;
+  const start = [
+    new TextDisplayBuilder().setContent(`## ${name}`),
+    new TextDisplayBuilder().setContent(
+      [
+        name != user.displayName
+          ? `...also known as **${user.displayName}** *(@${user.username})*`
+          : `...also known as **@${user.username}**`,
+        "**Member since**",
+        createdText,
+      ].join("\n"),
+    ),
+  ];
 
   if (avatar)
     container.addSectionComponents(

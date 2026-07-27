@@ -1,7 +1,8 @@
 import { getGuildLeaderboard } from "database/leveling";
 import {
-  EmbedBuilder,
+  ContainerBuilder,
   SlashCommandBuilder,
+  TextDisplayBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type InteractionResponse,
@@ -38,29 +39,31 @@ export async function run(
     return b.level == a.level ? b.xp - a.xp : b.level - a.level;
   });
 
-  const usersPerPage = 6;
+  const usersPerPage = 10;
   const pages = Math.ceil(leaderboardData.length / usersPerPage);
   let page = Math.max(0, Math.min(interaction.options.getNumber("page") ?? 0, pages) - 1);
 
-  const generateEmbed = async (): Promise<EmbedBuilder> => {
+  const generateContainer = async (disabled: boolean): Promise<ContainerBuilder> => {
     const start = page * usersPerPage;
     const pageData = leaderboardData.slice(start, start + usersPerPage);
-    const embed = new EmbedBuilder()
-      .setAuthor({ name: "Leaderboard" })
-      .setColor(await colorize({ hue: Sokolors.Blue }));
+    const content = [];
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent("## Leaderboard"))
+      .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
     for (const [index, userData] of pageData.entries())
-      embed.addFields({
-        name: `#${start + index + 1} • ${(await safeUser(interaction.client, userData.userID)).tag}`,
-        value: `Level **${Math.floor(userData.level)}** • **${Math.floor(userData.xp)}** XP`,
-      });
+      content.push(
+        `**#${start + index + 1}** • ${(await safeUser(interaction.client, userData.userID)).tag} • Level **${Math.floor(userData.level)}** @ **${Math.floor(userData.xp)}** XP`,
+      );
 
-    return embed;
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content.join("\n")));
+    if (pages > 1) container.addActionRowComponents(pagedButtons(pages, page, disabled));
+    return container;
   };
 
   const reply = await interaction.reply({
-    embeds: [await generateEmbed()],
-    components: pages > 1 ? [pagedButtons(pages, page)] : [],
+    components: [await generateContainer(false)],
+    flags: "IsComponentsV2",
   });
 
   if (pages <= 1) return;
@@ -68,17 +71,18 @@ export async function run(
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
     collector.resetTimer({ time: 60_000 });
-    page = await handlePages({ i: buttonInteraction, page, pages, collector });
+    if (buttonInteraction.customId == "please") return;
 
+    page = await handlePages({ i: buttonInteraction, page, pages, collector });
     await safeReply({
       interaction: buttonInteraction,
-      editOptions: { embeds: [await generateEmbed()], components: [pagedButtons(pages, page)] },
+      editOptions: { components: [await generateContainer(false)] },
     });
   });
 
   collector.on("end", async () => {
     try {
-      await interaction.editReply({ components: [] });
+      await interaction.editReply({ components: [await generateContainer(true)] });
     } catch (error) {
       if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
       throw error;

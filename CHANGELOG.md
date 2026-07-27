@@ -34,7 +34,7 @@
 
 ## 0.3.3 - 07/07/2026
 
-## Fixed
+### Fixed
 
 - _No reason provided_ in some embeds that don't have any way to provide a reason (thanks fishy)
 - Flipped 2FA value in /server and /serverboard (i.e when the server has 2FA, it shows as "No 2FA") (thanks fishy)

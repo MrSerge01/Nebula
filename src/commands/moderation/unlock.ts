@@ -77,6 +77,6 @@ export async function run(
       ),
     ]);
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "unlock.ts" });
+    await errorEmbed({ interaction, error, forward: true, fileName: "unlock" });
   }
 }

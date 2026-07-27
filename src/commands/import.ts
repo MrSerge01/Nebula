@@ -23,7 +23,7 @@ import {
   type Message,
   type ModalSubmitInteraction,
 } from "discord.js";
-import { buttonCheck } from "embeds/errorEmbed";
+import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { modalSubmit } from "utils/modalSubmit";
 import { safeReply } from "utils/safeThings";
@@ -47,49 +47,18 @@ function safeStringify(object: unknown): string {
 
 async function collapse(
   error: unknown,
-  cID: keyof typeof SupportedBots,
   interaction: ChatInputCommandInteraction,
-  containerHelper: (
-    container: ContainerBuilder,
-    options: {
-      content?: string;
-      buttons?: boolean;
-      error?: boolean;
-      json?: boolean;
-    },
-  ) => Promise<ContainerBuilder>,
-): Promise<Message | InteractionResponse> {
+): Promise<Message | InteractionResponse | undefined> {
   await interaction.deleteReply();
-  const errorContainer = new ContainerBuilder().addTextDisplayComponents(
-    new TextDisplayBuilder().setContent("# Something went wrong…"),
-    new TextDisplayBuilder().setContent(
-      [
-        cID === "MEE6"
-          ? "Open the leaderboard settings in the MEE6 dashboard and enable the option `Make my server's leaderboard public`. Otherwise we can't import data."
-          : (cID === "LURKR"
-            ? "Check that the API token you provided is correct."
-            : "We don't really know what went wrong. Maybe you should try again?"),
-        "You might as well check the error message shown below, it *might* explain better what's wrong.",
-        "If after doing all of that Sokora keeps failing to import your data, please send the error message to Sokora's team so we can try to fix this.",
-        codeBlock("yaml", error instanceof Error ? (error.stack ?? error.message) : String(error)),
-      ].join("\n\n"),
-    ),
-  );
-
-  return await safeReply({
-    interaction,
-    replyOptions: {
-      components: [await containerHelper(errorContainer, { error: true })],
-      flags: ["Ephemeral", "IsComponentsV2"],
-    },
-  });
+  return await errorEmbed({ interaction, error, log: true, forward: true, fileName: "import" });
 }
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
-  // [TODO] add return to not keep running the command lmao
   const user = interaction.client.user;
   const avatar = user.displayAvatarURL();
-  if (!interaction.guild || !interaction.guildId) return;
+  const guild = interaction.guild;
+  const guildID = interaction.guildId;
+  if (!guild || !guildID) return;
 
   async function containerHelper(
     container: ContainerBuilder,
@@ -133,11 +102,24 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     return container;
   }
 
-  const bots: { content: string; id: keyof typeof SupportedBots }[] = [
-    { content: "Tatsu\n-# Import from [Tatsu](https://tatsu.gg/)", id: "TATSU" },
-    { content: "MEE6\n-# Import from [MEE6](http://mee6.xyz/)", id: "MEE6" },
-    { content: "Lurkr\n-# Import from [Lurkr](https://lurkr.gg/)", id: "LURKR" },
+  const bots: { content: string; id: keyof typeof SupportedBots; userID: string }[] = [
+    {
+      content: "🟢  •  Tatsu\n-# Import from [Tatsu](https://tatsu.gg/)",
+      id: "TATSU",
+      userID: "172002275412279296",
+    },
+    {
+      content: "🔵  •  MEE6\n-# Import from [MEE6](http://mee6.xyz/)",
+      id: "MEE6",
+      userID: "159985870458322944",
+    },
+    {
+      content: "🟡  •  Lurkr\n-# Import from [Lurkr](https://lurkr.gg/)",
+      id: "LURKR",
+      userID: "506186003816513538",
+    },
   ];
+
   const containerComponents = [];
   for (const bot of bots)
     containerComponents.push(
@@ -156,11 +138,21 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       flags: ["Ephemeral", "IsComponentsV2"],
     },
   });
-  const collector = reply.createMessageComponentCollector({ time: 60_000 });
+
+  if (!reply) {
+    await collapse("For some reason, a reply wasn't sent your way.", interaction);
+    return;
+  }
+
+  const collector = reply?.createMessageComponentCollector({ time: 240_000 });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-    collector.resetTimer({ time: 60_000 });
-    const cID = buttonInteraction.customId as keyof typeof SupportedBots;
+
+    collector.resetTimer({ time: 240_000 });
+    let cID = buttonInteraction.customId;
+    if (cID == "please") return;
+
+    cID = cID as keyof typeof SupportedBots;
     const bots = {
       name: cID === "MEE6" ? cID.toUpperCase() : cID,
       data: [
@@ -170,24 +162,34 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       ].join("\n"),
     };
 
-    try {
-      async function construct(
-        lurkrKey?: string,
-        modalInteraction?: ModalSubmitInteraction,
-      ): Promise<void> {
-        if (!interaction.guildId) return;
-        const leveler = new Leveler({
-          guild: interaction.guildId,
-          tatsu_api: process.env.TATSU_TOKEN,
-          lurkr_api: lurkrKey,
-        });
-        let levels =
-          cID === "MEE6"
-            ? await leveler.GetLeaderboard(SupportedBots.MEE6)
+    async function construct(
+      lurkrKey?: string,
+      modalInteraction?: ModalSubmitInteraction,
+    ): Promise<void> {
+      if (!guildID) return;
+      const leveler = new Leveler({
+        guild: guildID,
+        tatsu_api: process.env.TATSU_TOKEN,
+        lurkr_api: lurkrKey,
+      });
+
+      let levels =
+        cID === "MEE6"
+          ? await leveler.GetLeaderboard(SupportedBots.MEE6)
+          : cID === "LURKR" && lurkrKey
+            ? await leveler.GetLeaderboard(SupportedBots.LURKR)
             : await leveler.GetLeaderboard(SupportedBots.TATSU);
 
-        if (cID === "LURKR" && lurkrKey) levels = await leveler.GetLeaderboard(SupportedBots.LURKR);
-        const container1 = new ContainerBuilder().addTextDisplayComponents(
+      const switchContainer = new ContainerBuilder()
+        .addActionRowComponents(
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setCustomId("back")
+              .setLabel("Return")
+              .setStyle(ButtonStyle.Secondary),
+          ),
+        )
+        .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
             [
               `Thanks for switching to Sokora! We will import leveling info from **${bots.name}** that we can gather. This includes a total of **${levels.length} entries**.`,
@@ -197,156 +199,124 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           ),
         );
 
-        const replyInteraction = modalInteraction ?? buttonInteraction;
-        const reply1 = await safeReply({
-          interaction: replyInteraction,
-          editOptions: { components: [await containerHelper(container1, { buttons: true })] },
-        });
+      const replyInteraction = modalInteraction ?? buttonInteraction;
+      await safeReply({
+        interaction: replyInteraction,
+        editOptions: { components: [await containerHelper(switchContainer, { buttons: true })] },
+      });
 
-        if (modalInteraction) await reply.delete();
-        collector.stop("bot_chosen");
-        const collector1 = reply1.createMessageComponentCollector({ time: 60_000 });
-        collector1.on("collect", async (buttonInteraction1: ButtonInteraction) => {
-          if (
-            await buttonCheck({
-              i: buttonInteraction1,
-              interaction: replyInteraction,
-              reply: reply1,
-            })
-          )
-            return;
-
-          collector1.resetTimer({ time: 60_000 });
-          let content;
-          switch (buttonInteraction1.customId) {
-            case "check": {
-              const levelData = safeStringify(levels);
-              const checkContainer = new ContainerBuilder().addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(
-                  `## This is what we'll import from ${bots.name}\n${
-                    levelData.length <= 4096
-                      ? codeBlock(levelData)
-                      : "The level data is an attachment due to it being too large."
-                  }`,
-                ),
-              );
-
-              const files: AttachmentBuilder[] = [];
-              if (levelData.length >= 4096) {
-                files.push(
-                  new AttachmentBuilder(Buffer.from(levelData, "utf8"), { name: "levels.txt" }),
-                );
-                checkContainer.addFileComponents(
-                  new FileBuilder().setURL("attachment://levels.txt"),
-                );
-              }
-
-              await safeReply({
-                interaction: buttonInteraction1,
-                replyOptions: {
-                  components: [
-                    await containerHelper(checkContainer, { buttons: true, json: true }),
-                  ],
-                  files: files,
-                },
-              });
-              break;
-            }
-            case "return": {
-              await safeReply({
-                interaction: buttonInteraction1,
-                replyOptions: { components: [container1] },
-              });
-              break;
-            }
-            case "merge":
-            case "overwrite": {
-              content = `# ${buttonInteraction1.customId == "merge" ? "Updating" : "Overwriting"} data for all users…`;
-              const res = [];
-              await safeReply({
-                interaction: buttonInteraction1,
-                replyOptions: {
-                  components: [await containerHelper(new ContainerBuilder(), { content })],
-                },
-              });
-
-              if (!interaction.guild || !interaction.guildId) return;
-              const difficulty = (await getSetting(
-                interaction.guild.id,
-                "leveling",
-                "difficulty",
-              )) as number;
-              for (const user of interaction.guild.members.cache) {
-                if (user[1].user.bot) continue;
-                const imported = levels.find(lev => lev.uid == user[1].id);
-                if (!imported) {
-                  res.push(
-                    `${user[1].user.username} wasn't imported (had no data saved in the imported dataset)`,
-                  );
-                  continue;
-                }
-                const previousXp = await getUserXp(interaction.guildId, user[1].id);
-                const newXp =
-                  (buttonInteraction1.customId == "merge" ? previousXp : 0) + imported.current_xp;
-                await setUserXp(interaction.guildId, user[1].id, newXp);
-                res.push(
-                  `${user[1].user.username} updated from ${previousXp} XP (level ${calculateLevel({ xp: previousXp, difficulty })}) to **XP ${newXp} (level ${calculateLevel({ xp: newXp, difficulty })})**.`,
-                );
-              }
-
-              content = `# Done!\n${res.join("\n")}`;
-              await safeReply({
-                interaction: buttonInteraction1,
-                replyOptions: {
-                  components: [await containerHelper(new ContainerBuilder(), { content })],
-                },
-              });
-            }
-          }
-        });
-
-        collector1.on("end", async () => {
-          try {
-            await interaction.deleteReply();
-          } catch (error) {
-            if (Error.isError(error) && error.message.toLowerCase().includes("unknown message"))
-              return;
-
-            throw error;
-          }
-        });
-      }
-
-      if (cID == "LURKR") {
-        const modal = new ModalBuilder()
-          .setCustomId(cID)
-          .setTitle(`•  API key to import`)
-          .addLabelComponents(
-            new LabelBuilder()
-              .setLabel("Value")
-              .setTextInputComponent(
-                new TextInputBuilder()
-                  .setCustomId("setting")
-                  .setPlaceholder("Type in the value")
-                  .setMaxLength(4000)
-                  .setStyle(TextInputStyle.Paragraph)
-                  .setRequired(true),
-              ),
+      if (modalInteraction) await reply.delete();
+      let content;
+      switch (cID) {
+        case "back": {
+          await safeReply({ interaction, editOptions: { components: [container] } });
+          break;
+        }
+        case "check": {
+          const levelData = safeStringify(levels);
+          const checkContainer = new ContainerBuilder().addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              `## This is what we'll import from ${bots.name}\n${
+                levelData.length <= 2048
+                  ? codeBlock(levelData)
+                  : "The level data is an attachment due to it being too large."
+              }`,
+            ),
           );
 
-        await buttonInteraction.showModal(modal);
-        const modalInteraction = await modalSubmit(buttonInteraction);
-        collector.resetTimer({ time: 60_000 });
-        if (!modalInteraction) return;
+          const files: AttachmentBuilder[] = [];
+          if (levelData.length > 2048) {
+            files.push(
+              new AttachmentBuilder(Buffer.from(levelData, "utf8"), { name: "levels.txt" }),
+            );
+            checkContainer.addFileComponents(new FileBuilder().setURL("attachment://levels.txt"));
+          }
 
-        try {
-          await construct(modalInteraction.fields.getTextInputValue("setting"), modalInteraction);
-        } catch (error) {
-          return await collapse(error, cID, interaction, containerHelper);
+          await safeReply({
+            interaction: buttonInteraction,
+            editOptions: {
+              components: [await containerHelper(checkContainer, { buttons: true, json: true })],
+              files,
+            },
+          });
+          break;
         }
-      } else await construct();
+        case "return": {
+          await safeReply({
+            interaction: buttonInteraction,
+            editOptions: { components: [switchContainer] },
+          });
+          break;
+        }
+        case "merge":
+        case "overwrite": {
+          content = `## ${cID == "merge" ? "Updating" : "Overwriting"} data for all users…`;
+          const res = [];
+          await safeReply({
+            interaction: buttonInteraction,
+            editOptions: {
+              components: [await containerHelper(new ContainerBuilder(), { content })],
+            },
+          });
+
+          if (!guild || !guildID) return;
+          const difficulty = (await getSetting(guildID, "leveling", "difficulty")) as number;
+
+          for (const user of guild.members.cache) {
+            if (user[1].user.bot) continue;
+            const imported = levels.find(lev => lev.uid == user[1].id);
+            if (!imported) {
+              res.push(
+                `${user[1].user.username} wasn't imported (had no data saved in the imported dataset)`,
+              );
+              continue;
+            }
+
+            const previousXp = await getUserXp(guildID, user[1].id);
+            const newXp = (cID == "merge" ? previousXp : 0) + imported.current_xp;
+            await setUserXp(guildID, user[1].id, newXp);
+            res.push(
+              `${user[1].user.username} updated from ${previousXp} XP (level ${calculateLevel({ xp: previousXp, difficulty })}) to **XP ${newXp} (level ${calculateLevel({ xp: newXp, difficulty })})**.`,
+            );
+          }
+
+          content = `## Done!\n${res.join("\n")}`;
+          await safeReply({
+            interaction: buttonInteraction,
+            editOptions: {
+              components: [await containerHelper(new ContainerBuilder(), { content })],
+            },
+          });
+        }
+      }
+    }
+
+    if (cID != "LURKR") return await construct();
+    const modal = new ModalBuilder()
+      .setCustomId(cID)
+      .setTitle(`•  API key to import`)
+      .addLabelComponents(
+        new LabelBuilder()
+          .setLabel("Value")
+          .setTextInputComponent(
+            new TextInputBuilder()
+              .setCustomId("setting")
+              .setPlaceholder("Type in the value")
+              .setMaxLength(3800)
+              .setStyle(TextInputStyle.Paragraph)
+              .setRequired(true),
+          ),
+      );
+
+    await buttonInteraction.showModal(modal);
+    const modalInteraction = await modalSubmit(buttonInteraction);
+    collector.resetTimer({ time: 240_000 });
+    if (!modalInteraction) return;
+
+    try {
+      await construct(modalInteraction.fields.getTextInputValue("setting"), modalInteraction);
     } catch (error) {
-      return await collapse(error, cID, interaction, containerHelper);
+      return await collapse(error, interaction);
     }
   });
 

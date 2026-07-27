@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { errorCheck, modEmbed } from "embeds/modEmbed";
+import { mention } from "utils/mention";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { safeChannel } from "utils/safeThings";
 
@@ -107,12 +108,7 @@ export async function run(
         });
     }
   } catch (error) {
-    return await errorEmbed({
-      interaction,
-      error,
-      forward: true,
-      fileName: "clear.ts",
-    });
+    return await errorEmbed({ interaction, error, forward: true, fileName: "clear" });
   }
 
   await modEmbed({
@@ -120,7 +116,7 @@ export async function run(
     user: targetUser,
     channel: channel.id,
     customText: {
-      logTitle: `Cleared ${deletedAmount} ${pluralOrNot("message", deletedAmount)}${targetUser ? ` from ${targetUser.username}` : ""}`,
+      logTitle: `Cleared ${deletedAmount} ${pluralOrNot("message", deletedAmount)}${targetUser ? ` from ${mention(targetUser.id, "USER")}` : ""}`,
     },
   });
 }

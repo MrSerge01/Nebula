@@ -1,6 +1,5 @@
 import {
   ChannelType,
-  type TextChannel,
   type AnySelectMenuInteraction,
   type BaseFetchOptions,
   type ButtonInteraction,
@@ -18,6 +17,7 @@ import {
   type MessagePayload,
   type ModalSubmitInteraction,
   type Role,
+  type TextChannel,
   type User,
 } from "discord.js";
 
@@ -100,35 +100,45 @@ export async function safeReply(options: {
     | ModalSubmitInteraction;
   replyOptions?: string | MessagePayload | InteractionReplyOptions;
   editOptions?: string | MessagePayload | InteractionEditReplyOptions;
-}): Promise<Message | InteractionResponse> {
+}): Promise<Message | InteractionResponse | undefined> {
   const { interaction, replyOptions, editOptions } = options;
-  const reply = replyOptions ?? editOptions;
 
   if (interaction.replied || interaction.deferred) {
     if (editOptions) return await interaction.editReply(editOptions);
-    return await interaction.followUp(reply);
+    if (replyOptions) return await interaction.followUp(replyOptions);
   }
 
-  if (interaction.isButton() || interaction.isAnySelectMenu())
-    return await interaction.update((replyOptions ?? editOptions) as InteractionUpdateOptions);
+  if (interaction.isButton() || interaction.isAnySelectMenu()) {
+    if (editOptions)
+      return await interaction.update((replyOptions ?? editOptions) as InteractionUpdateOptions);
 
-  return await interaction.reply(reply);
+    if (replyOptions) return await interaction.reply(replyOptions);
+  }
+
+  if (replyOptions) return await interaction.reply(replyOptions);
 }
 
 /**
  * Finds a channel to send important stuff to. **This should be used as a fallback,** i.e. prioritize log channel. This is only for things like welcome, canary updates, or important alerts when the server owner is not DM-able.
- *
  * It does not check for logChannel, whether this should change will be checked.
- *
  * @param guild Guild to find a channel in.
  */
 export function safeAlertChannel(guild: Guild): TextChannel {
-  return (
+  const me = guild.members.me;
+  if (!me) throw Error("how??? this shouldn't happen...");
+
+  const channel =
     guild.systemChannel ??
     guild.channels.cache
       .filter(c => c.type === ChannelType.GuildText)
-      .filter(c => c.permissionsFor(guild.members.me).has("SendMessages"))
+      .filter(c => c.permissionsFor(me).has("SendMessages"))
       .sort((a, b) => a.position - b.position)
-      .first()
-  );
+      .first();
+
+  if (!channel)
+    throw Error(
+      "the user has done black magic to achieve this, so the bot cannot send anything in this entire server.",
+    );
+
+  return channel;
 }

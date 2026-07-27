@@ -1,8 +1,10 @@
 import { createCase, editCase, getCase, type ModType } from "database/moderation";
 import {
-  EmbedBuilder,
+  ContainerBuilder,
+  SectionBuilder,
+  TextDisplayBuilder,
+  ThumbnailBuilder,
   type ChatInputCommandInteraction,
-  type ContainerBuilder,
   type InteractionResponse,
   type Message,
   type PermissionResolvable,
@@ -12,7 +14,6 @@ import ms from "enhanced-ms";
 import { mention } from "utils/mention";
 import { safeChannel, safeMember, safeReply } from "utils/safeThings";
 import { colorize, Sokolors } from "../colorize";
-import { dotCheck } from "../dotCheck";
 import { logChannel } from "../logChannel";
 import { errorEmbed } from "./errorEmbed";
 
@@ -37,19 +38,23 @@ type ErrorOptions = Options & {
     allErrors: boolean;
     botError: boolean;
     channelError?: boolean;
-    ownerError?: boolean;
     outsideError?: boolean;
     banCheckError?: boolean;
   };
 };
 
+/**
+ * Checks for errors in moderation commands.
+ * @param permissionAction The permission that the command requires. If the bot doesn't have it, it errors.
+ * @param options Error options.
+ * @returns An errorEmbed if something goes wrong.
+ */
 export async function errorCheck(
   permissionAction: string,
   options: ErrorOptions,
 ): Promise<Message | InteractionResponse | undefined> {
   const { interaction, user, channel, action, errorOptions } = options;
-  const { allErrors, botError, channelError, ownerError, outsideError, banCheckError } =
-    errorOptions;
+  const { allErrors, botError, channelError, outsideError, banCheckError } = errorOptions;
 
   const guild = interaction.guild;
   if (!guild) return;
@@ -135,11 +140,17 @@ export async function errorCheck(
   if (target.id == interaction.client.user.id)
     return await errorEmbed({ interaction, title: `You can't ${action.toLowerCase()} Sokora.` });
 
-  if (!target.manageable)
+  if (!target.moderatable)
     return await errorEmbed({
       interaction,
       title: `You can't ${action.toLowerCase()} ${name}.`,
-      reason: "The member has a higher (or the same) role position than Sokora.",
+      reason: [
+        "The member cannot be moderated by Sokora.\n",
+        "**There are three reasons as to why this error might occur:**",
+        "- The member has a higher role position than the bot;",
+        "- The member is an administrator;",
+        "- The member is the owner of the server.",
+      ].join("\n"),
     });
 
   if (highestModPos <= highestTargetPos && member.id != guild.ownerId) {
@@ -150,15 +161,14 @@ export async function errorCheck(
       reason: `The member has ${same ? "the same" : "a higher"} role position ${same ? "as" : "than"} you.`,
     });
   }
-
-  if (ownerError && target.id == guild.ownerId)
-    return await errorEmbed({
-      interaction,
-      title: `You can't ${action.toLowerCase()} ${name}.`,
-      reason: "The member owns the server.",
-    });
 }
 
+/**
+ * Sends a container containing information about a moderation action.
+ * @param options Options
+ * @param reason Reason for the moderation action.
+ * @returns A container with action info (or an errorEmbed if something goes wrong).
+ */
 export async function modEmbed(
   options: Options & { silent?: boolean },
   reason?: string | null,
@@ -178,11 +188,10 @@ export async function modEmbed(
   } = options;
   const guild = interaction.guild;
   if (!guild) throw new Error("Cannot create modEmbed without a guild!");
-  const name = user?.displayName;
   const generalValues = [`**Moderator**: ${interaction.user.displayName}`];
   const serverAvatar = (guild.icon ? guild.iconURL() : undefined) ?? undefined;
   const avatar = user ? user.displayAvatarURL() : serverAvatar;
-  let author = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""} ${name}`;
+  let title = `${previousID ? "Edited a " : ""}${previousID ? dbAction?.toLowerCase() : action}${previousID ? " on" : ""}${user ? mention(user.id, "USER") : ""}`;
 
   if (reason) generalValues.push(`**Reason**: ${reason}`);
   if (duration) generalValues.push(`**Duration**: ${ms(duration, "fullPrecision")}`);
@@ -207,10 +216,10 @@ export async function modEmbed(
         error,
         log: true,
         forward: true,
-        fileName: "modEmbed.ts",
+        fileName: "modEmbed",
       });
     }
-    author += `  •  #${previousID}`;
+    title += `  •  #${previousID}`;
   }
 
   if (dbAction) {
@@ -232,55 +241,77 @@ export async function modEmbed(
         reason ?? undefined,
         expiresAt ?? undefined,
       );
-      author += `  •  #${id}`;
+      title += `  •  #${id}`;
     } catch (error) {
       return await errorEmbed({
         interaction,
         error,
         log: true,
         forward: true,
-        fileName: "modEmbed.ts",
+        fileName: "modEmbed",
       });
     }
   }
 
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${dotCheck({ string: avatar, doubleSpace: true })}${customText?.logTitle ?? author}`,
-      iconURL: avatar,
-    })
-    .setDescription(generalValues.join("\n"))
-    .setFooter({ text: user ? `User ID: ${user.id}` : `Channel ID: ${channel}` })
-    .setTimestamp(new Date())
-    .setColor(await colorize({ hue: Sokolors.Green }));
+  const textDisplayComponents = [
+    new TextDisplayBuilder().setContent(`**${customText?.logTitle ?? title}**`),
+    new TextDisplayBuilder().setContent(generalValues.join("\n")),
+    new TextDisplayBuilder().setContent(
+      `-# ${user ? `User ID: ${user.id}` : `Channel ID: ${channel}`} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
+    ),
+  ];
+
+  const container = new ContainerBuilder().setAccentColor(await colorize({ hue: Sokolors.Green }));
+  if (avatar)
+    container.addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(textDisplayComponents)
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
+    );
+  else container.addTextDisplayComponents(textDisplayComponents);
 
   async function replier(): Promise<Awaited<ReturnType<typeof safeReply>>> {
     if (silent)
       return await safeReply({
         interaction,
-        replyOptions: { embeds: [embed], flags: "Ephemeral" },
+        replyOptions: { components: [container], flags: ["Ephemeral", "IsComponentsV2"] },
       });
 
-    return await safeReply({ interaction, replyOptions: { embeds: [embed] } });
+    return await safeReply({
+      interaction,
+      replyOptions: { components: [container], flags: "IsComponentsV2" },
+    });
   }
 
   await Promise.all([
-    logChannel(guild, { embeds: [embed] }, dm, {
-      silent: silent ?? false,
-      user,
-      options: {
-        embeds: [
-          new EmbedBuilder()
-            .setAuthor({
-              name: `${dotCheck({ string: serverAvatar, doubleSpace: true })}${customText?.dmTitle ?? `You got ${action?.toLowerCase()} from ${guild.name}`}`,
-              iconURL: serverAvatar,
-            })
-            .setDescription(generalValues.join("\n"))
-            .setTimestamp(new Date())
-            .setColor(await colorize({ hue: Sokolors.Red })),
-        ],
-      },
-    }),
+    logChannel(
+      guild,
+      { components: [container], flags: "IsComponentsV2" },
+      dm,
+      user
+        ? {
+            silent: silent ?? false,
+            user,
+            options: {
+              components: [
+                new ContainerBuilder()
+                  .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent(
+                      customText?.dmTitle ??
+                        `**You got ${action?.toLowerCase()} from ${guild.name}**`,
+                    ),
+                    new TextDisplayBuilder().setContent(generalValues.join("\n")),
+                    new TextDisplayBuilder().setContent(
+                      `-# ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
+                    ),
+                  )
+                  .setAccentColor(await colorize({ hue: Sokolors.Red })),
+              ],
+              flags: "IsComponentsV2",
+            },
+          }
+        : undefined,
+    ),
     replier(),
   ]);
 }

@@ -42,7 +42,7 @@ export async function run(
             title: "Serverboard error.",
             log: true,
             forward: true,
-            fileName: "serverboard.ts",
+            fileName: "serverboard",
           });
           return null;
         }
@@ -86,8 +86,9 @@ export async function run(
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
     collector.resetTimer({ time: 60_000 });
-    page = await handlePages({ i: buttonInteraction, page, pages, collector });
+    if (buttonInteraction.customId == "please") return;
 
+    page = await handlePages({ i: buttonInteraction, page, pages, collector });
     await safeReply({
       interaction: buttonInteraction,
       editOptions: { components: [await getContainer(false)] },

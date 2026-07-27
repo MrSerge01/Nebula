@@ -59,7 +59,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new TextDisplayBuilder().setContent(
         [
           "**📃 • General**",
-          `Version **${version}${commit ? `+[\`${commit.sha.slice(0, 6)}\`](${commit.html_url})` : ""}** • *Heijun*`,
+          `Version **${version}${commit ? `+[\`${commit.sha.slice(0, 8)}\`](${commit.html_url})` : ""}** • *Heijun*`,
           `**${members.toLocaleString("en-US")}** ${pluralOrNot("member", members)} • **${guilds.size.toLocaleString("en-US")}** ${pluralOrNot(
             "guild",
             guilds.size,

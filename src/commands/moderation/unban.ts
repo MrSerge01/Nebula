@@ -22,7 +22,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       interaction,
       user,
       action: "Unban",
-      errorOptions: { allErrors: false, botError: true, ownerError: true, banCheckError: true },
+      errorOptions: { allErrors: false, botError: true, banCheckError: true },
     })
   )
     return;
@@ -33,6 +33,6 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       interaction.guild?.members.unban(user.id, reason ?? undefined),
     ]);
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "unban.ts" });
+    await errorEmbed({ interaction, error, forward: true, fileName: "unban" });
   }
 }
