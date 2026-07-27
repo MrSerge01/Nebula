@@ -40,7 +40,7 @@ export async function sendChannelNews(
   const role = (await getSetting(guild.id, "news", "role")) as string;
   const roleToSend: Role | null = role ? await safeRole(guild, role) : null;
   const news = await getNews(guild.id, id);
-  const image = edit ? (news?.imageURL ?? null) : (imageURL ?? null);
+  const image = edit ? news?.imageURL : imageURL;
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(

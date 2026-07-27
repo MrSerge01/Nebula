@@ -2,12 +2,10 @@ import { getNews, updateNews } from "database/news";
 import { getSetting } from "database/settings";
 import {
   ContainerBuilder,
-  LabelBuilder,
-  ModalBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
-  TextInputBuilder,
-  TextInputStyle,
   type ChatInputCommandInteraction,
   type InteractionResponse,
   type Message,
@@ -18,6 +16,7 @@ import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { modalSubmit } from "utils/modalSubmit";
+import { newsModal } from "utils/newsModal";
 import { safeChannel, safeMember, safeRole } from "utils/safeThings";
 import { sendChannelNews } from "utils/sendChannelNews";
 
@@ -56,34 +55,8 @@ export async function run(
   if (!news)
     return await errorEmbed({ interaction, title: "The specified news post doesn't exist." });
 
-  const editModal = new ModalBuilder()
-    .setCustomId("editnews")
-    .setTitle(`•  Edit news post: ${news.title}`)
-    .addLabelComponents(
-      new LabelBuilder()
-        .setLabel("Title")
-        .setTextInputComponent(
-          new TextInputBuilder()
-            .setCustomId("title")
-            .setMaxLength(100)
-            .setStyle(TextInputStyle.Short)
-            .setValue(news.title)
-            .setRequired(true),
-        ),
-      new LabelBuilder()
-        .setLabel("Content (supports Markdown)")
-        .setTextInputComponent(
-          new TextInputBuilder()
-            .setCustomId("body")
-            .setMaxLength(3800)
-            .setStyle(TextInputStyle.Paragraph)
-            .setValue(news.body)
-            .setRequired(true),
-        ),
-    );
-
   try {
-    await interaction.showModal(editModal);
+    await interaction.showModal(newsModal(news));
   } catch (error) {
     await errorEmbed({ interaction, error, forward: true, fileName: "edit" });
   }
@@ -97,6 +70,7 @@ export async function run(
   const title = modalInteraction.fields.getTextInputValue("title");
   const body = modalInteraction.fields.getTextInputValue("body");
   const avatar = news.authorPFP;
+  const image = news.imageURL;
   const editedContainer = new ContainerBuilder()
     .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post edited."))
     .setAccentColor(await colorize({ hue: Sokolors.Green }));
@@ -127,11 +101,19 @@ export async function run(
       ),
       new TextDisplayBuilder().setContent(`## ${title}`),
       new TextDisplayBuilder().setContent(body),
-      new TextDisplayBuilder().setContent(
-        `-# Edited news post from ${guild.name} • ID: ${news.id} • ${mention(news.updatedAt?.valueOf() ?? news.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}`,
-      ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+
+  if (image)
+    container.addMediaGalleryComponents(
+      new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(image)),
+    );
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `-# Edited news post from ${guild.name} • ID: ${news.id} • ${mention(news.updatedAt?.valueOf() ?? news.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}`,
+    ),
+  );
 
   const channel = (await safeChannel(
     guild,
