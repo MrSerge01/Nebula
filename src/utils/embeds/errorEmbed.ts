@@ -43,7 +43,11 @@ import { errorType } from "../errorType";
  * @returns Container with the error description.
  */
 export async function errorEmbed(options: {
-  interaction?: ChatInputCommandInteraction | ButtonInteraction | AnySelectMenuInteraction;
+  interaction?:
+    | ChatInputCommandInteraction
+    | ButtonInteraction
+    | AnySelectMenuInteraction
+    | ModalSubmitInteraction;
   client?: Client;
   error?: unknown;
   title?: string;
@@ -93,7 +97,7 @@ export async function errorEmbed(options: {
         [
           emojis ? "**📜 • Error stack**" : "**error stack**",
           stack
-            ? stack.length <= 4096
+            ? stack.length <= 2048
               ? codeBlock(stack)
               : "The error stacktrace is an attachment below due to it being too large."
             : "No error stacktrace.",
@@ -138,7 +142,7 @@ export async function errorEmbed(options: {
       );
 
   const files: AttachmentBuilder[] = [];
-  if (stack && stack.length >= 4096) {
+  if (stack && stack.length >= 2048) {
     files.push(new AttachmentBuilder(Buffer.from(stack, "utf8"), { name: "error.txt" }));
     container.addFileComponents(new FileBuilder().setURL("attachment://error.txt"));
   }
@@ -192,7 +196,7 @@ export async function errorEmbed(options: {
               new TextInputBuilder()
                 .setCustomId("description")
                 .setPlaceholder("Pleasepleasepleasepleasepleasplesae 🥹")
-                .setMaxLength(3900)
+                .setMaxLength(3800)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true),
             ),
@@ -202,7 +206,7 @@ export async function errorEmbed(options: {
               new TextInputBuilder()
                 .setCustomId("explanation")
                 .setPlaceholder("Now how the hell did you reproduce the issue…? please say ❤️‍🩹")
-                .setMaxLength(3900)
+                .setMaxLength(3800)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(false),
             ),

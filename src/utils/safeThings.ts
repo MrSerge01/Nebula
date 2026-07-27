@@ -123,13 +123,22 @@ export async function safeReply(options: {
  * It does not check for logChannel, whether this should change will be checked.
  * @param guild Guild to find a channel in.
  */
-export function safeAlertChannel(guild: Guild): TextChannel | undefined {
-  return (
+export function safeAlertChannel(guild: Guild): TextChannel {
+  const me = guild.members.me;
+  if (!me) throw Error("how??? this shouldn't happen...");
+
+  const channel =
     guild.systemChannel ??
     guild.channels.cache
       .filter(c => c.type === ChannelType.GuildText)
-      .filter(c => c.permissionsFor(guild.members.me).has("SendMessages"))
+      .filter(c => c.permissionsFor(me).has("SendMessages"))
       .sort((a, b) => a.position - b.position)
-      .first()
-  );
+      .first();
+
+  if (!channel)
+    throw Error(
+      "the user has done black magic to achieve this, so the bot cannot send anything in this entire server.",
+    );
+
+  return channel;
 }

@@ -61,7 +61,7 @@ export default (async function run(message) {
           `**${checkForS(author.username)} message got deleted**`,
         ),
         new TextDisplayBuilder().setContent(
-          content.length <= 4096
+          content.length <= 2048
             ? content && content.length > 0
               ? content
               : "*Empty message*"
@@ -71,7 +71,7 @@ export default (async function run(message) {
       .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
     const files: AttachmentBuilder[] = [];
-    if (content.length > 4096) {
+    if (content.length > 2048) {
       files.push(new AttachmentBuilder(Buffer.from(content, "utf8"), { name: "message.txt" }));
       container.addFileComponents(new FileBuilder().setURL("attachment://message.txt"));
     }

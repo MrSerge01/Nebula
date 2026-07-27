@@ -663,7 +663,7 @@ export async function settingsEmbed(
               new TextInputBuilder()
                 .setCustomId("setting")
                 .setPlaceholder("Type in the value")
-                .setMaxLength(4000)
+                .setMaxLength(3800)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true)
                 .setValue(`${await getSettingPlease(id, key, cID, table)}`),

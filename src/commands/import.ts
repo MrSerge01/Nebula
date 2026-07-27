@@ -176,9 +176,10 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       let levels =
         cID === "MEE6"
           ? await leveler.GetLeaderboard(SupportedBots.MEE6)
-          : await leveler.GetLeaderboard(SupportedBots.TATSU);
+          : cID === "LURKR" && lurkrKey
+            ? await leveler.GetLeaderboard(SupportedBots.LURKR)
+            : await leveler.GetLeaderboard(SupportedBots.TATSU);
 
-      if (cID === "LURKR" && lurkrKey) levels = await leveler.GetLeaderboard(SupportedBots.LURKR);
       const switchContainer = new ContainerBuilder()
         .addActionRowComponents(
           new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -216,7 +217,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           const checkContainer = new ContainerBuilder().addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
               `## This is what we'll import from ${bots.name}\n${
-                levelData.length <= 4096
+                levelData.length <= 2048
                   ? codeBlock(levelData)
                   : "The level data is an attachment due to it being too large."
               }`,
@@ -224,7 +225,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           );
 
           const files: AttachmentBuilder[] = [];
-          if (levelData.length > 4096) {
+          if (levelData.length > 2048) {
             files.push(
               new AttachmentBuilder(Buffer.from(levelData, "utf8"), { name: "levels.txt" }),
             );
@@ -301,7 +302,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             new TextInputBuilder()
               .setCustomId("setting")
               .setPlaceholder("Type in the value")
-              .setMaxLength(4000)
+              .setMaxLength(3800)
               .setStyle(TextInputStyle.Paragraph)
               .setRequired(true),
           ),

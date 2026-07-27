@@ -65,7 +65,7 @@ export async function run(
         .setTextInputComponent(
           new TextInputBuilder()
             .setCustomId("title")
-            .setMaxLength(30)
+            .setMaxLength(100)
             .setStyle(TextInputStyle.Short)
             .setValue(news.title)
             .setRequired(true),
@@ -75,7 +75,7 @@ export async function run(
         .setTextInputComponent(
           new TextInputBuilder()
             .setCustomId("body")
-            .setMaxLength(4000)
+            .setMaxLength(3800)
             .setStyle(TextInputStyle.Paragraph)
             .setValue(news.body)
             .setRequired(true),

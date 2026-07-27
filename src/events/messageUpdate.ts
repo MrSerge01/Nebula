@@ -56,14 +56,14 @@ export default (async function run(oldMessage, newMessage) {
         new TextDisplayBuilder().setContent(
           [
             `**🖋️ • Old**: ${
-              oldLength <= 4096
+              oldLength <= 2048
                 ? oldContent
                 : "*The old content of the message is an attachment below due to it being too large.*"
             }`,
             `**🖊️ • New**: ${
-              newLength <= 4096
+              newLength <= 2048
                 ? newContent
-                : `*The new content of the message is${oldContent.length > 4096 ? " also" : ""} an attachment below this embed due to it being too large.*`
+                : `*The new content of the message is${oldContent.length > 2048 ? " also" : ""} an attachment below this embed due to it being too large.*`
             }`,
           ].join("\n"),
         ),
@@ -71,14 +71,14 @@ export default (async function run(oldMessage, newMessage) {
       .setAccentColor(await colorize({ hue: Sokolors.Yellow }));
 
     const files: AttachmentBuilder[] = [];
-    if (oldLength > 4096) {
+    if (oldLength > 2048) {
       files.push(
         new AttachmentBuilder(Buffer.from(oldContent, "utf8"), { name: "oldContent.txt" }),
       );
       container.addFileComponents(new FileBuilder().setURL("attachment://oldContent.txt"));
     }
 
-    if (newLength > 4096) {
+    if (newLength > 2048) {
       files.push(
         new AttachmentBuilder(Buffer.from(oldContent, "utf8"), { name: "newContent.txt" }),
       );

@@ -45,7 +45,7 @@ export async function run(
           new TextInputBuilder()
             .setCustomId("title")
             .setPlaceholder("Think of a title")
-            .setMaxLength(30)
+            .setMaxLength(100)
             .setStyle(TextInputStyle.Short)
             .setRequired(true),
         ),
@@ -55,7 +55,7 @@ export async function run(
           new TextInputBuilder()
             .setCustomId("body")
             .setPlaceholder("Write your news post here")
-            .setMaxLength(4000)
+            .setMaxLength(3800)
             .setStyle(TextInputStyle.Paragraph)
             .setRequired(true),
         ),
