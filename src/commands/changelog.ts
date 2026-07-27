@@ -40,8 +40,8 @@ async function genChangelog(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...Object.keys(changelog.body).map(v =>
           new ButtonBuilder()
-            .setLabel(v)
             .setCustomId(v + "+" + changelog.ver)
+            .setLabel(v)
             .setStyle(
               {
                 Fixed: ButtonStyle.Secondary,
@@ -59,8 +59,8 @@ async function genChangelog(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...list.map(v =>
           new ButtonBuilder()
-            .setLabel(v.ver)
             .setCustomId(v.ver)
+            .setLabel(v.ver)
             .setStyle(v.minor ? ButtonStyle.Primary : ButtonStyle.Secondary)
             .setDisabled(v.ver === changelog.ver),
         ),

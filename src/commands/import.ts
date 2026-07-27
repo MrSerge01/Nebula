@@ -54,10 +54,11 @@ async function collapse(
 }
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
-  // [TODO] add return to not keep running the command lmao
   const user = interaction.client.user;
   const avatar = user.displayAvatarURL();
-  if (!interaction.guild || !interaction.guildId) return;
+  const guild = interaction.guild;
+  const guildID = interaction.guildId;
+  if (!guild || !guildID) return;
 
   async function containerHelper(
     container: ContainerBuilder,
@@ -101,11 +102,24 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     return container;
   }
 
-  const bots: { content: string; id: keyof typeof SupportedBots }[] = [
-    { content: "🟢  •  Tatsu\n-# Import from [Tatsu](https://tatsu.gg/)", id: "TATSU" },
-    { content: "🔵  •  MEE6\n-# Import from [MEE6](http://mee6.xyz/)", id: "MEE6" },
-    { content: "🟡  •  Lurkr\n-# Import from [Lurkr](https://lurkr.gg/)", id: "LURKR" },
+  const bots: { content: string; id: keyof typeof SupportedBots; userID: string }[] = [
+    {
+      content: "🟢  •  Tatsu\n-# Import from [Tatsu](https://tatsu.gg/)",
+      id: "TATSU",
+      userID: "172002275412279296",
+    },
+    {
+      content: "🔵  •  MEE6\n-# Import from [MEE6](http://mee6.xyz/)",
+      id: "MEE6",
+      userID: "159985870458322944",
+    },
+    {
+      content: "🟡  •  Lurkr\n-# Import from [Lurkr](https://lurkr.gg/)",
+      id: "LURKR",
+      userID: "506186003816513538",
+    },
   ];
+
   const containerComponents = [];
   for (const bot of bots)
     containerComponents.push(
@@ -124,7 +138,13 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       flags: ["Ephemeral", "IsComponentsV2"],
     },
   });
-  const collector = reply.createMessageComponentCollector({ time: 240_000 });
+
+  if (!reply) {
+    await collapse("For some reason, a reply wasn't sent your way.", interaction);
+    return;
+  }
+
+  const collector = reply?.createMessageComponentCollector({ time: 240_000 });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
 
@@ -146,9 +166,9 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       lurkrKey?: string,
       modalInteraction?: ModalSubmitInteraction,
     ): Promise<void> {
-      if (!interaction.guildId) return;
+      if (!guildID) return;
       const leveler = new Leveler({
-        guild: interaction.guildId,
+        guild: guildID,
         tatsu_api: process.env.TATSU_TOKEN,
         lurkr_api: lurkrKey,
       });
@@ -159,15 +179,24 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           : await leveler.GetLeaderboard(SupportedBots.TATSU);
 
       if (cID === "LURKR" && lurkrKey) levels = await leveler.GetLeaderboard(SupportedBots.LURKR);
-      const switchContainer = new ContainerBuilder().addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          [
-            `Thanks for switching to Sokora! We will import leveling info from **${bots.name}** that we can gather. This includes a total of **${levels.length} entries**.`,
-            `Data we can import from ${bots.name} is:\n${bots.data}`,
-            `You may now import data by **merging** (adding imported XP to Sokora's XP) or by **overwriting** (removing Sokora's leveling data, then adding imported XP data). You can also review the JSON data that is to be imported, just in case.`,
-          ].join("\n\n"),
-        ),
-      );
+      const switchContainer = new ContainerBuilder()
+        .addActionRowComponents(
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setCustomId("back")
+              .setLabel("Return")
+              .setStyle(ButtonStyle.Secondary),
+          ),
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            [
+              `Thanks for switching to Sokora! We will import leveling info from **${bots.name}** that we can gather. This includes a total of **${levels.length} entries**.`,
+              `Data we can import from ${bots.name} is:\n${bots.data}`,
+              `You may now import data by **merging** (adding imported XP to Sokora's XP) or by **overwriting** (removing Sokora's leveling data, then adding imported XP data). You can also review the JSON data that is to be imported, just in case.`,
+            ].join("\n\n"),
+          ),
+        );
 
       const replyInteraction = modalInteraction ?? buttonInteraction;
       await safeReply({
@@ -178,6 +207,10 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       if (modalInteraction) await reply.delete();
       let content;
       switch (cID) {
+        case "back": {
+          await safeReply({ interaction, editOptions: { components: [container] } });
+          break;
+        }
         case "check": {
           const levelData = safeStringify(levels);
           const checkContainer = new ContainerBuilder().addTextDisplayComponents(
@@ -225,14 +258,10 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             },
           });
 
-          if (!interaction.guild || !interaction.guildId) return;
-          const difficulty = (await getSetting(
-            interaction.guild.id,
-            "leveling",
-            "difficulty",
-          )) as number;
+          if (!guild || !guildID) return;
+          const difficulty = (await getSetting(guildID, "leveling", "difficulty")) as number;
 
-          for (const user of interaction.guild.members.cache) {
+          for (const user of guild.members.cache) {
             if (user[1].user.bot) continue;
             const imported = levels.find(lev => lev.uid == user[1].id);
             if (!imported) {
@@ -242,9 +271,9 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
               continue;
             }
 
-            const previousXp = await getUserXp(interaction.guildId, user[1].id);
+            const previousXp = await getUserXp(guildID, user[1].id);
             const newXp = (cID == "merge" ? previousXp : 0) + imported.current_xp;
-            await setUserXp(interaction.guildId, user[1].id, newXp);
+            await setUserXp(guildID, user[1].id, newXp);
             res.push(
               `${user[1].user.username} updated from ${previousXp} XP (level ${calculateLevel({ xp: previousXp, difficulty })}) to **XP ${newXp} (level ${calculateLevel({ xp: newXp, difficulty })})**.`,
             );

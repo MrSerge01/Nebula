@@ -169,9 +169,9 @@ export async function errorEmbed(options: {
       container.addActionRowComponents(
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
+            .setCustomId("please")
             .setLabel("Report")
-            .setStyle(ButtonStyle.Primary)
-            .setCustomId("please"),
+            .setStyle(ButtonStyle.Primary),
         ),
       );
 
