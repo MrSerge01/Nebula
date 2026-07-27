@@ -1,19 +1,9 @@
-import { getNews, postNews, updateNews } from "database/news";
+import { postNews, updateNews } from "database/news";
 import { getSetting } from "database/settings";
-import {
-  ContainerBuilder,
-  MediaGalleryBuilder,
-  MediaGalleryItemBuilder,
-  TextDisplayBuilder,
-  type ChatInputCommandInteraction,
-  type Guild,
-  type Role,
-  type TextChannel,
-} from "discord.js";
+import type { ChatInputCommandInteraction, Guild, TextChannel } from "discord.js";
+import { newsEmbed } from "embeds/newsEmbed";
 import { channelCheck } from "./channelCheck";
-import { colorize, Sokolors } from "./colorize";
-import { mention } from "./mention";
-import { safeChannel, safeRole } from "./safeThings";
+import { safeChannel } from "./safeThings";
 
 /**
  * Sends news to a channel.
@@ -30,37 +20,12 @@ export async function sendChannelNews(
     title: string;
     body: string;
     author: string;
-    authorPFP?: string;
     id: number;
     imageURL?: string | null;
   },
   edit?: boolean,
 ): Promise<void> {
-  const { title, body, author, authorPFP, imageURL, id } = newsOptions;
-  const role = (await getSetting(guild.id, "news", "role")) as string;
-  const roleToSend: Role | null = role ? await safeRole(guild, role) : null;
-  const news = await getNews(guild.id, id);
-  const image = edit ? news?.imageURL : imageURL;
-  const container = new ContainerBuilder()
-    .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        `**Posted by ${author}${roleToSend ? ` for ${roleToSend}` : ""}**`,
-      ),
-      new TextDisplayBuilder().setContent(`## ${title}`),
-      new TextDisplayBuilder().setContent(body),
-    )
-    .setAccentColor(await colorize({ hue: Sokolors.Blue }));
-
-  if (image)
-    container.addMediaGalleryComponents(
-      new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(image)),
-    );
-
-  container.addTextDisplayComponents(
-    new TextDisplayBuilder().setContent(
-      `-# Latest from ${guild.name} • ID: ${id} • ${mention(edit ? news?.createdAt.valueOf()! : Date.now(), "DEFAULT_TIMESTAMP")}`,
-    ),
-  );
+  const { title, body, author, id, imageURL } = newsOptions;
 
   const channel = (await safeChannel(
     guild,
@@ -77,10 +42,13 @@ export async function sendChannelNews(
   )
     return;
 
-  const message = await channel.send({ components: [container], flags: "IsComponentsV2" });
+  const message = await channel.send({
+    components: [await newsEmbed(guild, { title, body, author, id, imageURL })],
+    flags: "IsComponentsV2",
+  });
   if (edit) {
     await updateNews(guild.id, id, title, body, message.id);
     return;
   }
-  await postNews(guild.id, title, body, author, authorPFP, message.id, imageURL, id);
+  await postNews(guild.id, title, body, author, message.id, imageURL, id);
 }

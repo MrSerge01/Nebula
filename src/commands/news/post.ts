@@ -57,7 +57,6 @@ export async function run(
       title,
       body,
       author: modalInteraction.user.displayName,
-      authorPFP: modalInteraction.user.avatarURL() ?? undefined,
       imageURL: modalInteraction.fields.getUploadedFiles("image")?.at(0)?.url ?? null,
       id: ((await getLatestNews(guild.id))[0]?.id ?? 0) + 1,
     });

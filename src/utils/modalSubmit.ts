@@ -15,7 +15,7 @@ export async function modalSubmit(
 ): Promise<ModalSubmitInteraction | undefined> {
   try {
     return await interaction.awaitModalSubmit({
-      time: 60_000,
+      time: 240_000,
       filter: m => m.user.id === interaction.user.id,
     });
   } catch {
