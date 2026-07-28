@@ -45,7 +45,9 @@ Follow to the next section to create a .env variable that'll let Sokora access t
 
 ### Running
 
-Just run `bun dev`.
+If running on your local hardware, just run `bun dev`.
+
+If you prefer to run the Docker container (which we'd actually recommend!), run `docker compose up --build --watch`. Or just `./run.sh` if on macOS/Linux.
 
 ## Contribution guide
 
@@ -53,13 +55,26 @@ A few, simple guidelines onto how to contribute to Sokora.
 
 ### Reminders
 
+Some things you should keep in mind at all times.
+
+- Ensure to run the static formatter and analyzer (via `bun run ql`) before committing.
+  - As a side note, **expect and ignore type errors in the specific `settingsEmbed.ts` file**.
 - Remember to commit changes to `bun.lock` file.
+- Do not repeat yourself, at all. Code duplication creates problems. Extract to functions.
+- Document via JSDoc anything that isn't self-explanatory and other developers will have to touch often (like utility functions or important parts of important files).
+
+Below, other things you should keep in mind when you're carrying specific tasks.
+
+- _I'm interacting with a setting that is specifically an ITERABLE OBJECT one._
+  - If you're defining it for the first time, add the property `$: { type: "TEXT", desc: "", val: "" }`.
+  - If you need to delete/reference a specific value, filter by `$`. It's a GUID.
+- _I'm finding a way for all settingsEmbed type errors to dissapear and everything to be typed._
+  - Choose a mansion you'd like us to buy for you.
 
 ### Code styling guidelines
 
 A few guides onto how code contributed to Sokora should look like.
 
-- Ensure to run the static formatter and analyzer (via `bun run ql`) before committing.
 - Use `camelCase` for both variables and function names.
 - Keep lines reasonably short, don't fear linebreaks. Of course, longer lines are valid where needed.
 - Use early returns to avoid nesting.

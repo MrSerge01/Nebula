@@ -67,11 +67,11 @@ export async function errorEmbed(options: {
   const error = errorType(options.error);
   const stack = error.stack;
 
-  function addContent(fwdContainer: boolean): string {
+  function addContent(shouldFwdContainer: boolean): string {
     const content = [];
     if (title) content.push(`**${title}**`);
     if (reason) content.push(reason);
-    if (!fwdContainer && !title && !reason) {
+    if (!shouldFwdContainer && !title && !reason) {
       content.push(
         "The bot has experienced an internal error.\nPretty please join the support server if you wish to report the issue! https://discord.gg/c6C25P4BuY",
       );
@@ -85,21 +85,21 @@ export async function errorEmbed(options: {
     return content.join("\n");
   }
 
-  function showErrors(container: ContainerBuilder, emojis: boolean): ContainerBuilder {
+  function showErrors(container: ContainerBuilder, shouldUseEmojis: boolean): ContainerBuilder {
     return container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         [
-          emojis ? "**💬 • Error message**" : "**error message**",
+          shouldUseEmojis ? "**💬 • Error message**" : "**error message**",
           `${codeBlock(error.message)}${fileName ? `in \`${fileName}\`` : ""}`,
         ].join("\n"),
       ),
       new TextDisplayBuilder().setContent(
         [
-          emojis ? "**📜 • Error stack**" : "**error stack**",
+          shouldUseEmojis ? "**📜 • Error stack**" : "**error stack**",
           stack
-            ? stack.length <= 2048
+            ? (stack.length <= 2048
               ? codeBlock(stack)
-              : "The error stacktrace is an attachment below due to it being too large."
+              : "The error stacktrace is an attachment below due to it being too large.")
             : "No error stacktrace.",
         ].join("\n"),
       ),
@@ -251,7 +251,7 @@ export async function errorEmbed(options: {
         const actualMediaGallery = media
           .filter(
             item =>
-              item.contentType?.startsWith("image/") || item.contentType?.startsWith("video/"),
+              item.contentType?.startsWith("image/") ?? item.contentType?.startsWith("video/"),
           )
           .map(image => new MediaGalleryItemBuilder().setURL(image.url))
           .toReversed();

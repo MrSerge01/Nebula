@@ -33,12 +33,12 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   )
     return;
 
-  const silent =
+  const isSilent =
     interaction.options.getBoolean("silent") ??
-    ((await getSetting(guild.id, "moderation", "silent")) as boolean);
+    (await getSetting(guild.id, "moderation", "silent"));
 
   await modEmbed(
-    { interaction, user, action: "Warned", dm: true, dbAction: "WARN", silent },
+    { interaction, user, action: "Warned", shouldDm: true, dbAction: "WARN", isSilent },
     reason,
   );
 }

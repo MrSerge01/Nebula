@@ -20,7 +20,7 @@ import { safeChannel, safeMember } from "./safeThings";
  * @param options Reply options of the log.
  * @param dm Whether or not should the bot send a DM to the user.
  * @param {{
-   silent: boolean;
+   isSilent: boolean;
    user: User;
    options: string | MessagePayload | MessageCreateOptions;
  }} dmOptions Options for sending a DM to the user.
@@ -29,9 +29,9 @@ import { safeChannel, safeMember } from "./safeThings";
 export async function logChannel(
   guild: Guild,
   options: string | MessagePayload | MessageCreateOptions,
-  dm?: boolean,
+  shouldDm?: boolean,
   dmOptions?: {
-    silent: boolean;
+    isSilent: boolean;
     user: User;
     options: string | MessagePayload | MessageCreateOptions;
   },
@@ -40,7 +40,7 @@ export async function logChannel(
   const logChannel = await getSetting(guild.id, "moderation", "channel");
 
   if (logChannel) {
-    channel = await safeChannel(guild, `${logChannel}`)
+    channel = await safeChannel(guild, logChannel)
       .then((channel: Channel | null) => {
         if (!channel?.isTextBased()) return null;
         return channel as TextChannel;
@@ -62,9 +62,9 @@ export async function logChannel(
       await channel.send(options);
   }
 
-  if (dm)
+  if (shouldDm)
     try {
-      if (!dmOptions || dmOptions.silent) return;
+      if (!dmOptions || dmOptions.isSilent) return;
 
       channel = await dmOptions.user.createDM().catch(() => null);
       if (!channel || !(await safeMember(guild, dmOptions.user.id)) || dmOptions.user.bot) return;

@@ -2,7 +2,7 @@ import eslint from "@eslint/js";
 import unicorn from "eslint-plugin-unicorn";
 import { defineConfig, globalIgnores } from "eslint/config";
 import tseslint from "typescript-eslint";
-import { rule } from "./ql/bracketless-newline.ts";
+import { bracketlessNewline } from "./ql/bracketless-newline.ts";
 
 export default defineConfig(
   globalIgnores(["eslint.config.js"]),
@@ -14,7 +14,7 @@ export default defineConfig(
     plugins: {
       local: {
         rules: {
-          "no-bracketless-if-without-blank-line": rule,
+          "no-bracketless-if-without-blank-line": bracketlessNewline,
         },
       },
     },
@@ -92,10 +92,15 @@ export default defineConfig(
       "@typescript-eslint/no-this-alias": "error",
       "@typescript-eslint/no-import-type-side-effects": "error",
       "unicorn/no-useless-undefined": "error",
-      "unicorn/prevent-abbreviations": [
+      "unicorn/max-nested-calls": "off",
+      "unicorn/no-unsafe-string-replacement": "off",
+      "unicorn/no-top-level-side-effects": "off",
+      "unicorn/prefer-await": "off", // i actually want to enable this, but requires refactors i'm lazy for
+      "unicorn/name-replacements": [
         "error",
         {
           replacements: {
+            mod: false,
             db: false,
             mod: false,
             def: false,
@@ -103,16 +108,7 @@ export default defineConfig(
           },
         },
       ],
-      "unicorn/import-style": [
-        "error",
-        {
-          styles: {
-            "node:path": {
-              named: true,
-            },
-          },
-        },
-      ],
+      "unicorn/import-style": "error",
     },
   },
 );

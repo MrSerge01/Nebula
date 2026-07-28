@@ -6,7 +6,7 @@ import {
   type Client,
 } from "discord.js";
 import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 type RunFunction = (interaction: ChatInputCommandInteraction) => Promise<unknown>;
@@ -16,19 +16,43 @@ interface Command {
 }
 
 export const commands: (Command & { data: SlashCommandBuilder })[] = [];
-export const subCommands: (Command & {
-  data: SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder;
-})[] = [];
+export const subCommands: (Command & { data: Exclude<Command["data"], SlashCommandBuilder> })[] =
+  [];
 
-const commandsPath = join(process.cwd(), "src", "commands");
+const commandsPath = path.join(process.cwd(), "src", "commands");
 
-function pushCommand(array: Command[], command: Command): number {
-  return array.push({ data: command.data, run: command.run });
+function pushCommand(array: Command[], command: Command): void {
+  array.push({ data: command.data, run: command.run });
 }
 
 function pushSubCommand(run: RunFunction[], command: Command): void {
   run.push(command.run);
   pushCommand(subCommands, command);
+}
+
+async function addSubcommandGroups(
+  name: string,
+  subName: string,
+  run: RunFunction[],
+  command: SlashCommandBuilder,
+): Promise<void> {
+  const subCommandGroup = new SlashCommandSubcommandGroupBuilder()
+    .setName(subName.toLowerCase()) // No need to remove .ts since it isn't a .ts file
+    .setDescription("This subcommand group has no description.");
+
+  const groupFiles = readdirSync(path.join(commandsPath, name, subName), {
+    withFileTypes: true,
+  });
+
+  for (const subCommandGroupFile of groupFiles) {
+    if (!subCommandGroupFile.isFile()) continue; // There cannot be subcommand groups of subcommand groups
+    const subCommand = (await import(
+      pathToFileURL(path.join(commandsPath, name, subName, subCommandGroupFile.name)).toString()
+    )) as Command & { data: SlashCommandSubcommandBuilder };
+    subCommandGroup.addSubcommand(subCommand.data);
+    pushSubCommand(run, subCommand);
+  }
+  command.addSubcommandGroup(subCommandGroup);
 }
 
 async function createSubCommand(name: string): Promise<Command> {
@@ -40,18 +64,19 @@ async function createSubCommand(name: string): Promise<Command> {
 
   const subNames: string[] = [];
   // Base executable subcommands first, then subcommands groups
-  const sortedSubFiles = readdirSync(join(commandsPath, name), { withFileTypes: true }).toSorted(
-    (a, b) =>
-      a.isDirectory() == b.isDirectory()
-        ? a.name.localeCompare(b.name)
-        : +a.isDirectory() - +b.isDirectory(),
+  const sortedSubFiles = readdirSync(path.join(commandsPath, name), {
+    withFileTypes: true,
+  }).toSorted((a, b) =>
+    a.isDirectory() == b.isDirectory()
+      ? a.name.localeCompare(b.name)
+      : +a.isDirectory() - +b.isDirectory(),
   );
 
   for (const subCommandFile of sortedSubFiles) {
     const subName = subCommandFile.name;
     if (subCommandFile.isFile()) {
       const subCommand = (await import(
-        pathToFileURL(join(commandsPath, name, subName)).toString()
+        pathToFileURL(path.join(commandsPath, name, subName)).toString()
       )) as Command & { data: SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder };
       if (subCommand.data instanceof SlashCommandSubcommandBuilder)
         command.addSubcommand(subCommand.data);
@@ -69,21 +94,8 @@ async function createSubCommand(name: string): Promise<Command> {
       );
       continue;
     }
-    const subCommandGroup = new SlashCommandSubcommandGroupBuilder()
-      .setName(subName.toLowerCase()) // No need to remove .ts since it isn't a .ts file
-      .setDescription("This subcommand group has no description.");
 
-    for (const subCommandGroupFile of readdirSync(join(commandsPath, name, subName), {
-      withFileTypes: true,
-    })) {
-      if (!subCommandGroupFile.isFile()) continue; // There cannot be subcommand groups of subcommand groups
-      const subCommand = (await import(
-        pathToFileURL(join(commandsPath, name, subName, subCommandGroupFile.name)).toString()
-      )) as Command & { data: SlashCommandSubcommandBuilder };
-      subCommandGroup.addSubcommand(subCommand.data);
-      pushSubCommand(run, subCommand);
-    }
-    command.addSubcommandGroup(subCommandGroup);
+    await addSubcommandGroups(name, subName, run, command);
   }
 
   return { data: command, run: run[0] };
@@ -102,7 +114,7 @@ async function loadCommands(): Promise<Command[]> {
     if (commandFile.isFile()) {
       pushCommand(
         commands,
-        (await import(pathToFileURL(join(commandsPath, name)).toString())) as Command,
+        (await import(pathToFileURL(path.join(commandsPath, name)).toString())) as Command,
       );
       continue;
     }

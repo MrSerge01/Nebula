@@ -40,8 +40,8 @@ async function genChangelog(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...Object.keys(changelog.body).map(v =>
           new ButtonBuilder()
-            .setCustomId(v + "+" + changelog.ver)
             .setLabel(v)
+            .setCustomId(v + "+" + changelog.ver)
             .setStyle(
               {
                 Fixed: ButtonStyle.Secondary,
@@ -59,9 +59,9 @@ async function genChangelog(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...list.map(v =>
           new ButtonBuilder()
-            .setCustomId(v.ver)
             .setLabel(v.ver)
-            .setStyle(v.minor ? ButtonStyle.Primary : ButtonStyle.Secondary)
+            .setCustomId(v.ver)
+            .setStyle(v.isMinor ? ButtonStyle.Primary : ButtonStyle.Secondary)
             .setDisabled(v.ver === changelog.ver),
         ),
       ),
@@ -78,9 +78,8 @@ async function genChangelog(
 
 function getDefaultCategoryToView(changelog: ReturnType<typeof getChangelog>): Label {
   if (changelog.body.Added) return "Added";
-  else if (changelog.body.Changed) return "Changed";
-  else if (changelog.body.Removed) return "Removed";
-  else return "Fixed";
+  if (changelog.body.Changed) return "Changed";
+  return changelog.body.Removed ? "Removed" : "Fixed";
 }
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -103,8 +102,8 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const collector = reply.createMessageComponentCollector({ time: 60_000 });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-
     collector.resetTimer({ time: 60_000 });
+
     const cID = buttonInteraction.customId;
     if (cID == "please") return;
 

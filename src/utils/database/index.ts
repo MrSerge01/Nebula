@@ -11,18 +11,18 @@ const preferredHashType = "sha1";
 /**
  * Retrieves the ACTUAL values from a query result because PostgreSQL adds unwanted data at the end
  * @param queryResult The returned object from a bun SQL query without using .values()
- * @param singles If true when selecting only one column, returns an array of only the column values instead. Else, returns like normal
- * @returns An array containing the objects (or direct values if singles) of the query result
+ * @param requiresSingles If true when selecting only one column, returns an array of only the column values instead. Else, returns like normal
+ * @returns An array containing the objects (or direct values if `requiresSingles`) of the query result
  */
 export function values<T = Record<string, unknown>>(
   queryResult: Record<string, unknown>,
-  singles?: boolean,
+  requiresSingles?: boolean,
 ): T[] {
   const actualValues: Record<string, T>[] = Object.values(queryResult).filter(
     v => v !== null && typeof v === "object" && !Array.isArray(v),
   ) as Record<string, T>[];
   return (
-    singles && actualValues.length > 0 && Object.values(actualValues[0]).length === 1
+    requiresSingles && actualValues.length > 0 && Object.values(actualValues[0]).length === 1
       ? actualValues.map(v => Object.values(v)[0])
       : actualValues
   ) as T[];
@@ -43,7 +43,7 @@ async function getHash(file: string, hashAlgo?: string): Promise<string> {
 const migrationFiles = fs
   .readdirSync(migrationsDirectory)
   .filter(f => f.endsWith(".sql"))
-  .toSorted()
+  .toSorted((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
   .map(f => `${migrationsDirectory}/${f}`);
 
 const migrationsEntries = await Promise.all(
@@ -67,8 +67,9 @@ async function applyMigrations(after?: string): Promise<void> {
   console.log("Database updated successfully");
 }
 
-export async function updateDatabase(): Promise<void> {
+export async function updateDatabase(shouldForce?: boolean): Promise<void> {
   try {
+    if (shouldForce) throw new Error("force");
     const DBversion = values<string>(
       await db`SELECT value FROM _info WHERE "key" = 'version';`,
       true,

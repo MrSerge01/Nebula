@@ -7,7 +7,7 @@ import {
 } from "database/moderation";
 import type { TypeOfDefinition } from "database/types";
 import {
-  Client,
+  type Client,
   ContainerBuilder,
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
@@ -25,10 +25,10 @@ import { mention } from "utils/mention";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { randomize } from "utils/randomize";
-import { safeMember, safeReply, safeUser } from "utils/safeThings";
+import { safeEdit, safeMember, safeUser } from "utils/safeThings";
 
 async function generateContainer(options: {
-  client: Client<boolean>;
+  client: Client;
   cases: TypeOfDefinition<Case>[];
   page: number;
   type: ModType | null;
@@ -88,7 +88,7 @@ async function generateContainer(options: {
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `## ${id ? capitalize(displayedCases[0].type?.toLowerCase()) : type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length)} ${id ? `#${id}` : user ? `of ${user.username}` : "in the server"}`,
+        `## ${id ? capitalize(displayedCases[0].type?.toLowerCase()) : (type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length))} ${id ? `#${id}` : (user ? `of ${user.username}` : "in the server")}`,
       ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
@@ -199,7 +199,7 @@ export async function run(
     if (buttonInteraction.customId == "please") return;
 
     page = await handlePages({ i: buttonInteraction, page, pages, collector });
-    await safeReply({
+    await safeEdit({
       interaction: buttonInteraction,
       editOptions: {
         components: [

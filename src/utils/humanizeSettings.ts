@@ -31,7 +31,7 @@ export function humanizeSettings(string: string): string {
  */
 export function humanizeType(type: FieldData): string {
   if (type == "BOOL") return "boolean";
-  if (type == "REWARD") return "level reward";
   if (type == "INTEGER") return "number";
-  return type.toLowerCase();
+  if (type == "mINTEGER") return "number (optional)";
+  return type.startsWith("m") ? type.toLowerCase().slice(1) + " (optional)" : type.toLowerCase();
 }

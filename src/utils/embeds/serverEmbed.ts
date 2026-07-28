@@ -7,12 +7,12 @@ import {
   GuildVerificationLevel,
   SectionBuilder,
   SeparatorBuilder,
-  TextChannel,
   TextDisplayBuilder,
   ThumbnailBuilder,
   type Guild,
   type NewsChannel,
   type StageChannel,
+  type TextChannel,
   type VoiceChannel,
 } from "discord.js";
 import { logChannel } from "utils/logChannel";
@@ -22,17 +22,17 @@ import { colorize, Sokolors } from "../colorize";
 import { mention } from "../mention";
 import { pluralOrNot } from "../pluralOrNot";
 
-type Options = {
+interface Options {
   guild: Guild;
   invite?: {
     show: boolean;
-    channel: string | null;
+    channel: string | undefined;
   };
   roles?: boolean;
-  disableButtons?: boolean;
+  shouldDisableButtons?: boolean;
   page?: number;
   pages?: number;
-};
+}
 
 /**
  * Gives you a CONTAINER containing information about the guild.
@@ -40,7 +40,7 @@ type Options = {
  * @returns Container that contains the guild info.
  */
 export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
-  const { page, pages, guild, invite, disableButtons } = options;
+  const { page, pages, guild, invite, shouldDisableButtons } = options;
   const { premiumTier: boostTier, premiumSubscriptionCount: boostCount } = guild;
   const boosters = guild.members.cache.filter(member => member.premiumSince);
   const client = guild.client.user.id;
@@ -53,6 +53,7 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
   const rolesLength = sortedRoles.length;
 
   const channels = guild.channels.cache;
+
   const channelSizes = {
     text: channels.filter(
       channel =>
@@ -87,7 +88,7 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
 
   if (guild.nsfwLevel != GuildNSFWLevel.Default)
     safetyValues.push(
-      `**${guild.nsfwLevel == GuildNSFWLevel.Explicit ? "Explicit" : guild.nsfwLevel == GuildNSFWLevel.Safe ? "Safe" : "Age restricted"}**`,
+      `**${guild.nsfwLevel == GuildNSFWLevel.Explicit ? "Explicit" : (guild.nsfwLevel == GuildNSFWLevel.Safe ? "Safe" : "Age restricted")}**`,
     );
 
   const statValues: (string | null)[] = [
@@ -164,7 +165,7 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
         .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
       await logChannel(guild, { components: [errorContainer], flags: "IsComponentsV2" }, true, {
-        silent: false,
+        isSilent: false,
         user: owner.user,
         options: { components: [container], flags: "IsComponentsV2" },
       });
@@ -211,7 +212,7 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
   }
 
   if (pages && pages > 1)
-    container.addActionRowComponents(pagedButtons(pages, page, disableButtons));
+    container.addActionRowComponents(pagedButtons(pages, page, shouldDisableButtons));
 
   container
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# Server ID: ${guild.id}`))

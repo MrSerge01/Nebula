@@ -29,30 +29,30 @@ interface HandlePagesOptions {
  * Includes: button to go left, button to jump to a page (modal!), button to go right.
  * @param pages Total amount of pages.
  * @param argumentPage Page to skip to.
- * @param disabled Disables the buttons if true.
+ * @param isDisabled Disables the buttons if true.
  * @returns Action row containing the pagination buttons.
  */
 export function pagedButtons(
   pages: number,
   argumentPage?: number,
-  disabled?: boolean,
+  isDisabled?: boolean,
 ): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId("left")
       .setEmoji(replace("(leftArrow)"))
       .setStyle(ButtonStyle.Primary)
-      .setDisabled(disabled ?? false),
+      .setDisabled(isDisabled ?? false),
     new ButtonBuilder()
       .setCustomId("pagecount")
       .setLabel(`${argumentPage ? argumentPage + 1 : 1} of ${pages}`)
       .setStyle(ButtonStyle.Secondary)
-      .setDisabled(disabled ?? false),
+      .setDisabled(isDisabled ?? false),
     new ButtonBuilder()
       .setCustomId("right")
       .setEmoji(replace("(rightArrow)"))
       .setStyle(ButtonStyle.Primary)
-      .setDisabled(disabled ?? false),
+      .setDisabled(isDisabled ?? false),
   );
 }
 

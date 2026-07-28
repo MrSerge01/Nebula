@@ -61,7 +61,7 @@ export async function run(
       }
     }
 
-    const configuration: ChartConfiguration = {
+    const config: ChartConfiguration = {
       type: "line",
       data: {
         datasets: [
@@ -118,10 +118,9 @@ export async function run(
       },
     };
 
-    const attachment = new AttachmentBuilder(
-      await chartJSNodeCanvas.renderToBuffer(configuration),
-      { name: "graph.png" },
-    );
+    const attachment = new AttachmentBuilder(await chartJSNodeCanvas.renderToBuffer(config), {
+      name: "graph.png",
+    });
     const container = new ContainerBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent("## Function graph"),

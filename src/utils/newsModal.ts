@@ -1,4 +1,4 @@
-import { getNews } from "database/news";
+import type { getNews } from "database/news";
 import {
   FileUploadBuilder,
   LabelBuilder,

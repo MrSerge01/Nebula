@@ -37,3 +37,13 @@ export function mention(who: string | number, type: Mentionable): string {
     }
   }
 }
+
+/**
+ * Reverts mentions (except timestamps, for now)
+ *
+ * @param mnt Mention
+ * @returns
+ */
+export function unmention(mnt: string): string {
+  return mnt.replace("<", "").replace(">", "").replace("#", "").replace("@", "").replace("&", "");
+}

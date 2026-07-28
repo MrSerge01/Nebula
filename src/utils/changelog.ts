@@ -1,7 +1,7 @@
 type TDate = `${number}/${number}/${number}`;
 type TVersion = TDate | "Work in progress";
 interface TParsedVersion {
-  minor: boolean;
+  isMinor: boolean;
   ver: string;
   codename: null | string;
   date: TVersion;
@@ -44,10 +44,10 @@ export function getChangelog(version: string): TParsedChangelog {
 }
 
 function parseVersion(string_: string): TParsedVersion {
-  const [version, codename, date] = string_.replace("## ", "").split(" - ");
-  const minor = version.endsWith(".0");
-  if (!date) return { ver: version, date: codename as TDate, minor, codename: null };
-  return { ver: version, date: date as TDate, codename, minor };
+  const [version, codename, date] = string_.replace("## ", "").split(" - ", 3);
+  const isMinor = version.endsWith(".0");
+  if (!date) return { ver: version, date: codename as TDate, isMinor, codename: null };
+  return { ver: version, date: date as TDate, codename, isMinor };
 }
 
 /**
@@ -55,14 +55,8 @@ function parseVersion(string_: string): TParsedVersion {
  * @returns An array of objects telling you the version, the date, and whether it's a minor or a patch release (SemVer-wise).
  */
 export function getVersions(): TParsedVersion[] {
-  const res: TParsedVersion[] = [];
-
-  changelog
+  return changelog
     .split("\n")
     .filter(s => s.startsWith("## "))
-    .map(s => {
-      res.push(parseVersion(s));
-    });
-
-  return res;
+    .map(s => parseVersion(s));
 }

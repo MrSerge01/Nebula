@@ -12,6 +12,7 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { safeChannel, safeMember } from "utils/safeThings";
+import { isInteractionSafe } from "utils/types";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("remove")
@@ -26,8 +27,10 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
-  const guild = interaction.guild;
-  if (!guild || !(await safeMember(guild, interaction.user.id)).permissions.has("ManageGuild"))
+  if (
+    !isInteractionSafe(interaction) ||
+    !(await safeMember(interaction.guild, interaction.user.id)).permissions.has("ManageGuild")
+  )
     return await errorEmbed({
       interaction,
       title: "You can't execute this command.",
@@ -43,17 +46,17 @@ export async function run(
         "You somehow ran the command without an ID being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
     });
 
-  const news = await getNews(guild.id, id);
+  const news = await getNews(interaction.guild.id, id);
   if (!news)
     return await errorEmbed({ interaction, title: "The specified news post doesn't exist." });
 
   const newsChannel = (await safeChannel(
-    guild,
-    ((await getSetting(guild.id, "news", "channel")) as string) ?? interaction.channel?.id,
+    interaction.guild,
+    (await getSetting(interaction.guild.id, "news", "channel")) ?? interaction.channel.id,
   )) as TextChannel;
 
   if (newsChannel && news.messageID) await newsChannel.messages.delete(news.messageID);
-  await deleteNews(guild.id, id);
+  await deleteNews(interaction.guild.id, id);
   await interaction.reply({
     components: [
       new ContainerBuilder()

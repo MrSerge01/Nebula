@@ -1,4 +1,4 @@
-import { resetSetting } from "database/settings";
+import { resetSetting, type TS } from "database/settings";
 import {
   ChannelType,
   ContainerBuilder,
@@ -21,7 +21,7 @@ import { mention } from "./mention";
 export async function channelCheck(options: {
   channel: Channel | GuildBasedChannel | null;
   setting: {
-    category: string;
+    category: keyof TS;
     setting: string;
   };
   permType: "View" | "Send";
@@ -31,6 +31,7 @@ export async function channelCheck(options: {
 
   async function reset(): Promise<boolean> {
     await dm?.send({ components: [container], flags: "IsComponentsV2" });
+    // @ts-expect-error [TODO] properly type channelCheck.setting
     await resetSetting(guild.id, setting.category, setting.setting);
     return false;
   }
@@ -44,9 +45,9 @@ export async function channelCheck(options: {
       new TextDisplayBuilder().setContent("## A channel is misconfigured in your server!"),
       new TextDisplayBuilder().setContent(
         channel
-          ? isValid(channel)
+          ? (isValid(channel)
             ? `Sokora needs ${permType == "View" ? "**View Channel**" : "both **View Channel** and **Send Messages**"} permission in ${mention(channel.id, "CHANNEL")}, requested by setting \`${setting.category}.${setting.setting}\`, but it doesn't have it anymore. **This setting has been reset to default.**`
-            : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that is neither a text nor an announcements channel! We cannot send messages to ${mention(channel.id, "CHANNEL")}. **This setting has been reset to default.**`
+            : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that is neither a text nor an announcements channel! We cannot send messages to ${mention(channel.id, "CHANNEL")}. **This setting has been reset to default.**`)
           : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that no longer exists! **This setting has been reset to default.**`,
       ),
       new TextDisplayBuilder().setContent(`-# This is coming from ${guild.name} • ID: ${guild.id}`),

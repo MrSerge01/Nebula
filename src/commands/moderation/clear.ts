@@ -75,12 +75,13 @@ export async function run(
     return await errorEmbed({ interaction, title: "You must clear at least 1 message." });
 
   const targetUser = interaction.options.getUser("user") ?? undefined;
-  let deletedAmount = 0;
   if (!channel.isTextBased() || channel.isDMBased())
     return await errorEmbed({
       interaction,
       title: "You have provided a channel that can't have messages to clear.",
     });
+
+  let deletedAmount = 0;
 
   try {
     if (targetUser) {
@@ -108,7 +109,12 @@ export async function run(
         });
     }
   } catch (error) {
-    return await errorEmbed({ interaction, error, forward: true, fileName: "clear" });
+    return await errorEmbed({
+      interaction,
+      error,
+      forward: true,
+      fileName: "clear",
+    });
   }
 
   await modEmbed({

@@ -1,8 +1,7 @@
 import type { Satisfies } from "utils/types";
 import { db, values } from ".";
-import { dekominator } from "../kominator";
-import { getSetting, setSetting } from "./settings";
-import type { LevelReward, TableDefinition, TypeOfDefinition } from "./types";
+import { type defLeveling, getSetting, setSetting } from "./settings";
+import type { SqlObjectType, TableDefinition, TypeOfDefinition } from "./types";
 
 type Def = Satisfies<
   TableDefinition,
@@ -45,7 +44,7 @@ export async function getGuildLeaderboard(
     await db`SELECT * FROM leveling WHERE "guild" = ${guildID};`,
   );
 
-  const difficulty = (await getSetting(guildID, "leveling", "difficulty")) as number;
+  const difficulty = await getSetting(guildID, "leveling", "difficulty");
   return xpData.map(x => {
     return { ...x, level: calculateLevel({ xp: x.xp, difficulty }) };
   });
@@ -67,45 +66,51 @@ export function calculateLevel(argument: { difficulty: number; xp: number }): nu
 }
 
 export async function getXpForNextLevel(guildID: string, userID: string): Promise<number> {
-  const difficulty = (await getSetting(guildID, "leveling", "difficulty")) as number;
+  const difficulty = await getSetting(guildID, "leveling", "difficulty");
   return formula(
     difficulty,
     calculateLevel({ difficulty, xp: await getUserXp(guildID, userID) }) + 1,
   );
 }
 
-export async function getLevelRewards(guildID: string): Promise<LevelReward[] | null> {
-  const content = (await getSetting(guildID, "leveling", "rewards")) as string[];
-  if (!content) return null;
-  return content.map(s => {
-    const channel = s.includes("#");
-    const [level, id] = s.split(channel ? "#" : "@");
-    return { level: Number(level), id, channel };
-  });
+type LevelReward = SqlObjectType<(typeof defLeveling)["rewards"]["properties"]>;
+type LevelReward$Less = Omit<LevelReward, "$">;
+
+export async function getLevelRewards(guildID: string): Promise<LevelReward[]> {
+  const rewards = await getSetting(guildID, "leveling", "rewards");
+  if (!rewards) return [];
+  return rewards;
 }
 
-export async function addLevelRewards(guildID: string, rewards: LevelReward[]): Promise<void> {
-  const encodedRewards = dekominator(
-    rewards.map(reward => `${reward.level}${reward.channel ? "#" : "@"}${reward.id}`),
-  );
-  const content = (await getSetting(guildID, "leveling", "rewards")) as string[];
-  if (!content) {
-    await setSetting(guildID, "leveling", "rewards", encodedRewards);
+/**
+ * Shorthand for adding level rewards to DB.
+ * @param guildID
+ * @param rewards Array of constructed reward objects, without GUID.
+ */
+export async function addLevelRewards(guildID: string, rewards: LevelReward$Less[]): Promise<void> {
+  const content = await getLevelRewards(guildID);
+  const properRewards: LevelReward[] = rewards.map(r => {
+    return { $: Bun.randomUUIDv7(), ...r };
+  });
+  if (content.length === 0) {
+    // :sob:
+    await setSetting(guildID, "leveling", "rewards", properRewards);
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-misused-spread
-  await setSetting(guildID, "leveling", "rewards", dekominator([...encodedRewards, ...content]));
+  await setSetting(guildID, "leveling", "rewards", [...content, ...properRewards]);
 }
 
+/**
+ * Shorthand for deleting rewards from the DB.
+ * @param guildID
+ * @param rewards Array of constructed reward objects with GUID.
+ */
 export async function removeLevelRewards(guildID: string, rewards: LevelReward[]): Promise<void> {
-  const encodedRewards = new Set(
-    rewards.map(reward => `${reward.level}${reward.channel ? "#" : "@"}${reward.id}`),
-  );
-  const content = (await getSetting(guildID, "leveling", "rewards")) as string[];
+  const content = await getLevelRewards(guildID);
   if (!content) return;
   const newRewards = [];
-  for (const reward of content) if (!encodedRewards.has(reward)) newRewards.push(reward);
+  for (const reward of content) if (rewards.every(r => r.$ != reward.$)) newRewards.push(reward);
 
-  await setSetting(guildID, "leveling", "rewards", dekominator(newRewards));
+  await setSetting(guildID, "leveling", "rewards", newRewards);
 }

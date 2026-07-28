@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { commands } from "handlers/commands";
-import { CANARY } from "src/canary";
+import { IS_CANARY } from "src/canary";
 import { colorize, Sokolors } from "utils/colorize";
 import { replace } from "utils/replace";
 import { safeAlertChannel } from "utils/safeThings";
@@ -27,7 +27,7 @@ export default (async function run(guild) {
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(`## Welcome to ${client.user.username}!`),
       new TextDisplayBuilder().setContent(
-        CANARY
+        IS_CANARY
           ? [
               "## Hey!! You are running **Sokora Canary**!",
               "You probably already know what Sokora is so we'll skip the welcome text.\n",

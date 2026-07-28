@@ -1,7 +1,7 @@
 import { Api } from "@top-gg/sdk";
 import { Chart, registerables } from "chart.js";
 import { updateDatabase } from "database/index";
-import { getUserSettingsTable, setUserSetting } from "database/userSettings";
+import { getSettingsTable, setSetting } from "database/settings";
 import {
   ActivityType,
   Client,
@@ -11,15 +11,14 @@ import {
   TextDisplayBuilder,
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
-import ms from "enhanced-ms";
 import { registerGuildCommands } from "handlers/commands";
 import { loadEasterEggs, loadEvents } from "handlers/events";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { safeAlertChannel, safeUser } from "utils/safeThings";
-import type { GHCommit } from "utils/types";
 import { rescheduleUnbans } from "utils/unbanScheduler";
-import { CANARY } from "./canary";
+import { IS_CANARY } from "./canary";
+import type { GHCommit } from "utils/types";
 
 export const client = new Client({
   presence: {
@@ -48,14 +47,17 @@ client.once("clientReady", async () => {
         await topgg.postStats({ serverCount: (await client.guilds.fetch()).size });
         console.log("Posted statistics to top.gg!");
       } catch (error) {
-        console.error(`Failed to start top.gg autoposter: ${error}`);
+        console.error(`Failed to start top.gg auto-poster: ${error}`);
       }
 
-      for (const user of new Set(
-        (await getUserSettingsTable("topgg", "remind"))
+      const users = new Set(
+        (await getSettingsTable("topgg", "remind"))
           ?.filter(index => index.value == "1")
-          .map(index => index.userID.replaceAll('"', "")),
-      ))
+          // YES THIS IS BAD, SORRY
+          .map(index => (index as unknown as { userID: string }).userID.replaceAll('"', "")),
+      );
+
+      for (const user of users)
         try {
           if (await topgg.hasVoted(user)) continue;
 
@@ -74,11 +76,12 @@ client.once("clientReady", async () => {
             forward: true,
             fileName: "bot",
           });
-          await setUserSetting(user, "topgg", "remind", false);
+          await setSetting(user, "topgg", "remind", false);
         }
-    }, ms("6h"));
+      // 21600000 ms == 6 h
+    }, 21_600_000);
 
-  await updateDatabase(); // Needs to be executed before anything else (since some things like rescheduleUnbans needs a DB in the first place)
+  await updateDatabase(process.argv.includes("force-db-reset")); // Needs to be executed before anything else (since some things like rescheduleUnbans needs a DB in the first place)
   await Promise.all([
     loadEvents(client),
     loadEasterEggs(),
@@ -88,13 +91,12 @@ client.once("clientReady", async () => {
     console.log(
       Math.random() < 0.002
         ? "こんにちは! (konichi whats upppppppp)"
-        : CANARY
+        : (IS_CANARY
           ? "ちーっす Canary!"
-          : "ちーっす！",
+          : "ちーっす！"),
     );
   });
-
-  if (CANARY) {
+  if (IS_CANARY) {
     // 43200000 is 12 h in ms
     const user = client.user;
     const yesterday = new Date(Date.now() - 1_209_600_000);

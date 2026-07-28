@@ -1,7 +1,7 @@
 services:
   sokora:
     build: .
-    container_name: sokora # rename to something else if ur on canary
+    container_name: sokora # rename to something else if you're on canary
     restart: always
     volumes:
       - ./data.db:/app/data.db

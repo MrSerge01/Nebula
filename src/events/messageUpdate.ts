@@ -89,7 +89,7 @@ export default (async function run(oldMessage, newMessage) {
     if (thumbnail != null) mediaFiles.push(thumbnail);
     if (image != null) mediaFiles.push(image);
     if (video != null) mediaFiles.push(video);
-    if (mediaFiles.length >= 1)
+    if (mediaFiles.length > 0)
       container.addMediaGalleryComponents(
         new MediaGalleryBuilder().addItems(
           mediaFiles.map(url => new MediaGalleryItemBuilder().setURL(url)),

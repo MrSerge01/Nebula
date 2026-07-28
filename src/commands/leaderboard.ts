@@ -11,7 +11,7 @@ import {
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { handlePages, pagedButtons } from "utils/pagination";
-import { safeReply, safeUser } from "utils/safeThings";
+import { safeEdit, safeUser } from "utils/safeThings";
 
 export const data = new SlashCommandBuilder()
   .setName("leaderboard")
@@ -43,7 +43,7 @@ export async function run(
   const pages = Math.ceil(leaderboardData.length / usersPerPage);
   let page = Math.max(0, Math.min(interaction.options.getNumber("page") ?? 0, pages) - 1);
 
-  const generateContainer = async (disabled: boolean): Promise<ContainerBuilder> => {
+  const generateContainer = async (isDisabled: boolean): Promise<ContainerBuilder> => {
     const start = page * usersPerPage;
     const pageData = leaderboardData.slice(start, start + usersPerPage);
     const content = [];
@@ -57,7 +57,7 @@ export async function run(
       );
 
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content.join("\n")));
-    if (pages > 1) container.addActionRowComponents(pagedButtons(pages, page, disabled));
+    if (pages > 1) container.addActionRowComponents(pagedButtons(pages, page, isDisabled));
     return container;
   };
 
@@ -74,7 +74,7 @@ export async function run(
     if (buttonInteraction.customId == "please") return;
 
     page = await handlePages({ i: buttonInteraction, page, pages, collector });
-    await safeReply({
+    await safeEdit({
       interaction: buttonInteraction,
       editOptions: { components: [await generateContainer(false)] },
     });

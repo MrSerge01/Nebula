@@ -12,7 +12,6 @@ import {
   type InteractionEditReplyOptions,
   type InteractionReplyOptions,
   type InteractionResponse,
-  type InteractionUpdateOptions,
   type Message,
   type MessagePayload,
   type ModalSubmitInteraction,
@@ -98,24 +97,43 @@ export async function safeReply(options: {
     | ButtonInteraction
     | AnySelectMenuInteraction
     | ModalSubmitInteraction;
-  replyOptions?: string | MessagePayload | InteractionReplyOptions;
-  editOptions?: string | MessagePayload | InteractionEditReplyOptions;
-}): Promise<Message | InteractionResponse | undefined> {
-  const { interaction, replyOptions, editOptions } = options;
+  replyOptions: string | MessagePayload | InteractionReplyOptions;
+}): Promise<Message | InteractionResponse> {
+  const { interaction, replyOptions } = options;
 
-  if (interaction.replied || interaction.deferred) {
-    if (editOptions) return await interaction.editReply(editOptions);
-    if (replyOptions) return await interaction.followUp(replyOptions);
-  }
+  if (interaction.replied || interaction.deferred) return await interaction.followUp(replyOptions);
 
-  if (interaction.isButton() || interaction.isAnySelectMenu()) {
-    if (editOptions)
-      return await interaction.update((replyOptions ?? editOptions) as InteractionUpdateOptions);
+  if (interaction.isButton() || interaction.isAnySelectMenu())
+    return await interaction.reply(replyOptions);
 
-    if (replyOptions) return await interaction.reply(replyOptions);
-  }
+  return await interaction.reply(replyOptions);
+}
 
-  if (replyOptions) return await interaction.reply(replyOptions);
+/**
+ * Properly handles editing the response/follow up to an interaction.
+ * @param {{
+ *   interaction: ChatInputCommandInteraction | ButtonInteraction | AnySelectMenuInteraction | ModalSubmitInteraction;
+ *   replyOptions?: string | MessagePayload | InteractionReplyOptions;
+ *   editOptions?: string | MessagePayload | InteractionEditReplyOptions;
+ * }} options Options.
+ * @returns {(Promise<Message<boolean> | InteractionResponse<boolean>>)}
+ */
+export async function safeEdit(options: {
+  interaction:
+    | ChatInputCommandInteraction
+    | ButtonInteraction
+    | AnySelectMenuInteraction
+    | ModalSubmitInteraction;
+  editOptions: string | MessagePayload | InteractionEditReplyOptions;
+}): Promise<Message | InteractionResponse> {
+  const { interaction, editOptions } = options;
+
+  if (interaction.replied || interaction.deferred) return await interaction.editReply(editOptions);
+
+  if (interaction.isButton() || interaction.isAnySelectMenu())
+    return await interaction.update(editOptions);
+
+  throw new Error("Should've probably used safeReply instead of safeEdit.");
 }
 
 /**
@@ -125,7 +143,7 @@ export async function safeReply(options: {
  */
 export function safeAlertChannel(guild: Guild): TextChannel {
   const me = guild.members.me;
-  if (!me) throw Error("how??? this shouldn't happen...");
+  if (!me) throw new Error("how??? this shouldn't happen…");
 
   const channel =
     guild.systemChannel ??
@@ -136,7 +154,7 @@ export function safeAlertChannel(guild: Guild): TextChannel {
       .first();
 
   if (!channel)
-    throw Error(
+    throw new Error(
       "the user has done black magic to achieve this, so the bot cannot send anything in this entire server.",
     );
 

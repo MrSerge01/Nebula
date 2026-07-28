@@ -18,8 +18,8 @@ export default (async function run(member) {
 
   const guildID = guild.id;
   const id =
-    ((await getSetting(guildID, "welcome", "leave_channel")) as string) ??
-    ((await getSetting(guildID, "welcome", "join_channel")) as string);
+    (await getSetting(guildID, "welcome", "leave_channel")) ??
+    (await getSetting(guildID, "welcome", "join_channel"));
 
   if (!id) return;
   const user = member.user;
@@ -31,11 +31,7 @@ export default (async function run(member) {
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(`## ${user.displayName} left`),
           new TextDisplayBuilder().setContent(
-            await replaceVariables(
-              (await getSetting(guildID, "welcome", "leave_text")) as string,
-              guild,
-              user,
-            ),
+            await replaceVariables(await getSetting(guildID, "welcome", "leave_text"), guild, user),
           ),
           new TextDisplayBuilder().setContent(`-# User ID: ${user.id}`),
         )

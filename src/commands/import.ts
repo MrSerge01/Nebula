@@ -26,7 +26,7 @@ import {
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { modalSubmit } from "utils/modalSubmit";
-import { safeReply } from "utils/safeThings";
+import { safeEdit, safeReply } from "utils/safeThings";
 
 export const data = new SlashCommandBuilder()
   .setName("import")
@@ -109,7 +109,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       userID: "172002275412279296",
     },
     {
-      content: "🔵  •  MEE6\n-# Import from [MEE6](http://mee6.xyz/)",
+      content: "🔵  •  MEE6\n-# Import from [MEE6](https://mee6.xyz/)",
       id: "MEE6",
       userID: "159985870458322944",
     },
@@ -120,15 +120,13 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     },
   ];
 
-  const containerComponents = [];
-  for (const bot of bots)
-    containerComponents.push(
-      new SectionBuilder()
-        .addTextDisplayComponents(new TextDisplayBuilder().setContent(bot.content))
-        .setButtonAccessory(
-          new ButtonBuilder().setCustomId(bot.id).setLabel("Import").setStyle(ButtonStyle.Primary),
-        ),
-    );
+  const containerComponents = Array.from(bots, bot =>
+    new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(bot.content))
+      .setButtonAccessory(
+        new ButtonBuilder().setCustomId(bot.id).setLabel("Import").setStyle(ButtonStyle.Primary),
+      ),
+  );
 
   const container = new ContainerBuilder().addSectionComponents(containerComponents);
   const reply = await safeReply({
@@ -149,10 +147,9 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
 
     collector.resetTimer({ time: 240_000 });
-    let cID = buttonInteraction.customId;
+    const cID = buttonInteraction.customId;
     if (cID == "please") return;
 
-    cID = cID as keyof typeof SupportedBots;
     const bots = {
       name: cID === "MEE6" ? cID.toUpperCase() : cID,
       data: [
@@ -173,12 +170,12 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         lurkr_api: lurkrKey,
       });
 
-      let levels =
+      const levels =
         cID === "MEE6"
           ? await leveler.GetLeaderboard(SupportedBots.MEE6)
-          : cID === "LURKR" && lurkrKey
+          : (cID === "LURKR" && lurkrKey
             ? await leveler.GetLeaderboard(SupportedBots.LURKR)
-            : await leveler.GetLeaderboard(SupportedBots.TATSU);
+            : await leveler.GetLeaderboard(SupportedBots.TATSU));
 
       const switchContainer = new ContainerBuilder()
         .addActionRowComponents(
@@ -200,7 +197,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         );
 
       const replyInteraction = modalInteraction ?? buttonInteraction;
-      await safeReply({
+      await safeEdit({
         interaction: replyInteraction,
         editOptions: { components: [await containerHelper(switchContainer, { buttons: true })] },
       });
@@ -209,7 +206,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       let content;
       switch (cID) {
         case "back": {
-          await safeReply({ interaction, editOptions: { components: [container] } });
+          await safeEdit({ interaction, editOptions: { components: [container] } });
           break;
         }
         case "check": {
@@ -232,7 +229,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             checkContainer.addFileComponents(new FileBuilder().setURL("attachment://levels.txt"));
           }
 
-          await safeReply({
+          await safeEdit({
             interaction: buttonInteraction,
             editOptions: {
               components: [await containerHelper(checkContainer, { buttons: true, json: true })],
@@ -242,7 +239,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           break;
         }
         case "return": {
-          await safeReply({
+          await safeEdit({
             interaction: buttonInteraction,
             editOptions: { components: [switchContainer] },
           });
@@ -252,7 +249,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         case "overwrite": {
           content = `## ${cID == "merge" ? "Updating" : "Overwriting"} data for all users…`;
           const res = [];
-          await safeReply({
+          await safeEdit({
             interaction: buttonInteraction,
             editOptions: {
               components: [await containerHelper(new ContainerBuilder(), { content })],
@@ -260,7 +257,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           });
 
           if (!guild || !guildID) return;
-          const difficulty = (await getSetting(guildID, "leveling", "difficulty")) as number;
+          const difficulty = await getSetting(guildID, "leveling", "difficulty");
 
           for (const user of guild.members.cache) {
             if (user[1].user.bot) continue;
@@ -281,7 +278,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           }
 
           content = `## Done!\n${res.join("\n")}`;
-          await safeReply({
+          await safeEdit({
             interaction: buttonInteraction,
             editOptions: {
               components: [await containerHelper(new ContainerBuilder(), { content })],
@@ -291,7 +288,10 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       }
     }
 
-    if (cID != "LURKR") return await construct();
+    if (cID != "LURKR") {
+      await construct();
+      return;
+    }
     const modal = new ModalBuilder()
       .setCustomId(cID)
       .setTitle(`•  API key to import`)

@@ -91,7 +91,7 @@ export async function run(
         title: "You aren't participating.",
       });
 
-    playerChoices.set(buttonInteraction.user.id, cID.split("_")[1] as RPSChoice);
+    playerChoices.set(buttonInteraction.user.id, cID.split("_", 2)[1] as RPSChoice);
     if (opponent.bot) collector.stop("game-complete");
     else {
       await buttonInteraction.reply({
@@ -148,9 +148,9 @@ export async function run(
             hue:
               winner == 0
                 ? Sokolors.Blue
-                : winner == 2 && opponent.bot
+                : (winner == 2 && opponent.bot
                   ? Sokolors.Red
-                  : Sokolors.Green,
+                  : Sokolors.Green),
           }),
         );
 

@@ -65,11 +65,12 @@ export async function run(
         "You somehow ran the command without a time value being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
     });
 
-  const timeMs = ms(time);
+  const timeMs = ms(time) ?? 0;
   const reason = interaction.options.getString("reason");
-  let title = `Set the slowdown to ${ms(ms(time), "fullPrecision")}`;
+  const title = timeMs
+    ? `Set the slowdown to ${ms(timeMs, "fullPrecision")}`
+    : "Removed the slowdown";
 
-  if (!timeMs) title = "Removed the slowdown";
   if (timeMs > 21_600_000)
     return await errorEmbed({
       interaction,

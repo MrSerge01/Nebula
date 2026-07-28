@@ -1,19 +1,19 @@
 import type { Client, InteractionResponse, Message } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { client } from "src/bot";
 
 const events: { name: string; event: ReturnType<Client["on"]> }[] = [];
 export const eventNames = ["messageUpdate", "messageDelete", "settings"];
 export async function loadEvents(client: Client): Promise<void> {
-  const eventsPath = join(process.cwd(), "src", "events");
+  const eventsPath = path.join(process.cwd(), "src", "events");
   for (const eventFile of readdirSync(eventsPath)) {
     if (!eventFile.endsWith(".ts")) continue;
-    const eventName = eventFile.split(".ts")[0];
+    const eventName = eventFile.split(".ts", 1)[0];
     const event = (
-      (await import(pathToFileURL(join(eventsPath, eventFile)).toString())) as {
+      (await import(pathToFileURL(path.join(eventsPath, eventFile)).toString())) as {
         // typing hack
         default: (_: unknown) => void;
       }
@@ -30,13 +30,13 @@ interface EasterEgg {
 export const easterEggs: EasterEgg[] = [];
 export const easterEggNames: string[] = [];
 export async function loadEasterEggs(): Promise<Message | InteractionResponse | undefined> {
-  const eventsPath = join(process.cwd(), "src", "events", "easterEggs");
+  const eventsPath = path.join(process.cwd(), "src", "events", "easterEggs");
   for (const easterEggFile of readdirSync(eventsPath)) {
     if (!easterEggFile.endsWith(".ts")) continue;
     try {
-      const easterEggName = easterEggFile.split(".")[0];
+      const easterEggName = easterEggFile.split(".", 1)[0];
       const eggModule = (await import(
-        pathToFileURL(join(eventsPath, easterEggFile)).toString()
+        pathToFileURL(path.join(eventsPath, easterEggFile)).toString()
       )) as { run: (message: Message) => Promise<void> };
       if (typeof eggModule.run == "function") {
         const easterEgg: EasterEgg = {

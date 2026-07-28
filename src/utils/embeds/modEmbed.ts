@@ -1,10 +1,10 @@
 import { createCase, editCase, getCase, type ModType } from "database/moderation";
 import {
-  ContainerBuilder,
   SectionBuilder,
   TextDisplayBuilder,
   ThumbnailBuilder,
   type ChatInputCommandInteraction,
+  ContainerBuilder,
   type InteractionResponse,
   type Message,
   type PermissionResolvable,
@@ -23,7 +23,7 @@ interface Options {
   channel?: string;
   user?: User;
   duration?: number | null;
-  dm?: boolean;
+  shouldDm?: boolean;
   dbAction?: ModType;
   expiresAt?: Date;
   previousID?: number;
@@ -105,13 +105,14 @@ export async function errorCheck(
       });
 
     const isBanned = (await guild.bans.fetch()).has(user.id);
-    if (action == "Ban" && isBanned)
+    if (isBanned && action == "Ban")
       return await errorEmbed({
         interaction,
         title: "You can't ban this user.",
         reason: "This user is already banned.",
       });
-    else if (action == "Unban" && !isBanned)
+
+    if (!isBanned && action == "Unban")
       return await errorEmbed({
         interaction,
         title: "You can't unban this user.",
@@ -122,7 +123,6 @@ export async function errorCheck(
   if (!allErrors || !user || !action) return;
   const target = await safeMember(guild, user.id);
   const name = user.displayName;
-  const highestModPos = member.roles.highest.position;
 
   if (outsideError && !target)
     return await errorEmbed({
@@ -132,7 +132,6 @@ export async function errorCheck(
     });
 
   if (!target) return;
-  const highestTargetPos = target.roles.highest.position;
 
   if (target == member)
     return await errorEmbed({ interaction, title: `You can't ${action.toLowerCase()} yourself.` });
@@ -153,12 +152,15 @@ export async function errorCheck(
       ].join("\n"),
     });
 
+  const highestModPos = member.roles.highest.position;
+  const highestTargetPos = target.roles.highest.position;
+
   if (highestModPos <= highestTargetPos && member.id != guild.ownerId) {
-    const same: boolean = highestModPos == highestTargetPos;
+    const isSamePos: boolean = highestModPos == highestTargetPos;
     return await errorEmbed({
       interaction,
       title: `You can't ${action.toLowerCase()} ${name}.`,
-      reason: `The member has ${same ? "the same" : "a higher"} role position ${same ? "as" : "than"} you.`,
+      reason: `The member has ${isSamePos ? "the same" : "a higher"} role position ${isSamePos ? "as" : "than"} you.`,
     });
   }
 }
@@ -170,7 +172,7 @@ export async function errorCheck(
  * @returns A container with action info (or an errorEmbed if something goes wrong).
  */
 export async function modEmbed(
-  options: Options & { silent?: boolean },
+  options: Options & { isSilent?: boolean },
   reason?: string | null,
 ): Promise<undefined | Message | InteractionResponse | ContainerBuilder> {
   const {
@@ -179,12 +181,12 @@ export async function modEmbed(
     channel,
     action,
     duration,
-    dm,
+    shouldDm,
     dbAction,
     expiresAt,
     previousID,
     customText,
-    silent,
+    isSilent,
   } = options;
   const guild = interaction.guild;
   if (!guild) throw new Error("Cannot create modEmbed without a guild!");
@@ -271,7 +273,7 @@ export async function modEmbed(
   else container.addTextDisplayComponents(textDisplayComponents);
 
   async function replier(): Promise<Awaited<ReturnType<typeof safeReply>>> {
-    if (silent)
+    if (isSilent)
       return await safeReply({
         interaction,
         replyOptions: { components: [container], flags: ["Ephemeral", "IsComponentsV2"] },
@@ -287,10 +289,10 @@ export async function modEmbed(
     logChannel(
       guild,
       { components: [container], flags: "IsComponentsV2" },
-      dm,
+      shouldDm,
       user
         ? {
-            silent: silent ?? false,
+            isSilent: isSilent ?? false,
             user,
             options: {
               components: [

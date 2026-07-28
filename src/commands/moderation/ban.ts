@@ -50,24 +50,30 @@ export async function run(
         "You somehow ran the command without a user being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
     });
 
-  const userOrMember = (await safeMembers(guild)).has(user.id);
+  const isUserOrMember = (await safeMembers(guild)).has(user.id);
   const duration = interaction.options.getString("duration");
   const reason = interaction.options.getString("reason");
   const del = interaction.options.getString("del");
-  let delSec;
-
   if (
     await errorCheck("Ban Members", {
       interaction,
       user,
       action: "Ban",
-      errorOptions: { allErrors: userOrMember, banCheckError: true, botError: true },
+      errorOptions: {
+        allErrors: isUserOrMember,
+        banCheckError: true,
+        botError: true,
+      },
     })
   )
     return;
 
+  let delSec;
+
+  let durationMs = null;
+
   if (duration) {
-    const durationMs = ms(duration);
+    durationMs = ms(duration);
     if (!durationMs || durationMs <= 0)
       return await errorEmbed({
         interaction,
@@ -84,13 +90,13 @@ export async function run(
     );
   }
 
-  const silent =
+  const isSilent =
     interaction.options.getBoolean("silent") ??
-    ((await getSetting(guild.id, "moderation", "silent")) as boolean);
+    (await getSetting(guild.id, "moderation", "silent"));
 
   if (del) {
     // this has to be in seconds, thanks to whoever made the change
-    delSec = ms(del) / 1000;
+    delSec = (ms(del) ?? 0) / 1000;
     if (!delSec || delSec <= 0)
       return await errorEmbed({
         interaction,
@@ -112,11 +118,11 @@ export async function run(
         interaction,
         user,
         action: "Banned",
-        duration: duration ? ms(duration) : undefined,
-        dm: userOrMember,
+        duration: durationMs ?? undefined,
+        shouldDm: isUserOrMember,
         dbAction: "BAN",
-        expiresAt: duration ? new Date(ms(duration)) : undefined,
-        silent,
+        expiresAt: durationMs ? new Date(durationMs) : undefined,
+        isSilent,
       },
       reason,
     );

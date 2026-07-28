@@ -12,7 +12,7 @@
     "setup": "bun i && bun run cli/setup.ts",
     "dev": "bun --watch ./src/bot.ts",
     "start": "bun ./src/index.ts",
-    "ql": "prettier --w .; eslint . --fix"
+    "ql": "prettier --w .; tsc --noEmit; eslint . --fix --no-warn-ignored"
   },
   "dependencies": {
     "@hokkiai/djs-level-importer": "^1.2.0",

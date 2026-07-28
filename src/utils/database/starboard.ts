@@ -56,7 +56,10 @@ export async function setStarred(
   });
 }
 
-export async function deleteStarred(guildID: string, messageID: string) {
+export async function deleteStarred(
+  guildID: string,
+  messageID: string,
+): Promise<Awaited<ReturnType<typeof errorEmbed>>> {
   try {
     await db`DELETE FROM starboard WHERE "guild" = ${guildID} AND "message" = ${messageID}`;
   } catch (error) {

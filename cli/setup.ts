@@ -14,13 +14,12 @@ const readHiddenInput = async (prompt: string): Promise<string> => {
     if (stdin.isTTY) stdin.setRawMode(true);
 
     stdin.on("data", data => {
-      if (data.toString() == "\n" || data.toString() == "\r") {
-        if (stdin.isTTY) stdin.setRawMode(false);
-        process.stdout.moveCursor(0, -1);
-        process.stdout.clearLine(1);
-        process.stdout.moveCursor(0, 1);
-        rl.close();
-      }
+      if (data.toString() != "\n" && data.toString() != "\r") return;
+      if (stdin.isTTY) stdin.setRawMode(false);
+      process.stdout.moveCursor(0, -1);
+      process.stdout.clearLine(1);
+      process.stdout.moveCursor(0, 1);
+      rl.close();
     });
 
     rl.question("", input => {
@@ -45,10 +44,10 @@ const main = async (): Promise<void> => {
     "Paste your bot token below: (you can get one from https://discord.com/developers/applications)",
   );
   replaceInEnvironment("YOUR_TOKEN", token);
-  const useDocker = confirm(
+  const shouldDocker = confirm(
     "Are you going to use Docker (Y) or setup manually (N, or any other key)?",
   );
-  if (useDocker)
+  if (shouldDocker)
     console.log(
       "Then just run Docker Compose on this directory, it should all work out of the box.",
     );

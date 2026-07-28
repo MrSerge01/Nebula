@@ -60,13 +60,13 @@ export async function run(
       reason: "The user was never muted.",
     });
 
-  const silent =
+  const isSilent =
     interaction.options.getBoolean("silent") ??
-    ((await getSetting(guild.id, "moderation", "silent")) as boolean);
+    (await getSetting(guild.id, "moderation", "silent"));
 
   try {
     await modEmbed(
-      { interaction, user, action: "Unmuted", dm: true, dbAction: "UNMUTE", silent },
+      { interaction, user, action: "Unmuted", shouldDm: true, dbAction: "UNMUTE", isSilent },
       reason,
     );
     await target?.edit({ communicationDisabledUntil: null });
