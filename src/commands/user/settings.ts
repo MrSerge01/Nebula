@@ -26,7 +26,6 @@ for (const key of userSettingsKeys)
   );
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
-  // [TODO]: rename this type guard (also checks for user duh)
   if (!isInteractionSafe(interaction))
     throw new Error("Why is user null if you are setting a user-table setting?");
 

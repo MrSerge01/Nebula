@@ -1,4 +1,4 @@
-import type { FieldData } from "database/types";
+import type { SingleSettingDefinition } from "database/types";
 import { capitalize } from "./capitalize";
 
 /**
@@ -26,12 +26,18 @@ export function humanizeSettings(string: string): string {
 }
 
 /**
- * Outputs the given TYPE with formatting applied.
- * @param {FieldData} type Humanized type.
+ * Outputs the given setting's type with human formatting applied.
+ * @param {SingleSettingDefinition} def Setting definition.
  */
-export function humanizeType(type: FieldData): string {
-  if (type == "BOOL") return "boolean";
-  if (type == "INTEGER") return "number";
-  if (type == "mINTEGER") return "number (optional)";
-  return type.startsWith("m") ? type.toLowerCase().slice(1) + " (optional)" : type.toLowerCase();
+export function humanizeSettingType(def: SingleSettingDefinition): string {
+  const { type, optional } = def;
+
+  const isOptional = optional ?? type.startsWith("m");
+  let typeString;
+
+  if (type == "BOOL") typeString = "boolean";
+  else if (type == "INTEGER") typeString = "number";
+  else if (type == "SELECT") typeString = "any of: " + def.choices.map(s => `\`${s}\``).join(", ");
+  else typeString = type.toLowerCase();
+  return isOptional ? typeString + " (optional)" : typeString;
 }

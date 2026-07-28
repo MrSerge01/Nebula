@@ -39,7 +39,6 @@ async function grantRewards(
 ): Promise<void> {
   if (reward.roles && reward.roles.length > 0)
     for (const _role of reward.roles) {
-      if (!_role) continue; // redundant, see TODO at database/types.ts
       const role = await safeRole(guild, _role);
       if (!member.roles.cache.has(role.id))
         push(`**You've been rewarded the ${mention(role.id, "ROLE")} role!** Congrats.`);
@@ -49,7 +48,6 @@ async function grantRewards(
 
   if (reward.channels && reward.channels.length > 0)
     for (const _channel of reward.channels) {
-      if (!_channel) continue; // redundant, see TODO at database/types.ts
       const channel = await safeChannel(guild, _channel);
       if (
         !channel.isTextBased() ||

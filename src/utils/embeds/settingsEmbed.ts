@@ -56,7 +56,7 @@ import {
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
 import { dotCheck } from "utils/dotCheck";
-import { humanizeSettings, humanizeType } from "utils/humanizeSettings";
+import { humanizeSettings, humanizeSettingType } from "utils/humanizeSettings";
 import { modalSubmit } from "utils/modalSubmit";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { safeEdit, safeReply } from "utils/safeThings";
@@ -616,10 +616,9 @@ async function toggleHandler<K extends keyof TS>(
 ): Promise<void | SettingReturnType<K, SettingKeyFor<K>>> {
   const { def, key } = ctl;
 
-  const setting =
-    methods === undefined
-      ? def.properties[interaction.customId]
-      : def.settings[interaction.customId];
+  const setting = (methods
+    ? def.settings[interaction.customId]
+    : def.properties[interaction.customId]) as unknown as SingleSettingDefinition;
   let value = methods
     ? null
     : {
@@ -688,7 +687,7 @@ async function toggleHandler<K extends keyof TS>(
                 : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(interaction.customId)}** couldn't be changed!`,
               isNewValueValid
                 ? `The ${newValue.length < 50 ? "value" : "**value**"} has been set ${newValue.length >= 500 ? "successfully." : (newValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
-                : `Given data is invalid. Ensure it's of the valid type (${humanizeType(setting.type)}) and try again.${newValue?.length >= 500 ? "" : `\nData entered was:\n${codeBlock(newValue)}`}`,
+                : `Given data is invalid. Ensure it's of the valid type (${humanizeSettingType(setting)}) and try again.${newValue?.length >= 500 ? "" : `\nData entered was:\n${codeBlock(newValue)}`}`,
               isNewValueValid ? Sokolors.Blue : Sokolors.Red,
             ),
           ],
@@ -1022,6 +1021,7 @@ export async function settingsEmbed<K extends keyof TS>(
             ...previousState,
             views: "default",
             settingState: {},
+            openSettingGuid: undefined,
           });
 
           await safeEdit({

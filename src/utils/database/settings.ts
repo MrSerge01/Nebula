@@ -102,13 +102,15 @@ export const defLeveling = {
         emoji: "🔢",
       },
       channels: {
-        type: "mCHANNEL",
+        type: "CHANNEL",
+        optional: true,
         iterable: true,
         desc: "Channels granted by this level.",
         emoji: "📑",
       },
       roles: {
-        type: "mROLE",
+        type: "ROLE",
+        optional: true,
         iterable: true,
         desc: "Roles granted by this level.",
         emoji: "📑",
@@ -391,7 +393,9 @@ export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>
   );
 
   const fallback = (): SettingReturnType<K, S> => {
-    if (!set || !("val" in set)) return (set.iterable ? [] : undefined) as SettingReturnType<K, S>;
+    if (!set || !Object.hasOwn(set, "val"))
+      return (set.iterable ? [] : undefined) as SettingReturnType<K, S>;
+
     // [TODO] shouldn't this need no assertion?
     return set.val as SettingReturnType<K, S>;
   };

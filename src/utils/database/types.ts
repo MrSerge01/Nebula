@@ -25,7 +25,6 @@ export interface TableDefinition {
 
 type Maybe<T> = T | undefined;
 
-// [TODO] mTYPE + iterable produces Maybe<TYPE>[] instead of Maybe<TYPE[]>, which is what it should produce…
 export type SqlType<T extends FieldData> = {
   BOOL: boolean;
   INTEGER: number;
@@ -73,21 +72,26 @@ interface SettingBase {
   iterable?: boolean;
   /** Emoji that represents the setting, used in SE. */
   emoji?: string;
+  /** If true, `undefined` is an acceptable value. */
+  optional?: boolean;
 }
 
-interface SelectSetting extends SettingBase {
+interface PreconditionBase<F extends FieldData> {
+  /** Validation function that should run before setting a value. Returns either a `string` (error message; fail) or undefined (success). */
+  precondition?: SettingPrecondition<F>;
+}
+
+type SelectSetting = SettingBase & {
   type: "SELECT";
   /** List of available choices for the select menu. */
   choices: string[];
-  precondition?: SettingPrecondition<"SELECT">;
-}
+} & PreconditionBase<"SELECT">;
 
-interface ObjectBase extends SettingBase {
+type ObjectBase = SettingBase & {
   type: "OBJECT";
   /** Named properties for the OBJECT setting. */
   properties: Record<string, SingleSettingDefinition>;
-  precondition?: SettingPrecondition<"OBJECT">;
-}
+} & PreconditionBase<"OBJECT">;
 
 interface SingleObjectSetting extends ObjectBase {
   iterable?: false | undefined;
@@ -105,9 +109,8 @@ interface IterableObjectSetting extends ObjectBase {
 
 type PrimitiveSetting<K extends Exclude<FieldData, "SELECT" | "OBJECT">> = {
   type: K;
-} & SettingBase & {
-    precondition?: SettingPrecondition<K>;
-  };
+} & SettingBase &
+  PreconditionBase<K>;
 
 export type SingleSettingDefinition =
   | SelectSetting
@@ -125,13 +128,8 @@ export interface SettingDefinitionRecord {
   settings: Record<string, SingleSettingDefinition>;
 }
 
-export type SettingsDefinition = Record<string, SettingDefinitionRecord>;
-
-export type SettingSettableValueBase = string | string[] | boolean | number | null;
-export type SettingSettableValue =
-  | SettingSettableValueBase
-  | Record<string, SettingSettableValueBase>
-  | Record<string, SettingSettableValueBase>[];
+type BaseSettingSettableValue = string | boolean | number | Date | undefined;
+export type SettingSettableValue = BaseSettingSettableValue | BaseSettingSettableValue[];
 
 type BaseSettingValueFromDef<T> = T extends SingleSettingDefinition
   ? T extends { iterable: true }
@@ -141,22 +139,15 @@ type BaseSettingValueFromDef<T> = T extends SingleSettingDefinition
       : SqlType<T["type"]>
   : never;
 
-export type SettingValueFromDef<T> = T extends { val: SettingSettableValue }
-  ? // can still be undefined if FieldData type is a Maybe type
-    BaseSettingValueFromDef<T>
-  : // if you use a Maybe this produces undefined | undefined, which doesn't matter
-    BaseSettingValueFromDef<T> | undefined;
+export type SettingValueFromDef<T> = T extends {
+  optional: true;
+}
+  ? BaseSettingValueFromDef<T> | undefined
+  : T extends { val: SettingSettableValue }
+    ? BaseSettingValueFromDef<T>
+    : BaseSettingValueFromDef<T> | undefined;
 
 export type SettingsFor<K extends keyof TS> = TS[K]["settings"];
-
-export type Setting<K extends keyof TS, S extends keyof TS[K]["settings"]> = TS[K]["settings"][S];
-
-/** Filter out anything that isn't an OBJECT setting. */
-type ObjectEntries<T extends Record<string, { type: string }>> = {
-  [P in keyof T as T[P]["type"] extends "OBJECT" ? P : never]: T[P];
-};
-
-export type SettingsObjectsFor<K extends keyof TS> = ObjectEntries<TS[K]["settings"]>;
 
 export type SettingKeyFor<K extends keyof TS> = keyof TS[K]["settings"] & string;
 
@@ -168,17 +159,6 @@ export type SettingReturnType<
 export type BulkedSettingReturnType<K extends keyof TS> = {
   [S in keyof SettingsFor<K>]: SettingValueFromDef<SettingsFor<K>[S]>;
 };
-
-export type SettingMethodSet<K extends keyof TS, S extends keyof SettingsFor<K>> = (
-  key: K,
-  setting: S,
-  value: SettingValueFromDef<TS[K]["settings"][S]>,
-) => Promise<void>;
-
-export type SettingMethodGet<K extends keyof TS, S extends keyof SettingsFor<K>> = (
-  key: K,
-  setting: S,
-) => Promise<SettingValueFromDef<TS[K]["settings"][S]>>;
 
 /** Called "glue fix" because after some (tiny to be fair) research I'm starting to think that the Sokora type system goes beyond LANGUAGE LIMITATIONS (LMFAO).
  *
@@ -206,30 +186,31 @@ export function isSettingValueValid(
   value: unknown,
   def: SingleSettingDefinition,
 ): value is SettingSettableValue {
-  console.debug(def, value, "<<< TypeCheck");
+  const isOptional = def.optional ?? def.type.startsWith("m");
 
   if (def.iterable) {
     const isArray = Array.isArray(value);
-    if (def.type.startsWith("m") && (value === undefined || (isArray && value.length > 0)))
-      return true;
+    if (isOptional && (value === undefined || (isArray && value.length > 0))) return true;
 
     if (!isArray) return false;
     return value.every(v => isSettingValueValid(v, { ...def, iterable: false }));
   }
+
+  if (value === undefined && isOptional) return true;
 
   switch (def.type) {
     case "OBJECT": {
       if (typeof value !== "object" || value === null) return false;
 
       const objectValue = value as Record<string, SettingSettableValue>;
-      console.debug(objectValue, "<<< OBJ VAL");
       for (const [property, propertyDefinition] of Object.entries(def.properties)) {
-        console.debug(property, propertyDefinition, objectValue[property], "A vs B vs C!!");
         if (property == "$") continue;
-        if (!Object.hasOwn(objectValue, property) && !propertyDefinition.type.startsWith("m"))
+        if (
+          !Object.hasOwn(objectValue, property) &&
+          !(propertyDefinition.optional ?? propertyDefinition.type.startsWith("m"))
+        )
           return false;
 
-        console.debug(objectValue[property], propertyDefinition, "A vs B");
         if (!isSettingValueValid(objectValue[property], propertyDefinition)) return false;
       }
       return true;
@@ -239,7 +220,6 @@ export function isSettingValueValid(
     }
     case "INTEGER":
     case "mINTEGER": {
-      if (value === undefined && def.type === "mINTEGER") return true;
       return (
         typeof value === "number" || (typeof value === "string" && !Number.isNaN(Number(value)))
       );
@@ -251,7 +231,6 @@ export function isSettingValueValid(
     case "CHANNEL":
     case "mCHANNEL": {
       // can't validate they IDs on its own, use safeThings for that; this just checks format (numeric string)
-      if (value === undefined && def.type.startsWith("m")) return true;
       // https://stackoverflow.com/questions/175739/how-can-i-check-if-a-string-is-a-valid-number
       return typeof value === "string";
     }
@@ -260,15 +239,14 @@ export function isSettingValueValid(
     }
     case "TEXT":
     case "mTEXT": {
-      if (def.type === "mTEXT") return typeof value === "string" || value === undefined;
-      return typeof value === "string" && value.trim().length > 0;
+      return typeof value === "string" && (isOptional ?? value.trim().length > 0);
     }
     case "TIMESTAMP":
     case "mTIMESTAMP": {
       return true; // TODO
     }
     default: {
-      // unreachable, exists for the compiler's sake and happinness
+      // unreachable, exists for the compiler's sake and happiness
       return false;
     }
   }
