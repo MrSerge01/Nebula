@@ -243,7 +243,9 @@ export function isSettingValueValid(
     }
     case "TIMESTAMP":
     case "mTIMESTAMP": {
-      return true; // TODO
+      return (
+        typeof value == "string" && (/<t:\d+:[tTdDfFsSR]>/gm.test(value) || /<t:\d+>/gm.test(value))
+      );
     }
     default: {
       // unreachable, exists for the compiler's sake and happiness

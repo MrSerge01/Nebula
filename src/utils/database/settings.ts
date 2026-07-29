@@ -373,6 +373,23 @@ export function switchTypes(value: string, set: SingleSettingDefinition): unknow
 }
 
 /**
+ * Dynamically gets you a properly typed setting definition as a value.
+ *
+ * @template {keyof TS} K
+ * @template {SettingKeyFor<K>} S
+ * @param {K} key Key
+ * @param {S} setting Setting
+ * @returns {SettingsGlueFix1<K, S>} Definition as an object
+ */
+export function getSettingDef<K extends keyof TS, S extends SettingKeyFor<K>>(
+  key: K,
+  setting: S,
+): SettingsGlueFix1<K, S> {
+  const settings: SettingsFor<K> = settingsDefinition[key].settings;
+  return settings[setting] as SettingsGlueFix1<K, S>;
+}
+
+/**
  * @param entityID ID of the guild/user to touch settings for.
  * @param key Key, e.g. `leveling`, `moderation`.
  * @param setting Specific setting to get.

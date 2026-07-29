@@ -12,17 +12,18 @@ import {
 } from "discord.js";
 import { colorize, Sokolors } from "./colorize";
 import { mention } from "./mention";
+import type { SettingKeyFor } from "database/types";
 
 /** Checks if a channel that the user specified as the value of any setting (moderation.channel for example) is valid.
  * "Valid" = Exists, is either a Text or News channel, and Sokora has the requested permissions for it (either send, view, or both).
  * @param options Options.
  * @returns Status of the channel. (if the bot can view it/send in it or not)
  */
-export async function channelCheck(options: {
+export async function channelCheck<K extends keyof TS>(options: {
   channel: Channel | GuildBasedChannel | null;
   setting: {
-    category: keyof TS;
-    setting: string;
+    category: K;
+    setting: SettingKeyFor<K>;
   };
   permType: "View" | "Send";
   guild: Guild;
@@ -31,7 +32,6 @@ export async function channelCheck(options: {
 
   async function reset(): Promise<boolean> {
     await dm?.send({ components: [container], flags: "IsComponentsV2" });
-    // @ts-expect-error [TODO] properly type channelCheck.setting
     await resetSetting(guild.id, setting.category, setting.setting);
     return false;
   }

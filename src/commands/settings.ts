@@ -1,24 +1,28 @@
+import gitDiff from "git-diff";
 import {
   settingsDefinition,
   getSetting,
   setSetting,
   type TS,
   serverSettingsKeys,
+  getSettingDef,
 } from "database/settings";
 import type { SettingKeyFor, SettingReturnType } from "database/types";
 import {
-  EmbedBuilder,
   type Guild,
   PermissionsBitField,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
   type ChatInputCommandInteraction,
   type User,
+  codeBlock,
+  ContainerBuilder,
+  TextDisplayBuilder,
 } from "discord.js";
 import { settingsEmbed } from "embeds/settingsEmbed";
 import { colorize, Sokolors } from "utils/colorize";
-import { dotCheck } from "utils/dotCheck";
 import { logChannel } from "utils/logChannel";
+import { mention } from "utils/mention";
 import { safeMember } from "utils/safeThings";
 import { isInteractionSafe } from "utils/types";
 
@@ -43,29 +47,71 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
 ): Promise<void> {
   if ((await getSetting(interaction.guild.id, "moderation", "events"))?.includes("settings")) {
     const member = await safeMember(interaction.guild, interaction.user.id);
-    const avatar = member.displayAvatarURL();
     const previousValue = await getSetting(interaction.guild.id, key, setting);
-    const embed = new EmbedBuilder()
-      .setAuthor({
-        name: `${dotCheck({ string: avatar, doubleSpace: true })}${member.user.username} changed ${key}.${setting}`,
-        iconURL: avatar,
-      })
-      .addFields(
-        {
-          name: "📻 • **Old value**",
-          value: previousValue === undefined ? "(unset)" : JSON.stringify(previousValue),
-        },
-        {
-          name: "📱 • **New value**",
-          // [TODO]: review, since OBJECT settings need to be shown in a proper format
-          value: JSON.stringify(value),
-        },
-      )
-      .setFooter({ text: `User ID: ${member.id}` })
-      .setTimestamp(Date.now())
-      .setColor(await colorize({ hue: Sokolors.Blue }));
+    const def = getSettingDef(key, setting);
+    const fmt = (value_: unknown): string =>
+      def.type === "OBJECT" && def.iterable
+        ? Bun.YAML.stringify(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            (value_ as { $: string }[]).map(({ $, ...rest }) => rest),
+            null,
+            2,
+          )
+        : Bun.YAML.stringify(value_, null, 2);
+    const oldString =
+      previousValue === undefined || previousValue === null
+        ? "[Setting was previously unset]"
+        : fmt(previousValue);
+    const newString =
+      value === undefined || previousValue === null
+        ? "[Setting value was deleted, it is now unset]"
+        : fmt(value);
 
-    await logChannel(interaction.guild, { embeds: [embed] });
+    const container = new ContainerBuilder().addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`**${member.user.username} changed ${key}.${setting}**`),
+    );
+
+    if (def.type === "OBJECT") {
+      const diff: string | undefined = gitDiff(
+        oldString
+          .split("\n")
+          .map(l => l.replace("-", "•"))
+          .join("\n"),
+        newString
+          .split("\n")
+          .map(l => l.replace("-", "•"))
+          .join("\n"),
+      );
+
+      if (!diff) return;
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          [
+            "🔼 • **Difference**",
+            codeBlock("diff", diff),
+            "-# Where red lines (starting with a `-`) are the previous value,\n-# and green lines (starting with a `+`) are the new value.",
+          ].join("\n"),
+        ),
+      );
+    } else {
+      const oldValueString = `☎️ • **Old value**${oldString.includes("\n") ? "\n" + codeBlock("yaml", oldString) : ` • \`${oldString}\``}`;
+      const newValueString = `📱 • **New value**${newString.includes("\n") ? "\n" + codeBlock("yaml", newString) : ` • \`${newString}\``}`;
+
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(oldValueString),
+        new TextDisplayBuilder().setContent(newValueString),
+      );
+    }
+
+    container
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `-# User ID: ${member.id} • ${mention(Date.now(), "DETAILED_TIMESTAMP")}`,
+        ),
+      )
+      .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+
+    await logChannel(interaction.guild, { components: [container], flags: "IsComponentsV2" });
   }
   await setSetting(interaction.guild.id, key, setting, value);
   return;

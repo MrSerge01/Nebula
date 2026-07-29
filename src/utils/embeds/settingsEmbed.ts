@@ -131,7 +131,7 @@ async function confirmResetModal<K extends keyof TS>(
     .addLabelComponents(
       new LabelBuilder()
         .setLabel("Yes, I want to delete all selected settings!")
-        .setCheckboxComponent(checkbox => checkbox.setCustomId("confirm")),
+        .setCheckboxComponent(checkbox => checkbox.setCustomId("confirm").setDefault(false)),
     );
 
   await interaction.showModal(modal);
@@ -1080,9 +1080,11 @@ export async function settingsEmbed<K extends keyof TS>(
             },
           });
         else {
-          const finalThing = finalValue.$
-            ? [...previous.filter(v => v.$ != finalValue.$), finalValue]
-            : [...previous, { ...finalValue, $: Bun.randomUUIDv7() }];
+          const finalThing = (
+            finalValue.$
+              ? [...previous.filter(v => v.$ != finalValue.$), finalValue]
+              : [...previous, { ...finalValue, $: Bun.randomUUIDv7() }]
+          ).toSorted(currentObjectState.settingDef.sorting);
           await methods.setSettingPlease(ctl.key, currentObjectState.setting, finalThing);
           await safeReply({
             interaction,

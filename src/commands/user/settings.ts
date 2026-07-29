@@ -1,4 +1,3 @@
-// [TODO] this, with setting filtering
 import {
   getSetting,
   setSetting,
