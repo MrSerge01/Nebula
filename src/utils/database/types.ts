@@ -1,5 +1,5 @@
 import type { Interaction } from "discord.js";
-import type { TS } from "./settings";
+import { getSettingDef, type TS } from "./settings";
 
 export type FieldData =
   | "TEXT"
@@ -93,11 +93,11 @@ type ObjectBase = SettingBase & {
   properties: Record<string, SingleSettingDefinition>;
 } & PreconditionBase<"OBJECT">;
 
-interface SingleObjectSetting extends ObjectBase {
+export interface SingleObjectSetting extends ObjectBase {
   iterable?: false | undefined;
 }
 
-interface IterableObjectSetting extends ObjectBase {
+export interface IterableObjectSetting extends ObjectBase {
   iterable: true;
   /** Sorting callback for the OBJECT list. Passed to `Array#toSorted`. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -182,10 +182,15 @@ export type SettingsGlueFix1<
  * @param def Definition to validate against.
  * @returns `true` if everything is valid, false otherwise.
  */
-export function isSettingValueValid(
+export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<K>>(
   value: unknown,
-  def: SingleSettingDefinition,
-): value is SettingSettableValue {
+  config: {
+    key: K;
+    setting: S;
+    def?: SingleSettingDefinition;
+  },
+): value is SettingReturnType<K, S> {
+  const def = config.def ?? getSettingDef(config.key, config.setting);
   const isOptional = def.optional ?? def.type.startsWith("m");
 
   if (def.iterable) {
@@ -193,7 +198,13 @@ export function isSettingValueValid(
     if (isOptional && (value === undefined || (isArray && value.length > 0))) return true;
 
     if (!isArray) return false;
-    return value.every(v => isSettingValueValid(v, { ...def, iterable: false }));
+    return value.every(v =>
+      isSettingValueValid(v, {
+        key: config.key,
+        setting: config.setting,
+        def: { ...def, iterable: false },
+      }),
+    );
   }
 
   if (value === undefined && isOptional) return true;
@@ -211,7 +222,14 @@ export function isSettingValueValid(
         )
           return false;
 
-        if (!isSettingValueValid(objectValue[property], propertyDefinition)) return false;
+        if (
+          !isSettingValueValid(objectValue[property], {
+            key: config.key,
+            setting: config.setting,
+            def: propertyDefinition,
+          })
+        )
+          return false;
       }
       return true;
     }

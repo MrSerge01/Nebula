@@ -1,12 +1,11 @@
 /** @warning settingsEmbed.ts (related to database/types.ts)
- * IMPORTANT!
+ * Warning!
  *
  * This file is not properly typed, and I genuinely do not know how to fix it.
  * This is due to some of the things I wanted to achieve being straight up not supported by the TypeScript compiler.
  *
  * As a result, many variables are either manually casted or straight up `unknown`, `any` or `never`.
- * We've agreed that linter errors on this file specifically do _not_ prevent a PR from being merged,
- * so long as any change to this file has been THOROUGHLY tested.
+ * Any change to this file should be THOROUGHLY tested.
  *
  * Pay close attention, you'll have to make assumptions or type inference in your brain.
  * Modify this with care and only if things are broken and you're sure that THIS and not any other file
@@ -21,11 +20,13 @@
 import { resetSetting, resetSettingCategory, settingsDefinition, type TS } from "database/settings";
 import {
   isSettingValueValid,
+  type SettingsFor,
   type SettingDefinitionRecord,
   type SettingKeyFor,
   type SettingReturnType,
   type SettingSettableValue,
   type SingleSettingDefinition,
+  type IterableObjectSetting,
 } from "database/types";
 import {
   ActionRowBuilder,
@@ -66,10 +67,10 @@ import { buttonCheck } from "./errorEmbed";
 const OBJECTS_PER_ITR_PAGE = 10;
 
 /** Holds the current state of OBJECT view within settingsEmbed for a user. */
-interface ObjectState {
-  key: keyof TS;
-  setting: SettingKeyFor<keyof TS>;
-  settingDef: SingleSettingDefinition & { type: "OBJECT" };
+interface ObjectState<K extends keyof TS, S extends SettingKeyFor<K>> {
+  key: K;
+  setting: S;
+  settingDef: TS[K]["settings"][S];
   /** `settingState` is always "defined" but sometimes is an empty object. Holds the JS object you'd store in DB, used for data representation. */
   settingState: Record<string, SettingSettableValue>;
   /** `views` is a control string, tells you the type of page to be rendered.
@@ -103,7 +104,7 @@ interface ResetState {
  *
  * Check type `ObjectState`'s JSDoc for what properties mean.
  */
-const ObjectStateMachine = new Map<string, ObjectState>();
+const ObjectStateMachine = new Map<string, ObjectState<keyof TS, never>>();
 /**
  * **This is for resetting embeds, it tracks their state.** Let's ignore the fact that "state machine" isn't too accurate of a name.
  *
@@ -115,10 +116,22 @@ const ObjectStateMachine = new Map<string, ObjectState>();
  */
 const ResetStateMachine = new Map<string, ResetState>();
 
-const OSMSetAndGet = (id: string, state: ObjectState): ObjectState => {
-  ObjectStateMachine.set(id, state);
+/** Sets a value in the Object State Machine, and returns it properly typed. */
+const OSMSet = <K extends keyof TS, S extends SettingKeyFor<K>>(
+  id: string,
+  state: ObjectState<K, S>,
+): ObjectState<K, S> => {
+  ObjectStateMachine.set(id, state as unknown as ObjectState<keyof TS, never>);
   return state;
 };
+/** Gets a properly typed value from the Object State Machine. */
+const OSMGet = <K extends keyof TS, S extends SettingKeyFor<K>>(id: string): ObjectState<K, S> => {
+  return OSMGet(id) as unknown as ObjectState<K, S>;
+};
+
+/** Fixes type errors by force. Use it **ONLY** with things that can't go wrong (like SELECTs where Discord UI only allows specific values) */
+const t = <K extends keyof TS, S extends SettingKeyFor<K>>(v: unknown): SettingReturnType<K, S> =>
+  v as SettingReturnType<K, S>;
 
 async function confirmResetModal<K extends keyof TS>(
   interaction: SettingInteraction<K, SettingKeyFor<K>>,
@@ -306,7 +319,7 @@ function iterableObjectRowGenerator(
 
 function objectEntriesGenerator<K extends keyof TS, S extends SettingKeyFor<K>>(
   ctl: ControlObject<K, S>,
-  objectValue: ObjectState["settingState"],
+  objectValue: ObjectState<K, S>["settingState"],
   lbl: ContainerBuilder,
 ): void {
   for (const [singleKey, singleDef] of Object.entries(ctl.def.properties)) {
@@ -321,9 +334,9 @@ function objectEntriesGenerator<K extends keyof TS, S extends SettingKeyFor<K>>(
   }
 }
 
-async function baseObjectViewPrefixGenerator(
+async function baseObjectViewPrefixGenerator<K extends keyof TS, S extends SettingKeyFor<K>>(
   lbl: ContainerBuilder,
-  currentState: ObjectState,
+  currentState: ObjectState<K, S>,
   pgCount?: number,
 ): Promise<ContainerBuilder> {
   lbl.setAccentColor(await colorize({ hue: Sokolors.Blue }));
@@ -351,13 +364,13 @@ async function baseObjectViewPrefixGenerator(
 function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyFor<K>>(
   ctl: ControlObject<K, S>,
   lbl: ContainerBuilder,
-  currentState: ObjectState,
+  currentState: ObjectState<K, S>,
 ): ContainerBuilder {
   const actionRow = new ActionRowBuilder<ButtonBuilder>();
   if (ctl.def.iterable) {
     const isDisabled =
       currentState.views === "create_or_save" &&
-      !isSettingValueValid([currentState.settingState], ctl.def);
+      !isSettingValueValid([currentState.settingState], { key: ctl.key, setting: ctl.subKey });
 
     actionRow.addComponents(
       new ButtonBuilder()
@@ -415,12 +428,12 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
 async function constructBaseObjectView<K extends keyof TS, S extends SettingKeyFor<K>>(
   ctl: ControlObject<K, S>,
   methods: MethodsObject,
-  currentState: ObjectState,
+  currentState: ObjectState<K, S>,
   osmKey: string,
 ): Promise<ContainerBuilder> {
   const _objectValue = await methods.getSettingPlease(ctl.key, ctl.subKey);
   const lbl = new ContainerBuilder();
-  let refreshedState: ObjectState | undefined;
+  let refreshedState: ObjectState<K, S> | undefined;
 
   if (ctl.def.iterable) {
     const objectValue = _objectValue as { $: string; [k: string]: unknown }[];
@@ -449,11 +462,12 @@ async function constructBaseObjectView<K extends keyof TS, S extends SettingKeyF
       );
     }
   } else {
+    if (!_objectValue) return lbl; // should never happen
     await baseObjectViewPrefixGenerator(lbl, currentState);
     objectEntriesGenerator(ctl, _objectValue, lbl);
   }
 
-  if (refreshedState) ObjectStateMachine.set(osmKey, refreshedState);
+  if (refreshedState) OSMSet(osmKey, refreshedState);
   else refreshedState = { ...currentState };
 
   baseObjectViewSuffixGenerator(ctl, lbl, refreshedState);
@@ -524,13 +538,17 @@ function MkControlObject<K extends keyof TS, S extends SettingKeyFor<K> | undefi
       id,
       key,
       subKey,
-      def: settingsDefinition[key],
-    } satisfies ControlObject<K>;
+      def: settingsDefinition[key] as SettingDefinitionRecord,
+    } as ControlObject<K, S>;
 
-  return { id, key, subKey, def: settingsDefinition[key].settings[subKey] } satisfies ControlObject<
-    K,
-    S
-  >;
+  return {
+    id,
+    key,
+    subKey,
+    def: (settingsDefinition[key].settings as SettingsFor<K>)[
+      subKey as unknown as SettingKeyFor<K>
+    ],
+  } as ControlObject<K, S>;
 }
 interface MethodsObject {
   setSettingPlease: <K extends keyof TS, S extends SettingKeyFor<K>>(
@@ -568,19 +586,23 @@ type Mode =
  */
 async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
   interaction: SettingInteraction<K, SettingKeyFor<K>> | NonExemptInteraction<K, S>,
-  ctl: ControlObject<K>,
+  ctl: ControlObject<K, S>,
   methods?: MethodsObject,
 ): Promise<undefined | SettingReturnType<K, SettingKeyFor<K>>> {
   const { def, key } = ctl;
   const cID = interaction.customId as SettingKeyFor<K>;
-  const setting = (methods ? def.settings[cID] : def.properties[cID]) as SingleSettingDefinition;
+  const setting: SingleSettingDefinition = methods
+    ? (def as unknown as SettingDefinitionRecord).settings[cID]
+    : def.properties[cID];
 
-  let value = methods ? null : { ...ObjectStateMachine.get(interaction.user.id)?.settingState };
+  let value: ObjectState<K, S>["settingState"] = methods
+    ? {}
+    : { ...OSMGet(interaction.user.id)?.settingState };
   const previousValue = methods ? await methods.getSettingPlease(key, cID) : value[cID];
 
   switch (setting.type) {
     case "BOOL": {
-      if (methods) await methods.setSettingPlease(key, cID, previousValue ? false : true);
+      if (methods) await methods.setSettingPlease(key, cID, t<K, S>(previousValue ? false : true));
       else value = { ...value, [cID]: value[cID] === true ? false : true };
       break;
     }
@@ -608,7 +630,10 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
       if (!modalInteraction) break;
 
       const newValue = modalInteraction.fields.getTextInputValue("setting");
-      const isNewValueValid = isSettingValueValid(newValue, setting);
+      const isNewValueValid = isSettingValueValid(newValue, {
+        key: ctl.key,
+        setting: ctl.subKey,
+      });
       if (isNewValueValid)
         if (methods) await methods.setSettingPlease(key, cID, newValue);
         else
@@ -647,23 +672,23 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
     case "mUSER":
     case "SELECT": {
       const valueThatWillBeSet = (interaction as StringSelectMenuInteraction).values;
-      if (methods) await methods.setSettingPlease(key, cID, valueThatWillBeSet);
+      if (methods) await methods.setSettingPlease(key, cID, t<K, S>(valueThatWillBeSet));
       else value = { ...value, [cID]: valueThatWillBeSet };
 
       break;
     }
     case "OBJECT": {
       if (!methods) return;
-      const updatedState = OSMSetAndGet(interaction.user.id, {
+      const updatedState = OSMSet(interaction.user.id, {
         views: "default",
-        settingState: setting.iterable ? {} : (previousValue ?? {}),
+        settingState: setting.iterable ? {} : (t(previousValue) ?? {}),
         key,
         setting: cID,
         settingDef: setting,
         page: 0,
         openSettingGuid: undefined,
         pages: 0,
-      });
+      } as ObjectState<K, S>);
       await safeEdit({
         interaction,
         editOptions: {
@@ -694,7 +719,11 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
     await safeEdit({
       interaction,
       editOptions: {
-        components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
+        components: [
+          await constructBaseSettingsEmbed(ctl as unknown as ControlObject<K>, methods, {
+            mode: "normal",
+          }),
+        ],
       },
     });
 }
@@ -786,7 +815,8 @@ export async function settingsEmbed<K extends keyof TS>(
   key: K,
   methods: MethodsObject,
 ): Promise<void> {
-  type SI = SettingInteraction<K, SettingKeyFor<K>>;
+  type S = SettingKeyFor<K>;
+  type SI = SettingInteraction<K, S>;
   const ctl = MkControlObject(key, undefined, interaction.guild.id);
   const resetting = (): ResetState => {
     return ResetStateMachine.getOrInsertComputed(interaction.user.id, () => ({
@@ -797,8 +827,8 @@ export async function settingsEmbed<K extends keyof TS>(
   const resetResetting = (): void => {
     ResetStateMachine.set(interaction.user.id, { working: false, targets: new Set() });
   };
-  const safelyGetObjectState = (): ObjectState => {
-    const currentState = ObjectStateMachine.get(interaction.user.id);
+  const safelyGetObjectState = (): ObjectState<K, S> => {
+    const currentState = OSMGet(interaction.user.id);
     if (!currentState)
       throw new Error(
         "JS-side problem: how the f*ck did we get 'undefined' when reading ObjectStateMachine for this user (" +
@@ -806,7 +836,7 @@ export async function settingsEmbed<K extends keyof TS>(
           ") over a control click? It should already exist by here.",
       );
 
-    return currentState;
+    return currentState as unknown as ObjectState<K, S>;
   };
 
   // reset on 1st launch of the command
@@ -892,7 +922,7 @@ export async function settingsEmbed<K extends keyof TS>(
         const resettingValue = resetting().targets;
         await Promise.all(
           setMap(resettingValue, async v =>
-            resetSetting(ctl.id, ctl.key, v.replace("resettgt_", "") as SettingKeyFor<K>),
+            resetSetting(ctl.id, ctl.key, v.replace("resettgt_", "") as S),
           ),
         );
         await safeReply({
@@ -923,7 +953,7 @@ export async function settingsEmbed<K extends keyof TS>(
       case EXEMPT_CIDs.OBJECT_GO_BACK: {
         const previousState = safelyGetObjectState();
         if (previousState.views === "itr_obj_child") {
-          const updatedState = OSMSetAndGet(interaction.user.id, {
+          const updatedState = OSMSet(interaction.user.id, {
             ...previousState,
             views: "default",
             settingState: {},
@@ -960,33 +990,21 @@ export async function settingsEmbed<K extends keyof TS>(
           ...currentObjectState.settingState,
           $: currentObjectState.openSettingGuid,
         };
-        const previous =
-          (await methods.getSettingPlease(ctl.key, currentObjectState.setting)) ?? [];
+        const previous = ((await methods.getSettingPlease(ctl.key, currentObjectState.setting)) ??
+          []) as { $: string; [k: string]: unknown }[];
 
-        if (!finalValue || !isSettingValueValid([finalValue], currentObjectState.settingDef))
-          await safeReply({
-            interaction,
-            replyOptions: {
-              components: [
-                await constructModalContainer(
-                  `${dotCheck({
-                    includeString: true,
-                    doubleSpace: true,
-                    string: "❌",
-                  })}**Something went wrong!**`,
-                  "We had some sort of error and don't exactly know which. Care to try again?",
-                  Sokolors.Red,
-                ),
-              ],
-              flags: ["Ephemeral", "IsComponentsV2"],
-            },
-          });
-        else {
-          const finalThing = (
-            finalValue.$
+        if (
+          isSettingValueValid([finalValue], {
+            key: currentObjectState.key,
+            setting: currentObjectState.setting,
+          })
+        ) {
+          const finalThing = t<K, S>(
+            (finalValue.$
               ? [...previous.filter(v => v.$ != finalValue.$), finalValue]
               : [...previous, { ...finalValue, $: Bun.randomUUIDv7() }]
-          ).toSorted(currentObjectState.settingDef.sorting);
+            ).toSorted((currentObjectState.settingDef as IterableObjectSetting).sorting),
+          );
           await methods.setSettingPlease(ctl.key, currentObjectState.setting, finalThing);
           await safeReply({
             interaction,
@@ -1006,7 +1024,7 @@ export async function settingsEmbed<K extends keyof TS>(
             },
           });
 
-          const updatedState = OSMSetAndGet(interaction.user.id, {
+          const updatedState = OSMSet(interaction.user.id, {
             ...currentObjectState,
             views: "default",
             settingState: {},
@@ -1025,14 +1043,31 @@ export async function settingsEmbed<K extends keyof TS>(
               ],
             },
           });
-        }
+        } else
+          await safeReply({
+            interaction,
+            replyOptions: {
+              components: [
+                await constructModalContainer(
+                  `${dotCheck({
+                    includeString: true,
+                    doubleSpace: true,
+                    string: "❌",
+                  })}**Something went wrong!**`,
+                  "We had some sort of error and don't exactly know which. Care to try again?",
+                  Sokolors.Red,
+                ),
+              ],
+              flags: ["Ephemeral", "IsComponentsV2"],
+            },
+          });
         break;
       }
       case EXEMPT_CIDs.OBJECT_OPEN_CREATE: {
         const currentObjectState = safelyGetObjectState();
         const lbl = new ContainerBuilder();
         const subCtl = MkControlObject(ctl.key, currentObjectState.setting, ctl.id);
-        const updatedState = OSMSetAndGet(interaction.user.id, {
+        const updatedState = OSMSet(interaction.user.id, {
           ...currentObjectState,
           views: "create_or_save",
         });
@@ -1049,12 +1084,16 @@ export async function settingsEmbed<K extends keyof TS>(
         const target = (await methods.getSettingPlease(
           currentObjectState.key,
           currentObjectState.setting,
-        )) as unknown[];
+        )) as { $: string }[];
 
-        const result = target.filter((v: any) => v.$ != currentObjectState.openSettingGuid);
-        await methods.setSettingPlease(currentObjectState.key, currentObjectState.setting, result);
+        const result = target.filter(v => v.$ != currentObjectState.openSettingGuid);
+        await methods.setSettingPlease(
+          currentObjectState.key,
+          currentObjectState.setting,
+          t<K, S>(result),
+        );
 
-        const updatedState = OSMSetAndGet(interaction.user.id, {
+        const updatedState = OSMSet(interaction.user.id, {
           ...currentObjectState,
           views: "default",
           settingState: {},
@@ -1078,9 +1117,13 @@ export async function settingsEmbed<K extends keyof TS>(
       }
       case EXEMPT_CIDs.OBJECT_CLEAR: {
         const currentObjectState = safelyGetObjectState();
-        await methods.setSettingPlease(currentObjectState.key, currentObjectState.setting, []);
+        await methods.setSettingPlease(
+          currentObjectState.key,
+          currentObjectState.setting,
+          t<K, S>([]),
+        );
 
-        const updatedState = OSMSetAndGet(interaction.user.id, {
+        const updatedState = OSMSet(interaction.user.id, {
           ...currentObjectState,
           views: "default",
           settingState: {},
@@ -1118,7 +1161,7 @@ export async function settingsEmbed<K extends keyof TS>(
           collector,
         });
 
-        const updatedState = OSMSetAndGet(interaction.user.id, {
+        const updatedState = OSMSet(interaction.user.id, {
           ...currentObjectState,
           views: "default",
           settingState: {},
@@ -1166,7 +1209,7 @@ export async function settingsEmbed<K extends keyof TS>(
           const currentObjectState = safelyGetObjectState();
           const subCtl = MkControlObject(ctl.key, currentObjectState.setting, ctl.id);
           const lbl = new ContainerBuilder();
-          let updatedState: ObjectState;
+          let updatedState: ObjectState<K, S>;
 
           if (cID.startsWith("+")) {
             const heldSettings = (await methods.getSettingPlease(ctl.key, subCtl.subKey)) as Record<
@@ -1180,24 +1223,32 @@ export async function settingsEmbed<K extends keyof TS>(
                 `Attempted to load setting with GUID ${guid}, but such setting does not exist!`,
               );
 
-            updatedState = OSMSetAndGet(interaction.user.id, {
+            updatedState = OSMSet(interaction.user.id, {
               ...currentObjectState,
               views: "itr_obj_child",
               openSettingGuid: guid,
               settingState: settingToLoad,
             });
-          } else
-            updatedState = OSMSetAndGet(interaction.user.id, {
+          } else {
+            const settingState = await toggleHandler(replyInteraction, subCtl);
+            if (!settingState)
+              throw new Error(
+                "settingState (return of toggleHandler) should NOT be undefined while collecting DEFAULT CASE and within an OBJECT view.",
+              );
+
+            updatedState = OSMSet(interaction.user.id, {
               ...currentObjectState,
-              settingState: await toggleHandler(replyInteraction, subCtl),
+              settingState,
             });
+          }
 
           await baseObjectViewPrefixGenerator(lbl, updatedState);
           objectEntriesGenerator(subCtl, updatedState.settingState, lbl);
           baseObjectViewSuffixGenerator(subCtl, lbl, updatedState);
 
           await safeEdit({ interaction: replyInteraction, editOptions: { components: [lbl] } });
-        } else await toggleHandler(replyInteraction, ctl, methods);
+        } else
+          await toggleHandler(replyInteraction, ctl as unknown as ControlObject<K, S>, methods);
       }
     }
   });

@@ -58,7 +58,6 @@ A few, simple guidelines onto how to contribute to Sokora.
 Some things you should keep in mind at all times.
 
 - Ensure to run the static formatter and analyzer (via `bun run ql`) before committing.
-  - As a side note, **expect and ignore type errors in the specific `settingsEmbed.ts` file**.
 - Remember to commit changes to `bun.lock` file.
 - Do not repeat yourself, at all. Code duplication creates problems. Extract to functions.
 - Document via JSDoc anything that isn't self-explanatory and other developers will have to touch often (like utility functions or important parts of important files).
@@ -68,8 +67,9 @@ Below, other things you should keep in mind when you're carrying specific tasks.
 - _I'm interacting with a setting that is specifically an ITERABLE OBJECT one._
   - If you're defining it for the first time, add the property `$: { type: "TEXT", desc: "", val: "" }`.
   - If you need to delete/reference a specific value, filter by `$`. It's a GUID.
-- _I'm finding a way for all settingsEmbed type errors to dissapear and everything to be typed._
+- _I'm finding a way for all of settingsEmbed.ts to be PROPERLY everything to be typed._
   - Choose a mansion you'd like us to buy for you.
+  - For reference, due to the guy building our type system assuming TypeScript is a better language than it actually is (see PR #91), we've hit some compiler limitations that make it very hard to convey what we're doing to the compiler without it erroring out. This section of CONTRIBUTING.md was created because we were actually going to tolerate getting `settingsEmbed.ts` (one of the most important files of the bot!) to production with a truckload of TypeErrors. By now this has been resolved, but using bad practices and type casts everywhere. Anyone who achieves proper typing for this is an absolute hero and will probably be rewarded in some sort of way.
 
 ### Code styling guidelines
 
