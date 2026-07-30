@@ -9,6 +9,7 @@ import {
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
+import { pagedButtons } from "utils/pagination";
 import { safeRole } from "utils/safeThings";
 
 export async function newsEmbed(
@@ -21,6 +22,11 @@ export async function newsEmbed(
     imageURL?: string | null;
   },
   willEdit?: boolean,
+  viewOptions?: {
+    pages: number;
+    page: number;
+    isDisabled: boolean;
+  },
 ): Promise<ContainerBuilder> {
   const { title, body, author, id, imageURL } = newsOptions;
   const roles = await getSetting(guild.id, "news", "role");
@@ -48,9 +54,14 @@ export async function newsEmbed(
       new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(image)),
     );
 
+  if (viewOptions && viewOptions.pages > 1)
+    container.addActionRowComponents(
+      pagedButtons(viewOptions.pages, viewOptions.page, viewOptions.isDisabled),
+    );
+
   container.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      `-# Latest from ${guild.name} • ID: ${id} • ${mention(timestamp, "DEFAULT_TIMESTAMP")}`,
+      `-# ${viewOptions ? "" : `Latest from ${guild.name} • `}ID: ${id} • ${mention(timestamp, "DEFAULT_TIMESTAMP")}`,
     ),
   );
 

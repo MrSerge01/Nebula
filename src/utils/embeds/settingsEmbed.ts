@@ -21,11 +21,11 @@
 import { resetSetting, resetSettingCategory, settingsDefinition, type TS } from "database/settings";
 import {
   isSettingValueValid,
-  type SettingReturnType,
   type SettingDefinitionRecord,
-  type SingleSettingDefinition,
   type SettingKeyFor,
+  type SettingReturnType,
   type SettingSettableValue,
+  type SingleSettingDefinition,
 } from "database/types";
 import {
   ActionRowBuilder,
@@ -35,24 +35,24 @@ import {
   ButtonStyle,
   ChannelSelectMenuBuilder,
   ChannelType,
+  type ChatInputCommandInteraction,
+  codeBlock,
   ContainerBuilder,
+  type Guild,
+  LabelBuilder,
+  type MessageActionRowComponentBuilder,
+  ModalBuilder,
   type ModalSubmitInteraction,
   RoleSelectMenuBuilder,
   SectionBuilder,
+  SeparatorBuilder,
   StringSelectMenuBuilder,
+  type StringSelectMenuInteraction,
   StringSelectMenuOptionBuilder,
   TextDisplayBuilder,
-  UserSelectMenuBuilder,
-  type ChatInputCommandInteraction,
-  type StringSelectMenuInteraction,
-  type MessageActionRowComponentBuilder,
-  SeparatorBuilder,
-  type Guild,
-  ModalBuilder,
-  codeBlock,
-  LabelBuilder,
   TextInputBuilder,
   TextInputStyle,
+  UserSelectMenuBuilder,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
 import { dotCheck } from "utils/dotCheck";
@@ -237,7 +237,6 @@ function rowGenerator(
         component = new RoleSelectMenuBuilder().setCustomId(cID).setMaxValues(maxValues);
 
         if (setting) component.setDefaultRoles(setting as string[]);
-
         break;
       }
       case "SELECT": {
@@ -286,11 +285,7 @@ function rowGenerator(
  */
 function iterableObjectRowGenerator(
   builder: ContainerBuilder,
-  data: {
-    guid: string;
-    indexInArray: number;
-    descriptor: string;
-  },
+  data: { guid: string; indexInArray: number; descriptor: string },
   settingObject: SingleSettingDefinition,
 ): void {
   builder.addSectionComponents(
@@ -318,15 +313,10 @@ function objectEntriesGenerator<K extends keyof TS, S extends SettingKeyFor<K>>(
     if (singleKey === "$") continue;
     rowGenerator(
       lbl,
-      {
-        key: singleKey,
-        desc: singleDef.desc,
-      },
+      { key: singleKey, desc: singleDef.desc },
       singleDef,
       objectValue?.[singleKey] ?? undefined,
-      {
-        mode: "normal",
-      },
+      { mode: "normal" },
     );
   }
 }
@@ -337,7 +327,6 @@ async function baseObjectViewPrefixGenerator(
   pgCount?: number,
 ): Promise<ContainerBuilder> {
   lbl.setAccentColor(await colorize({ hue: Sokolors.Blue }));
-
   const actionRow = new ActionRowBuilder<ButtonBuilder>();
 
   if (currentState.views != "create_or_save")
@@ -365,11 +354,11 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
   currentState: ObjectState,
 ): ContainerBuilder {
   const actionRow = new ActionRowBuilder<ButtonBuilder>();
-
   if (ctl.def.iterable) {
     const isDisabled =
       currentState.views === "create_or_save" &&
       !isSettingValueValid([currentState.settingState], ctl.def);
+
     actionRow.addComponents(
       new ButtonBuilder()
         .setCustomId(
@@ -430,9 +419,7 @@ async function constructBaseObjectView<K extends keyof TS, S extends SettingKeyF
   osmKey: string,
 ): Promise<ContainerBuilder> {
   const _objectValue = await methods.getSettingPlease(ctl.key, ctl.subKey);
-
   const lbl = new ContainerBuilder();
-
   let refreshedState: ObjectState | undefined;
 
   if (ctl.def.iterable) {
@@ -443,21 +430,16 @@ async function constructBaseObjectView<K extends keyof TS, S extends SettingKeyF
         OBJECTS_PER_ITR_PAGE * (currentState.page + 1),
       );
       const pgCount = Math.ceil(objectValue.length / OBJECTS_PER_ITR_PAGE);
+
       await baseObjectViewPrefixGenerator(lbl, currentState, pgCount);
       for (const [index, entry] of paged.entries())
         iterableObjectRowGenerator(
           lbl,
-          {
-            indexInArray: index,
-            guid: entry.$,
-            descriptor: ctl.def.naming(entry),
-          },
+          { indexInArray: index, guid: entry.$, descriptor: ctl.def.naming(entry) },
           ctl.def,
         );
-      refreshedState = {
-        ...currentState,
-        pages: pgCount,
-      };
+
+      refreshedState = { ...currentState, pages: pgCount };
     } else {
       await baseObjectViewPrefixGenerator(lbl, currentState);
       lbl.addTextDisplayComponents(
@@ -475,7 +457,6 @@ async function constructBaseObjectView<K extends keyof TS, S extends SettingKeyF
   else refreshedState = { ...currentState };
 
   baseObjectViewSuffixGenerator(ctl, lbl, refreshedState);
-
   return lbl;
 }
 
@@ -521,16 +502,7 @@ interface ControlObject<
   /** Key of the setting *itself* (within a table) we're working with; only defined for OBJECTs. */
   subKey: S;
 }
-function MkControlObject<K extends keyof TS, S extends SettingKeyFor<K>>(
-  key: K,
-  subKey: S,
-  id: string,
-): ControlObject<K, S>;
-function MkControlObject<K extends keyof TS>(
-  key: K,
-  subKey: undefined,
-  id: string,
-): ControlObject<K>;
+
 /**
  * Band-aid function to construct properly typed `ControlObject`s, and also type-check subKeys.
  *
@@ -551,19 +523,14 @@ function MkControlObject<K extends keyof TS, S extends SettingKeyFor<K> | undefi
     return {
       id,
       key,
-      // @ts-expect-error never happening :(
       subKey,
-      // @ts-expect-error shut up you too…
       def: settingsDefinition[key],
     } satisfies ControlObject<K>;
 
-  return {
-    id,
-    key,
-    subKey,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    def: settingsDefinition[key].settings[subKey],
-  } satisfies ControlObject<K, S>;
+  return { id, key, subKey, def: settingsDefinition[key].settings[subKey] } satisfies ControlObject<
+    K,
+    S
+  >;
 }
 interface MethodsObject {
   setSettingPlease: <K extends keyof TS, S extends SettingKeyFor<K>>(
@@ -599,44 +566,22 @@ type Mode =
  * @param methods Define this to use the standard handler, leave undefined for the OBJECT one.
  * @returns {Promise<SettingReturnType<K, S>> | void} If handling an OBJECT toggle, value you will want to pass to `setSettingPlease`. Void otherwise.
  */
-async function toggleHandler<K extends keyof TS>(
-  interaction: SettingInteraction<K, SettingKeyFor<K>>,
+async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
+  interaction: SettingInteraction<K, SettingKeyFor<K>> | NonExemptInteraction<K, S>,
   ctl: ControlObject<K>,
-  methods?: undefined,
-): Promise<SettingReturnType<K, SettingKeyFor<K>>>;
-async function toggleHandler<K extends keyof TS>(
-  interaction: NonExemptInteraction<K, SettingKeyFor<K>>,
-  ctl: ControlObject<K, SettingKeyFor<K>>,
-  methods: MethodsObject,
-): Promise<void>;
-async function toggleHandler<K extends keyof TS>(
-  interaction: SettingInteraction<K, SettingKeyFor<K>> | NonExemptInteraction<K, SettingKeyFor<K>>,
-  ctl: ControlObject<K> | ControlObject<K, SettingKeyFor<K>>,
   methods?: MethodsObject,
-): Promise<void | SettingReturnType<K, SettingKeyFor<K>>> {
+): Promise<undefined | SettingReturnType<K, SettingKeyFor<K>>> {
   const { def, key } = ctl;
+  const cID = interaction.customId as SettingKeyFor<K>;
+  const setting = (methods ? def.settings[cID] : def.properties[cID]) as SingleSettingDefinition;
 
-  const setting = (methods
-    ? def.settings[interaction.customId]
-    : def.properties[interaction.customId]) as unknown as SingleSettingDefinition;
-  let value = methods
-    ? null
-    : {
-        ...ObjectStateMachine.get(interaction.user.id)?.settingState,
-      };
-  const previousValue = methods
-    ? await methods.getSettingPlease(key, interaction.customId)
-    : value[interaction.customId];
+  let value = methods ? null : { ...ObjectStateMachine.get(interaction.user.id)?.settingState };
+  const previousValue = methods ? await methods.getSettingPlease(key, cID) : value[cID];
 
   switch (setting.type) {
     case "BOOL": {
-      if (methods)
-        await methods.setSettingPlease(key, interaction.customId, previousValue ? false : true);
-      else
-        value = {
-          ...value,
-          [interaction.customId]: value[interaction.customId] === true ? false : true,
-        };
+      if (methods) await methods.setSettingPlease(key, cID, previousValue ? false : true);
+      else value = { ...value, [cID]: value[cID] === true ? false : true };
       break;
     }
     case "INTEGER":
@@ -644,8 +589,8 @@ async function toggleHandler<K extends keyof TS>(
     case "TEXT":
     case "mTEXT": {
       const modal = new ModalBuilder()
-        .setCustomId(interaction.customId)
-        .setTitle(`•  ${humanizeSettings(interaction.customId)}`)
+        .setCustomId(cID)
+        .setTitle(`•  ${humanizeSettings(cID)}`)
         .addLabelComponents(
           new LabelBuilder().setLabel("Value").setTextInputComponent(
             new TextInputBuilder()
@@ -660,18 +605,16 @@ async function toggleHandler<K extends keyof TS>(
 
       await (interaction as ButtonInteraction).showModal(modal);
       const modalInteraction = await modalSubmit(interaction as ButtonInteraction);
-
       if (!modalInteraction) break;
 
       const newValue = modalInteraction.fields.getTextInputValue("setting");
       const isNewValueValid = isSettingValueValid(newValue, setting);
-
       if (isNewValueValid)
-        if (methods) await methods.setSettingPlease(key, interaction.customId, newValue);
+        if (methods) await methods.setSettingPlease(key, cID, newValue);
         else
           value = {
             ...value,
-            [interaction.customId]:
+            [cID]:
               setting.type === "INTEGER" || setting.type === "mINTEGER"
                 ? Number(newValue)
                 : newValue,
@@ -683,8 +626,8 @@ async function toggleHandler<K extends keyof TS>(
           components: [
             await constructModalContainer(
               isNewValueValid
-                ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(interaction.customId)}** got changed`
-                : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(interaction.customId)}** couldn't be changed!`,
+                ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
+                : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn't be changed!`,
               isNewValueValid
                 ? `The ${newValue.length < 50 ? "value" : "**value**"} has been set ${newValue.length >= 500 ? "successfully." : (newValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
                 : `Given data is invalid. Ensure it's of the valid type (${humanizeSettingType(setting)}) and try again.${newValue?.length >= 500 ? "" : `\nData entered was:\n${codeBlock(newValue)}`}`,
@@ -704,12 +647,8 @@ async function toggleHandler<K extends keyof TS>(
     case "mUSER":
     case "SELECT": {
       const valueThatWillBeSet = (interaction as StringSelectMenuInteraction).values;
-      if (methods) await methods.setSettingPlease(key, interaction.customId, valueThatWillBeSet);
-      else
-        value = {
-          ...value,
-          [interaction.customId]: valueThatWillBeSet,
-        };
+      if (methods) await methods.setSettingPlease(key, cID, valueThatWillBeSet);
+      else value = { ...value, [cID]: valueThatWillBeSet };
 
       break;
     }
@@ -719,7 +658,7 @@ async function toggleHandler<K extends keyof TS>(
         views: "default",
         settingState: setting.iterable ? {} : (previousValue ?? {}),
         key,
-        setting: interaction.customId,
+        setting: cID,
         settingDef: setting,
         page: 0,
         openSettingGuid: undefined,
@@ -730,7 +669,7 @@ async function toggleHandler<K extends keyof TS>(
         editOptions: {
           components: [
             await constructBaseObjectView(
-              MkControlObject(ctl.key, interaction.customId as never, ctl.id),
+              MkControlObject(ctl.key, cID, ctl.id),
               methods,
               updatedState,
               interaction.user.id,
@@ -742,30 +681,20 @@ async function toggleHandler<K extends keyof TS>(
     }
     default: {
       console.warn(
-        "Unhandled setting type",
-        setting.type,
-        "for",
-        interaction.customId,
-        "with",
+        `Unhandled setting type ${setting.type} for ${cID} with`,
         setting,
-        "and",
-        methods ? "methods" : "no methods",
+        `and ${methods ? "methods" : "no methods"}`,
       );
       break;
     }
   }
 
   if (!methods) return value as SettingReturnType<K, S>;
-
   if (interaction.isButton() || interaction.isAnySelectMenu())
     await safeEdit({
       interaction,
       editOptions: {
-        components: [
-          await constructBaseSettingsEmbed(ctl, methods, {
-            mode: "normal",
-          }),
-        ],
+        components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
       },
     });
 }
@@ -801,12 +730,9 @@ async function constructBaseSettingsEmbed<K extends keyof TS>(
   for (const [singleKey, singleDef] of Object.entries(def.settings))
     rowGenerator(
       lbl,
-      {
-        key: singleKey,
-        desc: singleDef.desc,
-      },
+      { key: singleKey, desc: singleDef.desc },
       singleDef,
-      await methods.getSettingPlease(key, singleKey),
+      await methods.getSettingPlease(key, singleKey as SettingKeyFor<K>),
       mode,
     );
 
@@ -861,9 +787,7 @@ export async function settingsEmbed<K extends keyof TS>(
   methods: MethodsObject,
 ): Promise<void> {
   type SI = SettingInteraction<K, SettingKeyFor<K>>;
-
   const ctl = MkControlObject(key, undefined, interaction.guild.id);
-
   const resetting = (): ResetState => {
     return ResetStateMachine.getOrInsertComputed(interaction.user.id, () => ({
       working: false,
@@ -893,30 +817,21 @@ export async function settingsEmbed<K extends keyof TS>(
     await safeEdit({
       interaction: replyInteraction,
       editOptions: {
-        components: [
-          await constructBaseSettingsEmbed(ctl, methods, {
-            mode: "normal",
-          }),
-        ],
+        components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
       },
     });
     resetResetting();
   }
 
   const reply = await interaction.reply({
-    components: [
-      await constructBaseSettingsEmbed(ctl, methods, {
-        mode: "normal",
-      }),
-    ],
+    components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
     flags: ["IsComponentsV2", "Ephemeral"],
   });
   const collector = reply.createMessageComponentCollector({ time: 120_000 });
   collector.on("collect", async (replyInteraction: SI) => {
-    collector.resetTimer({
-      time: 120_000,
-    });
-    switch (replyInteraction.customId) {
+    collector.resetTimer({ time: 120_000 });
+    const cID = replyInteraction.customId;
+    switch (cID) {
       /// RESET CTL ///
       case EXEMPT_CIDs.RESET: {
         ResetStateMachine.set(interaction.user.id, { working: true, targets: new Set() });
@@ -948,11 +863,7 @@ export async function settingsEmbed<K extends keyof TS>(
         await safeEdit({
           interaction: replyInteraction,
           editOptions: {
-            components: [
-              await constructBaseSettingsEmbed(ctl, methods, {
-                mode: "normal",
-              }),
-            ],
+            components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
           },
         });
         await safeReply({
@@ -981,7 +892,7 @@ export async function settingsEmbed<K extends keyof TS>(
         const resettingValue = resetting().targets;
         await Promise.all(
           setMap(resettingValue, async v =>
-            resetSetting(ctl.id, ctl.key, v.replace("resettgt_", "")),
+            resetSetting(ctl.id, ctl.key, v.replace("resettgt_", "") as SettingKeyFor<K>),
           ),
         );
         await safeReply({
@@ -1001,11 +912,7 @@ export async function settingsEmbed<K extends keyof TS>(
         await safeEdit({
           interaction: replyInteraction,
           editOptions: {
-            components: [
-              await constructBaseSettingsEmbed(ctl, methods, {
-                mode: "normal",
-              }),
-            ],
+            components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
           },
         });
         break;
@@ -1015,7 +922,6 @@ export async function settingsEmbed<K extends keyof TS>(
       /// (or Matoryoshka, however its spelled, you'll find it both ways)
       case EXEMPT_CIDs.OBJECT_GO_BACK: {
         const previousState = safelyGetObjectState();
-
         if (previousState.views === "itr_obj_child") {
           const updatedState = OSMSetAndGet(interaction.user.id, {
             ...previousState,
@@ -1041,11 +947,7 @@ export async function settingsEmbed<K extends keyof TS>(
           await safeEdit({
             interaction: replyInteraction,
             editOptions: {
-              components: [
-                await constructBaseSettingsEmbed(ctl, methods, {
-                  mode: "normal",
-                }),
-              ],
+              components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
             },
           });
           ObjectStateMachine.delete(interaction.user.id);
@@ -1054,13 +956,13 @@ export async function settingsEmbed<K extends keyof TS>(
       }
       case EXEMPT_CIDs.OBJECT_SAVE: {
         const currentObjectState = safelyGetObjectState();
-
         const finalValue = {
           ...currentObjectState.settingState,
           $: currentObjectState.openSettingGuid,
         };
         const previous =
           (await methods.getSettingPlease(ctl.key, currentObjectState.setting)) ?? [];
+
         if (!finalValue || !isSettingValueValid([finalValue], currentObjectState.settingDef))
           await safeReply({
             interaction,
@@ -1129,9 +1031,7 @@ export async function settingsEmbed<K extends keyof TS>(
       case EXEMPT_CIDs.OBJECT_OPEN_CREATE: {
         const currentObjectState = safelyGetObjectState();
         const lbl = new ContainerBuilder();
-
         const subCtl = MkControlObject(ctl.key, currentObjectState.setting, ctl.id);
-
         const updatedState = OSMSetAndGet(interaction.user.id, {
           ...currentObjectState,
           views: "create_or_save",
@@ -1141,24 +1041,17 @@ export async function settingsEmbed<K extends keyof TS>(
         objectEntriesGenerator(subCtl, updatedState.settingState, lbl);
         baseObjectViewSuffixGenerator(subCtl, lbl, updatedState);
 
-        await safeEdit({
-          interaction: replyInteraction,
-          editOptions: {
-            components: [lbl],
-          },
-        });
+        await safeEdit({ interaction: replyInteraction, editOptions: { components: [lbl] } });
         break;
       }
       case EXEMPT_CIDs.OBJECT_DELETE_CHILD: {
         const currentObjectState = safelyGetObjectState();
-
         const target = (await methods.getSettingPlease(
           currentObjectState.key,
           currentObjectState.setting,
         )) as unknown[];
 
         const result = target.filter((v: any) => v.$ != currentObjectState.openSettingGuid);
-
         await methods.setSettingPlease(currentObjectState.key, currentObjectState.setting, result);
 
         const updatedState = OSMSetAndGet(interaction.user.id, {
@@ -1185,7 +1078,6 @@ export async function settingsEmbed<K extends keyof TS>(
       }
       case EXEMPT_CIDs.OBJECT_CLEAR: {
         const currentObjectState = safelyGetObjectState();
-
         await methods.setSettingPlease(currentObjectState.key, currentObjectState.setting, []);
 
         const updatedState = OSMSetAndGet(interaction.user.id, {
@@ -1217,7 +1109,6 @@ export async function settingsEmbed<K extends keyof TS>(
           return;
 
         const currentObjectState = safelyGetObjectState();
-
         if (currentObjectState.views != "default") return;
 
         const page = await handlePages({
@@ -1256,10 +1147,10 @@ export async function settingsEmbed<K extends keyof TS>(
           await replyInteraction.deferUpdate();
 
           const targetsSoFar = new Set(resetState.targets);
-          if (targetsSoFar.has(replyInteraction.customId))
-            targetsSoFar.delete(replyInteraction.customId);
-          else targetsSoFar.add(replyInteraction.customId);
+          if (targetsSoFar.has(cID)) targetsSoFar.delete(cID);
+          else targetsSoFar.add(cID);
           ResetStateMachine.set(interaction.user.id, { working: true, targets: targetsSoFar });
+
           await safeEdit({
             interaction: replyInteraction,
             editOptions: {
@@ -1276,12 +1167,13 @@ export async function settingsEmbed<K extends keyof TS>(
           const subCtl = MkControlObject(ctl.key, currentObjectState.setting, ctl.id);
           const lbl = new ContainerBuilder();
           let updatedState: ObjectState;
-          if (replyInteraction.customId.startsWith("+")) {
+
+          if (cID.startsWith("+")) {
             const heldSettings = (await methods.getSettingPlease(ctl.key, subCtl.subKey)) as Record<
               string,
               SettingSettableValue
             >[];
-            const guid = replyInteraction.customId.replace("+", "");
+            const guid = cID.replace("+", "");
             const settingToLoad = heldSettings.find(v => v.$ == guid);
             if (!settingToLoad)
               throw new Error(
@@ -1294,28 +1186,22 @@ export async function settingsEmbed<K extends keyof TS>(
               openSettingGuid: guid,
               settingState: settingToLoad,
             });
-          } else {
-            const res = await toggleHandler(replyInteraction, subCtl);
+          } else
             updatedState = OSMSetAndGet(interaction.user.id, {
               ...currentObjectState,
-              settingState: res,
+              settingState: await toggleHandler(replyInteraction, subCtl),
             });
-          }
 
           await baseObjectViewPrefixGenerator(lbl, updatedState);
           objectEntriesGenerator(subCtl, updatedState.settingState, lbl);
           baseObjectViewSuffixGenerator(subCtl, lbl, updatedState);
 
-          await safeEdit({
-            interaction: replyInteraction,
-            editOptions: {
-              components: [lbl],
-            },
-          });
+          await safeEdit({ interaction: replyInteraction, editOptions: { components: [lbl] } });
         } else await toggleHandler(replyInteraction, ctl, methods);
       }
     }
   });
+
   collector.on("end", async () => {
     await reply.delete();
     ObjectStateMachine.delete(interaction.user.id);

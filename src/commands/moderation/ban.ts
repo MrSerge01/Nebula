@@ -69,7 +69,6 @@ export async function run(
     return;
 
   let delSec;
-
   let durationMs = null;
 
   if (duration) {

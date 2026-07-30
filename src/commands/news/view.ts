@@ -1,21 +1,17 @@
 import { listAllNews } from "database/news";
-import { getSetting } from "database/settings";
 import {
-  ContainerBuilder,
-  MediaGalleryBuilder,
-  MediaGalleryItemBuilder,
   SlashCommandSubcommandBuilder,
-  TextDisplayBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
+  type ContainerBuilder,
+  type Guild,
   type InteractionResponse,
   type Message,
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
-import { colorize, Sokolors } from "utils/colorize";
-import { mention } from "utils/mention";
-import { handlePages, pagedButtons } from "utils/pagination";
-import { safeEdit, safeRole } from "utils/safeThings";
+import { newsEmbed } from "embeds/newsEmbed";
+import { handlePages } from "utils/pagination";
+import { safeEdit } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("view")
@@ -37,10 +33,6 @@ export async function run(
 
   const news = await listAllNews(guild.id);
   const pages = news.length;
-  const roles = await getSetting(guild.id, "news", "role");
-  const rolesToSend: string[] = roles
-    ? await Promise.all(roles.map(async role => mention((await safeRole(guild, role)).id, "ROLE")))
-    : [];
   let page = Math.max(0, Math.min(interaction.options.getNumber("page") ?? 0, pages) - 1);
 
   if (!news?.length)
@@ -50,35 +42,19 @@ export async function run(
       reason: "Admins can post news with the **/news post** command.",
     });
 
-  async function getContainer(isDisabled: boolean): Promise<ContainerBuilder> {
+  async function getContainer(guild: Guild, isDisabled: boolean): Promise<ContainerBuilder> {
     const currentNews = news[page];
-    const { author, title, body, id, updatedAt, createdAt, imageURL } = currentNews;
-    const container = new ContainerBuilder()
-      .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          `**Posted by ${author}${rolesToSend ? ` for ${rolesToSend.join(" ")}` : ""}**`,
-        ),
-        new TextDisplayBuilder().setContent(`## ${title}`),
-        new TextDisplayBuilder().setContent(body),
-      )
-      .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+    const { author, title, body, id, imageURL } = currentNews;
 
-    if (imageURL)
-      container.addMediaGalleryComponents(
-        new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(imageURL)),
-      );
-
-    if (pages > 1) container.addActionRowComponents(pagedButtons(pages, page, isDisabled));
-
-    return container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        `-# ID: ${id} • ${mention(updatedAt?.valueOf() ?? createdAt.valueOf(), "DEFAULT_TIMESTAMP")}`,
-      ),
-    );
+    return await newsEmbed(guild, { title, body, author, id, imageURL }, false, {
+      pages,
+      page,
+      isDisabled,
+    });
   }
 
   const reply = await interaction.reply({
-    components: [await getContainer(false)],
+    components: [await getContainer(guild, false)],
     flags: "IsComponentsV2",
   });
 
@@ -92,13 +68,13 @@ export async function run(
     page = await handlePages({ i: buttonInteraction, page, pages, collector });
     await safeEdit({
       interaction: buttonInteraction,
-      editOptions: { components: [await getContainer(false)] },
+      editOptions: { components: [await getContainer(guild, false)] },
     });
   });
 
   collector.on("end", async () => {
     try {
-      await interaction.editReply({ components: [await getContainer(true)] });
+      await interaction.editReply({ components: [await getContainer(guild, true)] });
     } catch (error) {
       if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
       throw error;
