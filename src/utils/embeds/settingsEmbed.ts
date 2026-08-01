@@ -224,7 +224,7 @@ function rowGenerator(
         ? false
         : ((settingObject.val && settingObject.val == setting) ||
             setting == null ||
-            setting.length === 0
+            (setting as unknown[]).length === 0
           ? true
           : false),
     )
@@ -651,6 +651,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
       const isNewValueValid = isSettingValueValid(newValue, {
         key: ctl.key,
         setting: ctl.subKey,
+        def: setting,
       });
       if (isNewValueValid)
         if (methods) await methods.setSettingPlease(key, cID, newValue);

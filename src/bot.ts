@@ -1,3 +1,4 @@
+import pLimit from "p-limit";
 import { Api } from "@top-gg/sdk";
 import { Chart, registerables } from "chart.js";
 import { updateDatabase } from "database/index";
@@ -23,6 +24,7 @@ import { rescheduleUnbans } from "utils/unbanScheduler";
 import { IS_CANARY } from "./canary";
 
 const LOG_FILE = process.env.LIFECYCLE_LOG_PATH ?? "/app/logs/lifecycle.log";
+const CANARY_MSG_BATCH_SIZE = 25;
 
 function appendLog(event: string): void {
   try {
@@ -144,54 +146,66 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
     )
     .join("\n");
 
-  await Promise.all(
-    client.guilds.cache.values().map(async guild => {
-      if (!user) return;
-      const textDisplayComponents =
-        log.length > 0
-          ? [
-              new TextDisplayBuilder().setContent("## Sokora Canary pulled updates!"),
-              new TextDisplayBuilder().setContent(
-                "Hello! This restart brought changes. We don't maintain a formal changelog for these quick patches, so here's a developer commit log, messages should be clear enough.",
-              ),
-              new TextDisplayBuilder().setContent(codeBlock("diff", dump)),
-              new TextDisplayBuilder().setContent(
-                hasTooManyCommits
-                  ? // eslint-disable-next-line unicorn/string-content
-                    `There's more commits that don't fit in this message (total is ${log.length}), see the full log [at this link](https://github.com/SokoraDesu/Sokora/compare/${log.at(-1)?.sha}...dev) or compare latest \`dev\` to \`${log.at(-1)?.sha.slice(0, 8)}\`.\nFor reference, changes are counted from the second the bot started up until ${lastShutdown.toISOString()}.`
-                  : "That's about it.",
-              ),
-              new TextDisplayBuilder().setContent(
-                [
-                  "**Enjoy testing, and thanks for using Sokora Canary!**",
-                  `-# By the way, get pinged, ${mention(guild.ownerId, "USER")}!`,
-                ].join("\n"),
-              ),
-            ]
-          : [
-              new TextDisplayBuilder().setContent(
-                "## Sokora Canary restarted, though there's nothing new",
-              ),
-              new TextDisplayBuilder().setContent(
-                [
-                  `Hello! This restart brought no new updates. For reference, shutdown was logged at ${lastShutdown.toDateString()} + 30', and no new commits exist since.`,
-                  "We'll hopefully have something new soon.",
-                  "Thanks for using Sokora Canary!",
-                ].join("\n"),
-              ),
-            ];
+  const timestamp = mention(lastShutdown.valueOf(), "DEFAULT_TIMESTAMP");
+  const limit = pLimit(CANARY_MSG_BATCH_SIZE);
 
-      await safeAlertChannel(guild).send({
-        components: [
-          new ContainerBuilder()
-            .addTextDisplayComponents(textDisplayComponents)
-            .setAccentColor(
-              await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Green }),
-            ),
-        ],
-        flags: "IsComponentsV2",
-      });
-    }),
+  console.log(
+    "Issuing canary alert to",
+    client.guilds.cache.size,
+    "guilds in batches of",
+    CANARY_MSG_BATCH_SIZE,
+  );
+
+  await Promise.all(
+    client.guilds.cache.map(async guild =>
+      limit(async () => {
+        if (!user) return;
+        const textDisplayComponents =
+          log.length > 0
+            ? [
+                new TextDisplayBuilder().setContent("## Sokora Canary pulled updates!"),
+                new TextDisplayBuilder().setContent(
+                  "Hello! This restart brought changes. We don't maintain a formal changelog for these quick patches, so here's a developer commit log, messages should be clear enough.",
+                ),
+                new TextDisplayBuilder().setContent(codeBlock("diff", dump)),
+                new TextDisplayBuilder().setContent(
+                  hasTooManyCommits
+                    ? // eslint-disable-next-line unicorn/string-content
+                      `There's more commits that don't fit in this message (total is ${log.length}), see the full log [at this link](https://github.com/SokoraDesu/Sokora/compare/${log.at(-1)?.sha}...dev) or compare latest \`dev\` to \`${log.at(-1)?.sha.slice(0, 8)}\`.\nFor reference, changes are counted from the second the bot started up until ${timestamp}.`
+                    : "That's about it.",
+                ),
+                new TextDisplayBuilder().setContent(
+                  [
+                    "**Enjoy testing, and thanks for using Sokora Canary!**",
+                    `-# By the way, get pinged, ${mention(guild.ownerId, "USER")}!`,
+                  ].join("\n"),
+                ),
+              ]
+            : [
+                new TextDisplayBuilder().setContent(
+                  "## Sokora Canary restarted, though there's nothing new",
+                ),
+                new TextDisplayBuilder().setContent(
+                  [
+                    `Hello! This restart brought no new updates. For reference, shutdown was logged at ${timestamp} + 30', and no new commits exist since.`,
+                    "We'll hopefully have something new soon.",
+                    "Thanks for using Sokora Canary!",
+                  ].join("\n"),
+                ),
+              ];
+
+        await safeAlertChannel(guild).send({
+          components: [
+            new ContainerBuilder()
+              .addTextDisplayComponents(textDisplayComponents)
+              .setAccentColor(
+                await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Green }),
+              ),
+          ],
+          flags: "IsComponentsV2",
+        });
+      }),
+    ),
   );
 };
 

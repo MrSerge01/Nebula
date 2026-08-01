@@ -24,6 +24,7 @@
     "enhanced-ms": "^5.0.0",
     "git-diff": "^2.0.7",
     "mathjs": "^15.2.0",
+    "p-limit": "^7.3.1",
     "sharp": "^0.35.3"
   },
   "devDependencies": {
