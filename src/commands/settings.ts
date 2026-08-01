@@ -99,8 +99,7 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
       const newValueString = `📱 • **New value**${newString.includes("\n") ? "\n" + codeBlock("yaml", newString) : ` • \`${newString}\``}`;
 
       container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(oldValueString),
-        new TextDisplayBuilder().setContent(newValueString),
+        new TextDisplayBuilder().setContent(`${oldValueString}\n${newValueString}`),
       );
     }
 

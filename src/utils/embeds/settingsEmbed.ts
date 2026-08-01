@@ -323,7 +323,7 @@ function iterableObjectRowGenerator(
     new SectionBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `${dotCheck({ string: settingObject.emoji, doubleSpace: true, twoSides: true, includeString: true })}${data.descriptor}\n-# Entry #${data.indexInArray + 1} | ${data.guid}`,
+          `${dotCheck({ string: settingObject.emoji, doubleSpace: true, twoSides: true, includeString: true })}${data.descriptor}\n-# Entry #${data.indexInArray + 1} • ${data.guid}`,
         ),
       )
       .setButtonAccessory(
@@ -1039,6 +1039,7 @@ export async function settingsEmbed<K extends keyof TS>(
                 await constructModalContainer(
                   `${dotCheck({
                     doubleSpace: true,
+                    twoSides: true,
                     includeString: true,
                     string: "✅",
                   })}**Object created successfully!**`,

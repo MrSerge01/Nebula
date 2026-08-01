@@ -3,20 +3,20 @@ import {
   type AnySelectMenuInteraction,
   ButtonBuilder,
   ButtonStyle,
+  type ChatInputCommandInteraction,
   ContainerBuilder,
+  LabelBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  ModalBuilder,
   SectionBuilder,
+  SeparatorBuilder,
   SlashCommandSubcommandBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   TextDisplayBuilder,
-  type ChatInputCommandInteraction,
-  LabelBuilder,
-  ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  SeparatorBuilder,
-  MediaGalleryBuilder,
-  MediaGalleryItemBuilder,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
 import { modalSubmit } from "utils/modalSubmit";
@@ -31,7 +31,7 @@ async function getContainers(
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent("## The /settings command"),
       new TextDisplayBuilder().setContent(
-        "Sokora's settings menu (formally called \"**Peak Settings Editor**\", or **PSE**) can be confusing at first, since instead of taking command arguments or redirecting to a web dashboard, it shows a container with the current settings and a ton of toggles. This container is interactive and is the way you're supposed to edit settings (faster and easier than any of the aforementioned!)",
+        "Sokora's settings menu (formally called \"**Peak Settings Editor**\", or **PSE**) can be confusing at first, since instead of taking command arguments or redirecting to a web dashboard, it shows a container with the current settings and a ton of toggles. This container is interactive and is the way you're supposed to edit settings (faster and easier!)",
       ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
@@ -45,7 +45,7 @@ async function getContainers(
           "- Boolean settings (like `Enabled` in certain categories) appear as a button that shows *current* status. Clicking it inverts it (i.e. disables what is enabled and vice versa).",
           "- Channel, role or select settings show a Discord-native select menu.",
           '- Text or numeric settings wield an "Edit" button, hitting it opens a Modal where you can see the current value and overwrite it if you wish.\n',
-          "**Below is an interactive demo you can test.**",
+          "**Below is an interactive demo.**",
         ].join("\n"),
       ),
     )
@@ -62,11 +62,7 @@ async function getContainers(
             .setStyle(isPreviewBool ? ButtonStyle.Success : ButtonStyle.Danger),
         ),
     )
-    .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        "Title of setting 2\n-# Description of the aforementioned",
-      ),
-    )
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent("Title of setting 2\n-# Guess"))
     .addActionRowComponents(
       new ActionRowBuilder<StringSelectMenuBuilder>().setComponents(
         new StringSelectMenuBuilder()
@@ -86,7 +82,7 @@ async function getContainers(
       new SectionBuilder()
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
-            "Title of setting 3\n-# You guessed it, description of the third setting.",
+            "Title of setting 3\n-# You guessed it! Description of setting 3",
           ),
         )
         .setButtonAccessory(
@@ -99,7 +95,7 @@ async function getContainers(
     .addSeparatorComponents(new SeparatorBuilder().setDivider(true))
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        "\n**Changes apply instantly whenever you touch something.** If you fear mistaken changes, enable settings logging so you have a history of changes you can revert, via `/settings moderation`.",
+        "**Changes apply instantly whenever you touch something.** If you fear accidental changes, enable settings logging via `/settings moderation` so you have a history of changes.",
       ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
@@ -111,7 +107,7 @@ async function getContainers(
         [
           'Some settings (so-called OBJECTS) are nested. They wield an "Open" button instead of an "Edit" one, after which two things can be found depending on whether it is a "static object" (merely an object) or an "iterable object" (a list of multiple objects):',
           '- For _static objects_: A view similar to that of PSE, but with the specific settings of the OBJECT (an "object view").',
-          '- For _iterable objects_: A list ("iterable view"; or a message telling you the list is empty), with entries wielding another "Open button" that takes you to this object\'s object view.\n',
+          '- For _iterable objects_: A list ("iterable view"; or a message telling you the list is empty), with entries wielding another "Open" button that takes you to this object\'s object view.\n',
           "*These are a bit more complex to give you an interactive example*,\nso we'll instead rely on **the screenshots below.**",
         ].join("\n"),
       ),
@@ -134,7 +130,7 @@ async function getContainers(
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         [
-          'Unlike regular PSE views, object views do have a "Save" button to apply changes. Other than that, object views behave nearly the same.',
+          'Unlike regular PSE views, object views have a "Save" button to apply changes. Other than that, object views behave nearly the same.',
           "Iterable objects give you a list where each entry is given a label specific to the setting (e.g., `leveling.rewards` shows the level, channels and roles of each object in the main label). A tinier label below shows lesser important (but useful for power users) information: object index in the list and its GUID. These two don't have a use-case yet but will have one in future releases.",
           "The way they're sorted is also setting-dependant (e.g., `leveling.rewards` sorts by level).",
         ].join("\n\n"),
@@ -147,7 +143,7 @@ async function getContainers(
       new TextDisplayBuilder().setContent("## 🔄 • Resetting or deleting data"),
       new TextDisplayBuilder().setContent(
         [
-          'There\'s always a "Reset" button that shows up at the bottom of every PSE view whenever a setting has diverged from its default value. Clicking it opens a _resetting view_ where all changed settings have a "Select" button to their right.',
+          'There\'s a "Reset" button that shows up at the bottom of every PSE view whenever a setting has diverged from its default value. Clicking it opens a _resetting view_ where all changed settings have a "Select" button to their right.',
           'Selecting a setting marks it for reset whenever you click the "Proceed with selected" button below. Next to it there\'s also a "Reset all" button to just wipe the entire category, and a button to go back.',
           'Iterable views instead only have a "Clear" button that directly deletes every object within the iterable. Open objects to delete them individually.',
           "In all cases, **hitting reset will show a confirmation dialog to double-check** if you really want to reset anything.",
@@ -163,7 +159,7 @@ async function getContainers(
         [
           'From `moderation.events` (assuming `moderation.channel` is set) you can enable an event called "settings". **When enabled, any settings change will be logged to the designated channel**, allowing to check what the previous value was and optionally revert it yourself.',
           "Regular settings are logged in a simple before/after format, and using raw IDs for things like channels or roles (which is more convenient for later restoration).",
-          'OBJECT settings are logged using text in a format similar to (but not valid!) YAML, and using a "diff" where instead of showing the before and after, just one text block is shown highlighting in red what was removed and in green what was added in place.',
+          'OBJECT settings are logged using text in a format similar to YAML, and using a "diff" where instead of showing the before and after, just one text block is shown highlighting in red what was removed and in green what was added in place.',
         ].join("\n\n"),
       ),
     )
@@ -194,7 +190,6 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           interaction: replyInteraction,
           editOptions: {
             components: await getContainers(isPreviewBool, previewArraySelected),
-            flags: ["IsComponentsV2"],
           },
         });
 
@@ -206,7 +201,6 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           interaction: replyInteraction,
           editOptions: {
             components: await getContainers(isPreviewBool, previewArraySelected),
-            flags: ["IsComponentsV2"],
           },
         });
 
@@ -246,7 +240,6 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           interaction: replyInteraction,
           editOptions: {
             components: await getContainers(isPreviewBool, previewArraySelected),
-            flags: ["IsComponentsV2"],
           },
         });
 
