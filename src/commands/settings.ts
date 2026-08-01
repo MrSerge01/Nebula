@@ -1,25 +1,25 @@
-import gitDiff from "git-diff";
 import {
-  settingsDefinition,
-  getSetting,
-  setSetting,
   type TS,
-  serverSettingsKeys,
+  getSetting,
   getSettingDef,
+  serverSettingsKeys,
+  setSetting,
+  settingsDefinition,
 } from "database/settings";
 import type { SettingKeyFor, SettingReturnType } from "database/types";
 import {
-  type Guild,
-  PermissionsBitField,
-  SlashCommandBuilder,
-  SlashCommandSubcommandBuilder,
   type ChatInputCommandInteraction,
+  type Guild,
   type User,
   codeBlock,
   ContainerBuilder,
+  PermissionsBitField,
+  SlashCommandBuilder,
+  SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
 } from "discord.js";
 import { settingsEmbed } from "embeds/settingsEmbed";
+import gitDiff from "git-diff";
 import { colorize, Sokolors } from "utils/colorize";
 import { logChannel } from "utils/logChannel";
 import { mention } from "utils/mention";
@@ -58,10 +58,12 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
             2,
           )
         : Bun.YAML.stringify(value_, null, 2);
+
     const oldString =
       previousValue === undefined || previousValue === null
         ? "[Setting was previously unset]"
         : fmt(previousValue);
+
     const newString =
       value === undefined || previousValue === null
         ? "[Setting value was deleted, it is now unset]"
@@ -87,7 +89,6 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
       container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
           [
-            "🔼 • **Difference**",
             codeBlock("diff", diff),
             "-# Where red lines (starting with a `-`) are the previous value,\n-# and green lines (starting with a `+`) are the new value.",
           ].join("\n"),
@@ -122,7 +123,6 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     throw new Error("Why is guild null if you are setting a server-table setting?");
 
   const key = interaction.options.getSubcommand() as keyof TS;
-
   await settingsEmbed(interaction, key, {
     setSettingPlease: async (key, setting, value) => {
       await setSettingPlease(interaction, key, setting, value);

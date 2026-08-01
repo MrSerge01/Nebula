@@ -29,7 +29,6 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     throw new Error("Why is user null if you are setting a user-table setting?");
 
   const key = interaction.options.getSubcommand() as keyof TS;
-
   await settingsEmbed(interaction, key, {
     setSettingPlease: async (key, setting, value) => {
       await setSetting(interaction.user.id, key, setting, value);

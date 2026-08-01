@@ -10,15 +10,15 @@ import {
 import { getSetting } from "database/settings";
 import type { SettingReturnType } from "database/types";
 import {
+  ContainerBuilder,
   type Guild,
   type GuildMember,
   PermissionsBitField,
-  type User,
-  type TextChannel,
-  ContainerBuilder,
   SectionBuilder,
+  type TextChannel,
   TextDisplayBuilder,
   ThumbnailBuilder,
+  type User,
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { easterEggs } from "handlers/events";

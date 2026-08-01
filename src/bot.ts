@@ -13,14 +13,14 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { registerGuildCommands } from "handlers/commands";
 import { loadEasterEggs, loadEvents } from "handlers/events";
+import fs from "node:fs";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { safeAlertChannel, safeUser } from "utils/safeThings";
+import { MILLISEC_30M, MILLISEC_6H } from "utils/times";
+import type { GHCommit } from "utils/types";
 import { rescheduleUnbans } from "utils/unbanScheduler";
 import { IS_CANARY } from "./canary";
-import type { GHCommit } from "utils/types";
-import { MILLISEC_30M, MILLISEC_6H } from "utils/times";
-import fs from "node:fs";
 
 const LOG_FILE = process.env.LIFECYCLE_LOG_PATH ?? "/app/logs/lifecycle.log";
 

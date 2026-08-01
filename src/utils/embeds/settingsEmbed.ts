@@ -17,16 +17,22 @@
  * [^1]: Good luck.
  */
 
-import { resetSetting, resetSettingCategory, settingsDefinition, type TS } from "database/settings";
+import {
+  getSettingCategory,
+  resetSetting,
+  resetSettingCategory,
+  settingsDefinition,
+  type TS,
+} from "database/settings";
 import {
   isSettingValueValid,
-  type SettingsFor,
+  type IterableObjectSetting,
   type SettingDefinitionRecord,
   type SettingKeyFor,
   type SettingReturnType,
   type SettingSettableValue,
+  type SettingsFor,
   type SingleSettingDefinition,
-  type IterableObjectSetting,
 } from "database/types";
 import {
   ActionRowBuilder,
@@ -62,8 +68,8 @@ import { modalSubmit } from "utils/modalSubmit";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { safeEdit, safeReply } from "utils/safeThings";
 import { setMap } from "utils/setMap";
-import { buttonCheck } from "./errorEmbed";
 import { COLLECTOR_DURATION } from "utils/times";
+import { buttonCheck } from "./errorEmbed";
 
 const OBJECTS_PER_ITR_PAGE = 10;
 
@@ -206,12 +212,21 @@ function rowGenerator(
     .setCustomId(cID)
     .setLabel(
       isNormal
-        ? (settingObject.type === "OBJECT" && !settingObject.iterable
+        ? (settingObject.type === "OBJECT" || settingObject.iterable
           ? "Open"
           : "Edit")
         : (constructMode.resetting.has(cID)
           ? "Unselect"
           : "Select"),
+    )
+    .setDisabled(
+      isNormal || constructMode.resetting.has(cID)
+        ? false
+        : ((settingObject.val && settingObject.val == setting) ||
+            setting == null ||
+            setting.length === 0
+          ? true
+          : false),
     )
     .setStyle(
       isNormal || constructMode.resetting.has(cID) ? ButtonStyle.Secondary : ButtonStyle.Danger,
@@ -756,7 +771,7 @@ async function constructBaseSettingsEmbed<K extends keyof TS>(
   methods: MethodsObject,
   mode: Mode,
 ): Promise<ContainerBuilder> {
-  const { def, key } = ctl;
+  const { def, key, id } = ctl;
   const lbl = new ContainerBuilder().setAccentColor(await colorize({ hue: Sokolors.Blue }));
 
   for (const [singleKey, singleDef] of Object.entries(def.settings))
@@ -787,20 +802,27 @@ async function constructBaseSettingsEmbed<K extends keyof TS>(
           .setStyle(ButtonStyle.Secondary),
       ),
     );
-  else
-    lbl.addActionRowComponents(
-      new ActionRowBuilder<ButtonBuilder>().addComponents(
+  else {
+    const actual = Object.values(await getSettingCategory(id, key));
+    const defaults = Object.values(def.settings).map(setting => setting.val ?? null);
+    const buttons = [
+      new ButtonBuilder()
+        .setLabel(def.description)
+        .setCustomId("whatever")
+        .setDisabled(true)
+        .setStyle(ButtonStyle.Secondary),
+    ];
+
+    if (JSON.stringify(actual).replaceAll("[]", "null") !== JSON.stringify(defaults))
+      buttons.unshift(
         new ButtonBuilder()
           .setLabel("Reset some or all settings")
           .setCustomId(EXEMPT_CIDs.RESET)
           .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setLabel(def.description)
-          .setCustomId("whatever")
-          .setDisabled(true)
-          .setStyle(ButtonStyle.Secondary),
-      ),
-    );
+      );
+
+    lbl.addActionRowComponents(new ActionRowBuilder<ButtonBuilder>().addComponents(buttons));
+  }
 
   return lbl;
 }
@@ -1239,10 +1261,7 @@ export async function settingsEmbed<K extends keyof TS>(
                 "settingState (return of toggleHandler) should NOT be undefined while collecting DEFAULT CASE and within an OBJECT view.",
               );
 
-            updatedState = OSMSet(interaction.user.id, {
-              ...currentObjectState,
-              settingState,
-            });
+            updatedState = OSMSet(interaction.user.id, { ...currentObjectState, settingState });
           }
 
           await baseObjectViewPrefixGenerator(lbl, updatedState);
