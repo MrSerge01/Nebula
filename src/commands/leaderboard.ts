@@ -12,6 +12,7 @@ import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { safeEdit, safeUser } from "utils/safeThings";
+import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("leaderboard")
@@ -67,10 +68,10 @@ export async function run(
   });
 
   if (pages <= 1) return;
-  const collector = reply.createMessageComponentCollector({ time: 60_000 });
+  const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-    collector.resetTimer({ time: 60_000 });
+    collector.resetTimer({ time: COLLECTOR_DURATION });
     if (buttonInteraction.customId == "please") return;
 
     page = await handlePages({ i: buttonInteraction, page, pages, collector });

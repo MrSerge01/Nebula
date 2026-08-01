@@ -27,6 +27,7 @@ import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { modalSubmit } from "utils/modalSubmit";
 import { safeEdit, safeReply } from "utils/safeThings";
+import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("import")
@@ -142,11 +143,11 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     return;
   }
 
-  const collector = reply?.createMessageComponentCollector({ time: 240_000 });
+  const collector = reply?.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
 
-    collector.resetTimer({ time: 240_000 });
+    collector.resetTimer({ time: COLLECTOR_DURATION });
     const cID = buttonInteraction.customId;
     if (cID == "please") return;
 
@@ -310,7 +311,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
 
     await buttonInteraction.showModal(modal);
     const modalInteraction = await modalSubmit(buttonInteraction);
-    collector.resetTimer({ time: 240_000 });
+    collector.resetTimer({ time: COLLECTOR_DURATION });
     if (!modalInteraction) return;
 
     try {

@@ -14,6 +14,7 @@ import { buttonCheck } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { replace } from "utils/replace";
 import { getChangelog, getVersions } from "../utils/changelog";
+import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("changelog")
@@ -99,10 +100,10 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     components: [container],
     flags: ["Ephemeral", "IsComponentsV2"],
   });
-  const collector = reply.createMessageComponentCollector({ time: 60_000 });
+  const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-    collector.resetTimer({ time: 60_000 });
+    collector.resetTimer({ time: COLLECTOR_DURATION });
 
     const cID = buttonInteraction.customId;
     if (cID == "please") return;

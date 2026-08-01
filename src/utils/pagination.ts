@@ -16,6 +16,7 @@ import { colorize, Sokolors } from "./colorize";
 import { modalSubmit } from "./modalSubmit";
 import { replace } from "./replace";
 import { safeReply } from "./safeThings";
+import { COLLECTOR_DURATION } from "./times";
 
 interface HandlePagesOptions {
   i: ButtonInteraction;
@@ -87,7 +88,7 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
   await i.showModal(modal);
   const modalInteraction = await modalSubmit(i);
   if (!modalInteraction) return functionPage;
-  collector.resetTimer({ time: 60_000 });
+  collector.resetTimer({ time: COLLECTOR_DURATION });
   const value = Number.parseInt(modalInteraction.fields.getTextInputValue("page_input"));
 
   if (!Number.isNaN(value)) {

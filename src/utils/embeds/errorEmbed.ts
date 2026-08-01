@@ -28,6 +28,7 @@ import { mention } from "utils/mention";
 import { modalSubmit } from "utils/modalSubmit";
 import { safeChannel, safeReply } from "utils/safeThings";
 import { errorType } from "../errorType";
+import { COLLECTOR_DURATION } from "utils/times";
 
 /**
  * Sends a container containing an error.
@@ -184,7 +185,7 @@ export async function errorEmbed(options: {
       replyOptions: { components: [container], files, flags: ["Ephemeral", "IsComponentsV2"] },
     });
 
-    const collector = reply.createMessageComponentCollector({ time: 240_000 });
+    const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
       const modal = new ModalBuilder()
         .setCustomId("modalpls")
@@ -219,7 +220,7 @@ export async function errorEmbed(options: {
 
       await buttonInteraction.showModal(modal);
       const modalInteraction = await modalSubmit(buttonInteraction);
-      collector.resetTimer({ time: 240_000 });
+      collector.resetTimer({ time: COLLECTOR_DURATION });
       if (!modalInteraction) {
         collector.stop();
         return;

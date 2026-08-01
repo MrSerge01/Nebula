@@ -9,6 +9,7 @@ import { errorEmbed } from "embeds/errorEmbed";
 import { errorCheck, modEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
 import { safeMember } from "utils/safeThings";
+import { MILLISEC_28D } from "utils/times";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("mute")
@@ -61,8 +62,7 @@ export async function run(
 
   const durationMs = duration ? ms(duration) : null;
 
-  // 2419200000 ms == 28 days
-  if (!duration || !durationMs || durationMs > 2_419_200_000 || durationMs <= 0)
+  if (!duration || !durationMs || durationMs > MILLISEC_28D || durationMs <= 0)
     return await errorEmbed({
       interaction,
       title: `You can't mute ${user.username}.`,

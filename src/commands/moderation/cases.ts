@@ -26,6 +26,7 @@ import { handlePages, pagedButtons } from "utils/pagination";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { randomize } from "utils/randomize";
 import { safeEdit, safeMember, safeUser } from "utils/safeThings";
+import { COLLECTOR_DURATION } from "utils/times";
 
 async function generateContainer(options: {
   client: Client;
@@ -192,10 +193,10 @@ export async function run(
   });
 
   if (pages <= 1) return;
-  const collector = reply.createMessageComponentCollector({ time: 60_000 });
+  const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-    collector.resetTimer({ time: 60_000 });
+    collector.resetTimer({ time: COLLECTOR_DURATION });
     if (buttonInteraction.customId == "please") return;
 
     page = await handlePages({ i: buttonInteraction, page, pages, collector });

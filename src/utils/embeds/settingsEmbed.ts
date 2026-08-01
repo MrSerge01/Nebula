@@ -63,6 +63,7 @@ import { handlePages, pagedButtons } from "utils/pagination";
 import { safeEdit, safeReply } from "utils/safeThings";
 import { setMap } from "utils/setMap";
 import { buttonCheck } from "./errorEmbed";
+import { COLLECTOR_DURATION } from "utils/times";
 
 const OBJECTS_PER_ITR_PAGE = 10;
 
@@ -125,8 +126,10 @@ const OSMSet = <K extends keyof TS, S extends SettingKeyFor<K>>(
   return state;
 };
 /** Gets a properly typed value from the Object State Machine. */
-const OSMGet = <K extends keyof TS, S extends SettingKeyFor<K>>(id: string): ObjectState<K, S> => {
-  return OSMGet(id) as unknown as ObjectState<K, S>;
+const OSMGet = <K extends keyof TS, S extends SettingKeyFor<K>>(
+  id: string,
+): ObjectState<K, S> | undefined => {
+  return ObjectStateMachine.get(id) as unknown as ObjectState<K, S>;
 };
 
 /** Fixes type errors by force. Use it **ONLY** with things that can't go wrong (like SELECTs where Discord UI only allows specific values) */
@@ -377,7 +380,7 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
         .setCustomId(
           currentState.views == "create_or_save" || currentState.views == "itr_obj_child"
             ? EXEMPT_CIDs.OBJECT_SAVE
-            : EXEMPT_CIDs.OBJECT_OPEN_CREATE,
+            : EXEMPT_CIDs.OBJECT_CREATE,
         )
         .setLabel(
           currentState.views == "create_or_save" || currentState.views == "itr_obj_child"
@@ -480,7 +483,7 @@ const EXEMPT_CIDs = {
   RESET_PROCEED_W_SELECTED: "resetctl_proceed",
   RESET_CANCEL: "resetctl_abort",
   OBJECT_GO_BACK: "objectctl_up",
-  OBJECT_OPEN_CREATE: "objectctl_create",
+  OBJECT_CREATE: "objectctl_create",
   OBJECT_SAVE: "objectctl_save",
   OBJECT_CLEAR: "objectctl_reset",
   OBJECT_DELETE_CHILD: "objectctl_del_self",
@@ -857,9 +860,9 @@ export async function settingsEmbed<K extends keyof TS>(
     components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
     flags: ["IsComponentsV2", "Ephemeral"],
   });
-  const collector = reply.createMessageComponentCollector({ time: 120_000 });
+  const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (replyInteraction: SI) => {
-    collector.resetTimer({ time: 120_000 });
+    collector.resetTimer({ time: COLLECTOR_DURATION });
     const cID = replyInteraction.customId;
     switch (cID) {
       /// RESET CTL ///
@@ -1063,7 +1066,7 @@ export async function settingsEmbed<K extends keyof TS>(
           });
         break;
       }
-      case EXEMPT_CIDs.OBJECT_OPEN_CREATE: {
+      case EXEMPT_CIDs.OBJECT_CREATE: {
         const currentObjectState = safelyGetObjectState();
         const lbl = new ContainerBuilder();
         const subCtl = MkControlObject(ctl.key, currentObjectState.setting, ctl.id);

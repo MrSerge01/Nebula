@@ -9,6 +9,7 @@ import { errorEmbed } from "embeds/errorEmbed";
 import { errorCheck, modEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
 import { safeChannel } from "utils/safeThings";
+import { MILLISEC_6H } from "utils/times";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("slowdown")
@@ -71,7 +72,7 @@ export async function run(
     ? `Set the slowdown to ${ms(timeMs, "fullPrecision")}`
     : "Removed the slowdown";
 
-  if (timeMs > 21_600_000)
+  if (timeMs > MILLISEC_6H)
     return await errorEmbed({
       interaction,
       title: "You have provided a duration longer than 6 hours.",

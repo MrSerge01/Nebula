@@ -4,7 +4,7 @@ services:
     container_name: sokora # rename to something else if you're on canary
     restart: always
     volumes:
-      - ./data.db:/app/data.db
+      - sokora_logs:/app/logs
       - ./.env:/app/.env
     env_file:
       - .env
@@ -37,3 +37,4 @@ services:
 
 volumes:
   pgdata:
+  sokora_logs:

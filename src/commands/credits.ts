@@ -12,6 +12,7 @@ import { buttonCheck } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { replace } from "utils/replace";
 import { safeEdit } from "utils/safeThings";
+import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("credits")
@@ -70,7 +71,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     flags: ["Ephemeral", "IsComponentsV2"],
   });
 
-  const collector = reply.createMessageComponentCollector({ time: 60_000 });
+  const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
 
