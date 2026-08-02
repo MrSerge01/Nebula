@@ -28,7 +28,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent("## Dynamic (variables)"),
       new TextDisplayBuilder().setContent(
-        "You can write the following variables in some places to dynamically show certain pieces of data. Data like 'current time' or 'member count' always refer to what that value is at the moment of sending the specific message. Dynamic variables are currently supported for **join messages, leave messages, join DMs, and news.**",
+        "You can write the following variables in some places to dynamically show certain pieces of data. Data like ’current time’ or ’member count’ always refer to what that value is at the moment of sending the specific message. Dynamic variables are currently supported for **join messages, leave messages, join DMs, and news.**",
       ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
@@ -73,12 +73,12 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           "`(count)` - member count",
           "`(servername)` - name of this server",
           `\`(serverowner)\` - ${
-            user.id == guild.ownerId ? "your name!" : "name of this server's owner"
+            user.id == guild.ownerId ? "your name!" : "name of this server’s owner"
           }`,
-          "`(currentdate)` - current date in the 'July 10, 2025' format",
-          "`(currentdate, simple)` - current date in the '7/10/25' format",
-          "`(currentdate, detailed)` - current date in the 'July 10, 2025 at 1:11 PM' format",
-          "`(<id>, user | role | channel)` - given an ID, allows you to mention/link it (Discord modals don't let you do this natively)",
+          "`(currentdate)` - current date in the ’July 10, 2025’ format",
+          "`(currentdate, simple)` - current date in the ’7/10/25’ format",
+          "`(currentdate, detailed)` - current date in the ’July 10, 2025 at 1:11 PM’ format",
+          "`(<id>, user | role | channel)` - given an ID, allows you to mention/link it (Discord modals don’t let you do this natively)",
           "`(<timestamp>, default_timestamp | simple_timestamp | detailed_timestamp)` - given a timestamp, formats it as a date",
         ].join("\n"),
       ),

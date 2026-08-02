@@ -60,7 +60,7 @@ export const defLeveling = {
   },
   block_channels: {
     type: "CHANNEL",
-    desc: "Channels where messages aren't counted.",
+    desc: "Channels where messages aren’t counted.",
     iterable: true,
     emoji: "🚫",
   },
@@ -239,7 +239,7 @@ export const defWelcome = {
   },
   dm_text: {
     type: "TEXT",
-    desc: "Text sent in the user's DM when they join the server. Use (variables) to add dynamic info, run /help variables for info.",
+    desc: "Text sent in the user’s DM when they join the server. Use (variables) to add dynamic info, run /help variables for info.",
     val: "Welcome to (servername), (name)! Interestingly, you just helped us reach (count) members. Have a nice day!",
     emoji: "📬",
   },
@@ -298,7 +298,7 @@ export const settingsDefinition = {
     settings: defLeveling,
   },
   moderation: {
-    description: "Change Sokora's settings related to moderation.",
+    description: "Change Sokora’s settings related to moderation.",
     settings: defModeration,
   },
   news: {
@@ -310,7 +310,7 @@ export const settingsDefinition = {
     settings: defStarboard,
   },
   serverboard: {
-    description: "Configure your server's appearance on the serverboard.",
+    description: "Configure your server’s appearance on the serverboard.",
     settings: defServerboard,
   },
   welcome: {
@@ -413,7 +413,6 @@ export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>
     if (!set || !Object.hasOwn(set, "val"))
       return (set.iterable ? [] : undefined) as SettingReturnType<K, S>;
 
-    // [TODO] shouldn't this need no assertion?
     return set.val as SettingReturnType<K, S>;
   };
 
@@ -499,20 +498,20 @@ export async function listPublicServers(): Promise<
 > {
   const publicGuildSet = new Set(
     values<TypeOfDefinition<Def>>(
-      await db`SELECT * FROM settings WHERE "key" = 'serverboard.shown' AND "value" = 'true';`,
+      await db`SELECT * FROM settings WHERE "key" = ${"serverboard.shown"} AND "value" = ${"true"};`,
     ).map(entry => entry.guildID),
   );
 
   const inviteGuildsSet = new Set(
     values<TypeOfDefinition<Def>>(
-      await db`SELECT * FROM settings WHERE "key" = 'serverboard.server_invite' AND "value" = 'true';`,
+      await db`SELECT * FROM settings WHERE "key" = ${"serverboard.server_invite"} AND "value" = ${"true"};`,
     ).map(entry => entry.guildID),
   );
 
   return Promise.all(
     [...publicGuildSet].map(async (entry: unknown) => {
       if (typeof entry != "string")
-        throw new Error(`Somehow '${entry}' was not of type string in listPublicServers.`);
+        throw new Error(`Somehow ’${entry}’ was not of type string in listPublicServers.`);
 
       const inviteChannel = await getSetting(entry, "serverboard", "invite_channel");
       return {
@@ -528,7 +527,7 @@ export async function deletePublicServer(
   guildID: string,
 ): Promise<Message | InteractionResponse | undefined> {
   try {
-    await db`DELETE FROM settings WHERE "guildID" = ${guildID} AND "key" = 'serverboard.shown' AND "value" = 'true';`;
+    await db`DELETE FROM settings WHERE "guildID" = ${guildID} AND "key" = ${"serverboard.shown"} AND "value" = ${"true"};`;
   } catch (error) {
     return await errorEmbed({
       client,

@@ -21,7 +21,7 @@ export const data = new SlashCommandSubcommandBuilder()
   .addStringOption(option =>
     option
       .setName("function")
-      .setDescription("The function to graph (e.g., 'x^2' or 'sin(x)')")
+      .setDescription("The function to graph (e.g., ’x^2’ or ’sin(x)’)")
       .setRequired(true),
   )
   .addNumberOption(option => option.setName("xmin").setDescription("Minimum x value"))

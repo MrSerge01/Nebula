@@ -81,7 +81,7 @@ export async function run(
   if (!channel.isTextBased() || channel.isDMBased())
     return await errorEmbed({
       interaction,
-      title: "You have provided a channel that can't be slowed down.",
+      title: "You have provided a channel that can’t be slowed down.",
     });
 
   await Promise.all([

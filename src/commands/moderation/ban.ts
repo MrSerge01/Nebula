@@ -31,7 +31,7 @@ export const data = new SlashCommandSubcommandBuilder()
     bool
       .setName("silent")
       .setDescription(
-        "If true, the user won't be notified about this action (overrides the server setting).",
+        "If true, the user won’t be notified about this action (overrides the server setting).",
       ),
   );
 
@@ -76,7 +76,7 @@ export async function run(
     if (!durationMs || durationMs <= 0)
       return await errorEmbed({
         interaction,
-        title: `You can't ban ${user.username} temporarily.`,
+        title: `You can’t ban ${user.username} temporarily.`,
         reason: "The duration is invalid.",
       });
 
@@ -99,14 +99,14 @@ export async function run(
     if (!delSec || delSec <= 0)
       return await errorEmbed({
         interaction,
-        title: `The bot can't remove messages of ${user.username} while banning.`,
+        title: `The bot can’t remove messages of ${user.username} while banning.`,
         reason: "The duration is invalid.",
       });
 
     if (delSec > 604_800)
       return await errorEmbed({
         interaction,
-        title: `The bot can't remove messages of ${user.username} while banning.`,
+        title: `The bot can’t remove messages of ${user.username} while banning.`,
         reason: "The duration is longer than 7 days.",
       });
   }

@@ -60,10 +60,10 @@ async function applyMigrations(after?: string): Promise<void> {
     try {
       await db.file(file);
     } catch (error) {
-      throw new Error(`Failed to apply '${file}'.`, { cause: error });
+      throw new Error(`Failed to apply ${file}.`, { cause: error });
     }
 
-  await db`UPDATE _info SET value = ${hashList.at(-1)} WHERE "key" = 'version';`;
+  await db`UPDATE _info SET value = ${hashList.at(-1)} WHERE "key" = ${"version"};`;
   console.log("Database updated successfully");
 }
 
@@ -71,7 +71,7 @@ export async function updateDatabase(shouldForce?: boolean): Promise<void> {
   try {
     if (shouldForce) throw new Error("force");
     const DBversion = values<string>(
-      await db`SELECT value FROM _info WHERE "key" = 'version';`,
+      await db`SELECT value FROM _info WHERE "key" = ${"version"};`,
       true,
     )[0];
     if (!DBversion) throw new Error("No DBVersion was assigned."); // Goes into initializing the DB
@@ -85,7 +85,7 @@ export async function updateDatabase(shouldForce?: boolean): Promise<void> {
     console.log("Initializing database…");
     await db`
       CREATE TABLE IF NOT EXISTS _info ("key" TEXT, "value" TEXT);
-      INSERT INTO _info VALUES ('version', '');
+      INSERT INTO _info VALUES (${"version"}, ${""});
     `.simple();
     await applyMigrations();
   }

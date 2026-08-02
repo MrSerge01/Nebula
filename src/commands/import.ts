@@ -139,7 +139,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   });
 
   if (!reply) {
-    await collapse("For some reason, a reply wasn't sent your way.", interaction);
+    await collapse("For some reason, a reply wasn’t sent your way.", interaction);
     return;
   }
 
@@ -155,8 +155,8 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       name: cID === "MEE6" ? cID.toUpperCase() : cID,
       data: [
         "- User XP",
-        cID === "TATSU" ? "-# Note: Tatsu doesn't have role rewards." : "- Role rewards",
-        "-# Settings like difficulty (which dictate the amount of XP needed to levelup) can't be imported. Levels might immediately change when chatting if you don't manually change the difficulty (and the current one differs too much from this one, which isn't necessarily the case).",
+        cID === "TATSU" ? "-# Note: Tatsu doesn’t have role rewards." : "- Role rewards",
+        "-# Settings like difficulty (which dictate the amount of XP needed to levelup) can’t be imported. Levels might immediately change when chatting if you don’t manually change the difficulty (and the current one differs too much from this one, which isn’t necessarily the case).",
       ].join("\n"),
     };
 
@@ -192,7 +192,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             [
               `Thanks for switching to Sokora! We will import leveling info from **${bots.name}** that we can gather. This includes a total of **${levels.length} entries**.`,
               `Data we can import from ${bots.name} is:\n${bots.data}`,
-              `You may now import data by **merging** (adding imported XP to Sokora's XP) or by **overwriting** (removing Sokora's leveling data, then adding imported XP data). You can also review the JSON data that is to be imported, just in case.`,
+              `You may now import data by **merging** (adding imported XP to Sokora’s XP) or by **overwriting** (removing Sokora’s leveling data, then adding imported XP data). You can also review the JSON data that is to be imported, just in case.`,
             ].join("\n\n"),
           ),
         );
@@ -214,7 +214,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           const levelData = safeStringify(levels);
           const checkContainer = new ContainerBuilder().addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-              `## This is what we'll import from ${bots.name}\n${
+              `## This is what we’ll import from ${bots.name}\n${
                 levelData.length <= 2048
                   ? codeBlock(levelData)
                   : "The level data is an attachment due to it being too large."
@@ -265,7 +265,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             const imported = levels.find(lev => lev.uid == user[1].id);
             if (!imported) {
               res.push(
-                `${user[1].user.username} wasn't imported (had no data saved in the imported dataset)`,
+                `${user[1].user.username} wasn’t imported (had no data saved in the imported dataset)`,
               );
               continue;
             }

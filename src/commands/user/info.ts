@@ -24,7 +24,7 @@ import { safeMember, safeMembers } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("info")
-  .setDescription("Shows your (or another user's) info.")
+  .setDescription("Shows your (or another user’s) info.")
   .addUserOption(user => user.setName("user").setDescription("Select the user."));
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {

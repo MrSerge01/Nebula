@@ -16,7 +16,7 @@ export const data = new SlashCommandSubcommandBuilder()
   .addStringOption(option =>
     option
       .setName("expression")
-      .setDescription("The mathematical expression to calculate (e.g., 'sin(pi/4)', '10*2+(6/3)')")
+      .setDescription("The mathematical expression to calculate (e.g., ’sin(pi/4)’, ’10*2+(6/3)’)")
       .setRequired(true),
   );
 
@@ -36,7 +36,7 @@ export async function run(
       title: "Invalid expression.",
       reason: String(error).includes("Invalid result")
         ? `Preferably, provide expressions with a result a computer can manage (expr. \`${expression}\` gave a result above compute limit).`
-        : "Please provide a valid mathematical expression. Examples: 'sin(pi/4)', '10*2+(6/3)', 'sqrt(25)'",
+        : "Please provide a valid mathematical expression. Examples: ’sin(pi/4)’, ’10*2+(6/3)’, ’sqrt(25)’",
     });
   }
 

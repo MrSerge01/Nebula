@@ -49,13 +49,13 @@ export async function run(
   if (channel.isThread() || channel.isDMBased())
     return await errorEmbed({
       interaction,
-      title: "You have provided a channel that can't be locked in the first place.",
+      title: "You have provided a channel that can’t be locked in the first place.",
     });
 
   if (channel.permissionsFor(guild.id)?.has("SendMessages"))
     return await errorEmbed({
       interaction,
-      title: "You can't execute this command.",
+      title: "You can’t execute this command.",
       reason: "The channel is not locked.",
     });
 

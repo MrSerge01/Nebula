@@ -65,7 +65,7 @@ export async function errorCheck(
   if (botError && !client.permissions.has(permission))
     return await errorEmbed({
       interaction,
-      title: "The bot can't execute this command.",
+      title: "The bot can’t execute this command.",
       reason: `The bot is missing the **${permissionAction}** permission. If you want to run this command, you might want to give the bot this permission.`,
     });
 
@@ -73,7 +73,7 @@ export async function errorCheck(
     if (!channel)
       return await errorEmbed({
         interaction,
-        title: "The bot can't execute this command.",
+        title: "The bot can’t execute this command.",
         reason: "The provided channel does not exist!",
       });
 
@@ -83,7 +83,7 @@ export async function errorCheck(
     if (!fetchedChannel.permissionsFor(client).has("ViewChannel"))
       return await errorEmbed({
         interaction,
-        title: "The bot can't execute this command.",
+        title: "The bot can’t execute this command.",
         reason:
           "The bot is missing the **View Channel** permission. If you want to run this command, you might want to give the bot this permission from the channel settings.",
       });
@@ -92,31 +92,31 @@ export async function errorCheck(
   if (!member.permissions.has(permission))
     return await errorEmbed({
       interaction,
-      title: "You can't execute this command.",
-      reason: `You're missing the **${permissionAction}** permission.`,
+      title: "You can’t execute this command.",
+      reason: `You’re missing the **${permissionAction}** permission.`,
     });
 
   if (banCheckError) {
     if (!user)
       return await errorEmbed({
         interaction,
-        title: "You can't ban this user.",
-        reason: "This user doesn't exist.",
+        title: "You can’t ban this user.",
+        reason: "This user doesn’t exist.",
       });
 
     const isBanned = (await guild.bans.fetch()).has(user.id);
     if (isBanned && action == "Ban")
       return await errorEmbed({
         interaction,
-        title: "You can't ban this user.",
+        title: "You can’t ban this user.",
         reason: "This user is already banned.",
       });
 
     if (!isBanned && action == "Unban")
       return await errorEmbed({
         interaction,
-        title: "You can't unban this user.",
-        reason: "This user isn't currently banned.",
+        title: "You can’t unban this user.",
+        reason: "This user isn’t currently banned.",
       });
   }
 
@@ -127,22 +127,22 @@ export async function errorCheck(
   if (outsideError && !target)
     return await errorEmbed({
       interaction,
-      title: `You can't ${action.toLowerCase()} ${name}.`,
-      reason: "This user isn't in this server.",
+      title: `You can’t ${action.toLowerCase()} ${name}.`,
+      reason: "This user isn’t in this server.",
     });
 
   if (!target) return;
 
   if (target == member)
-    return await errorEmbed({ interaction, title: `You can't ${action.toLowerCase()} yourself.` });
+    return await errorEmbed({ interaction, title: `You can’t ${action.toLowerCase()} yourself.` });
 
   if (target.id == interaction.client.user.id)
-    return await errorEmbed({ interaction, title: `You can't ${action.toLowerCase()} Sokora.` });
+    return await errorEmbed({ interaction, title: `You can’t ${action.toLowerCase()} Sokora.` });
 
   if (!target.moderatable)
     return await errorEmbed({
       interaction,
-      title: `You can't ${action.toLowerCase()} ${name}.`,
+      title: `You can’t ${action.toLowerCase()} ${name}.`,
       reason: [
         "The member cannot be moderated by Sokora.\n",
         "**There are three reasons as to why this error might occur:**",
@@ -159,7 +159,7 @@ export async function errorCheck(
     const isSamePos: boolean = highestModPos == highestTargetPos;
     return await errorEmbed({
       interaction,
-      title: `You can't ${action.toLowerCase()} ${name}.`,
+      title: `You can’t ${action.toLowerCase()} ${name}.`,
       reason: `The member has ${isSamePos ? "the same" : "a higher"} role position ${isSamePos ? "as" : "than"} you.`,
     });
   }
@@ -206,8 +206,8 @@ export async function modEmbed(
     )
       return await errorEmbed({
         interaction,
-        title: `You can't edit this ${dbAction?.toLowerCase()}.`,
-        reason: `The ${dbAction?.toLowerCase()} doesn't exist.`,
+        title: `You can’t edit this ${dbAction?.toLowerCase()}.`,
+        reason: `The ${dbAction?.toLowerCase()} doesn’t exist.`,
       });
 
     try {

@@ -20,7 +20,7 @@ export const data = new SlashCommandSubcommandBuilder()
     bool
       .setName("silent")
       .setDescription(
-        "If true, the user won't be notified about this action (overrides the server setting).",
+        "If true, the user won’t be notified about this action (overrides the server setting).",
       ),
   );
 

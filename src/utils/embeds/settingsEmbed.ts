@@ -166,7 +166,7 @@ async function confirmResetModal<K extends keyof TS>(
         components: [
           await constructModalContainer(
             `**${dotCheck({ string: "✅", twoSides: true, includeString: true })}Nevermind that then**`,
-            "No setting was reset. Everything continues to shine the way it did so far.\nIf you *did* expect things to get reset, you probably did not mark the checkbox in the dialog. You're required to toggle it as a double check.",
+            "No setting was reset. Everything continues to shine the way it did so far.\nIf you *did* expect things to get reset, you probably did not mark the checkbox in the dialog. You’re required to toggle it as a double check.",
             Sokolors.Blue,
           ),
         ],
@@ -383,6 +383,7 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
   ctl: ControlObject<K, S>,
   lbl: ContainerBuilder,
   currentState: ObjectState<K, S>,
+  hasValues?: boolean,
 ): ContainerBuilder {
   const actionRow = new ActionRowBuilder<ButtonBuilder>();
   if (ctl.def.iterable) {
@@ -406,23 +407,27 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
         )
         .setStyle(ButtonStyle.Success)
         .setDisabled(isDisabled),
-      new ButtonBuilder()
-        .setCustomId(
-          currentState.views == "create_or_save"
-            ? EXEMPT_CIDs.OBJECT_GO_BACK
-            : (currentState.views == "itr_obj_child"
-              ? EXEMPT_CIDs.OBJECT_DELETE_CHILD
-              : EXEMPT_CIDs.OBJECT_CLEAR),
-        )
-        .setLabel(
-          currentState.views == "create_or_save"
-            ? "Cancel"
-            : (currentState.views == "itr_obj_child"
-              ? "Delete"
-              : "Clear"),
-        )
-        .setStyle(ButtonStyle.Danger),
     );
+
+    if (hasValues)
+      actionRow.addComponents(
+        new ButtonBuilder()
+          .setCustomId(
+            currentState.views == "create_or_save"
+              ? EXEMPT_CIDs.OBJECT_GO_BACK
+              : (currentState.views == "itr_obj_child"
+                ? EXEMPT_CIDs.OBJECT_DELETE_CHILD
+                : EXEMPT_CIDs.OBJECT_CLEAR),
+          )
+          .setLabel(
+            currentState.views == "create_or_save"
+              ? "Cancel"
+              : (currentState.views == "itr_obj_child"
+                ? "Delete"
+                : "Clear"),
+          )
+          .setStyle(ButtonStyle.Danger),
+      );
   } else
     actionRow.addComponents(
       new ButtonBuilder()
@@ -435,7 +440,7 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
   lbl.addActionRowComponents(actionRow);
   lbl.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      `-# You're ${currentState.views === "default" ? "touching" : (currentState.views === "create_or_save" ? "creating a new object within" : "altering an object within")} **${currentState.key} > ${currentState.setting}** configuration, which is a${ctl.def.iterable ? "n iterable" : " static"} object`,
+      `-# You’re ${currentState.views === "default" ? "touching" : (currentState.views === "create_or_save" ? "creating a new object within" : "altering an object within")} **${currentState.key} > ${currentState.setting}** configuration, which is a${ctl.def.iterable ? "n iterable" : " static"} object`,
     ),
   );
 
@@ -452,10 +457,12 @@ async function constructBaseObjectView<K extends keyof TS, S extends SettingKeyF
   const _objectValue = await methods.getSettingPlease(ctl.key, ctl.subKey);
   const lbl = new ContainerBuilder();
   let refreshedState: ObjectState<K, S> | undefined;
+  let hasValues = false;
 
   if (ctl.def.iterable) {
     const objectValue = _objectValue as { $: string; [k: string]: unknown }[];
     if (objectValue && objectValue.length > 0) {
+      hasValues = true;
       const paged = objectValue.slice(
         OBJECTS_PER_ITR_PAGE * currentState.page,
         OBJECTS_PER_ITR_PAGE * (currentState.page + 1),
@@ -488,7 +495,7 @@ async function constructBaseObjectView<K extends keyof TS, S extends SettingKeyF
   if (refreshedState) OSMSet(osmKey, refreshedState);
   else refreshedState = { ...currentState };
 
-  baseObjectViewSuffixGenerator(ctl, lbl, refreshedState);
+  baseObjectViewSuffixGenerator(ctl, lbl, refreshedState, hasValues);
   return lbl;
 }
 
@@ -671,10 +678,10 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
             await constructModalContainer(
               isNewValueValid
                 ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
-                : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn't be changed!`,
+                : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
               isNewValueValid
                 ? `The ${newValue.length < 50 ? "value" : "**value**"} has been set ${newValue.length >= 500 ? "successfully." : (newValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
-                : `Given data is invalid. Ensure it's of the valid type (${humanizeSettingType(setting)}) and try again.${newValue?.length >= 500 ? "" : `\nData entered was:\n${codeBlock(newValue)}`}`,
+                : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${newValue?.length >= 500 ? "" : `\nData entered was:\n${codeBlock(newValue)}`}`,
               isNewValueValid ? Sokolors.Blue : Sokolors.Red,
             ),
           ],
@@ -857,7 +864,7 @@ export async function settingsEmbed<K extends keyof TS>(
     const currentState = OSMGet(interaction.user.id);
     if (!currentState)
       throw new Error(
-        "JS-side problem: how the f*ck did we get 'undefined' when reading ObjectStateMachine for this user (" +
+        "JS-side problem: how the f*ck did we get ’undefined’ when reading ObjectStateMachine for this user (" +
           interaction.user.id +
           ") over a control click? It should already exist by here.",
       );
@@ -1081,7 +1088,7 @@ export async function settingsEmbed<K extends keyof TS>(
                     doubleSpace: true,
                     string: "❌",
                   })}**Something went wrong!**`,
-                  "We had some sort of error and don't exactly know which. Care to try again?",
+                  "We had some sort of error and don’t exactly know which. Care to try again?",
                   Sokolors.Red,
                 ),
               ],
@@ -1101,12 +1108,18 @@ export async function settingsEmbed<K extends keyof TS>(
 
         await baseObjectViewPrefixGenerator(lbl, updatedState);
         objectEntriesGenerator(subCtl, updatedState.settingState, lbl);
-        baseObjectViewSuffixGenerator(subCtl, lbl, updatedState);
+        baseObjectViewSuffixGenerator(subCtl, lbl, updatedState, true);
 
         await safeEdit({ interaction: replyInteraction, editOptions: { components: [lbl] } });
         break;
       }
       case EXEMPT_CIDs.OBJECT_DELETE_CHILD: {
+        const confirmInteraction = await confirmResetModal(replyInteraction);
+        if (!confirmInteraction) {
+          await fullyResetResetting(replyInteraction);
+          break;
+        }
+
         const currentObjectState = safelyGetObjectState();
         const target = (await methods.getSettingPlease(
           currentObjectState.key,
@@ -1126,6 +1139,19 @@ export async function settingsEmbed<K extends keyof TS>(
           settingState: {},
         });
 
+        await safeReply({
+          interaction: confirmInteraction,
+          replyOptions: {
+            components: [
+              await constructModalContainer(
+                `**${dotCheck({ string: "🗑️", twoSides: true, includeString: true })}Child object deleted**`,
+                "Chosen object was successfully deleted.",
+                Sokolors.Red,
+              ),
+            ],
+            flags: ["IsComponentsV2", "Ephemeral"],
+          },
+        });
         await safeEdit({
           interaction: replyInteraction,
           editOptions: {
@@ -1143,6 +1169,12 @@ export async function settingsEmbed<K extends keyof TS>(
         break;
       }
       case EXEMPT_CIDs.OBJECT_CLEAR: {
+        const confirmInteraction = await confirmResetModal(replyInteraction);
+        if (!confirmInteraction) {
+          await fullyResetResetting(replyInteraction);
+          break;
+        }
+
         const currentObjectState = safelyGetObjectState();
         await methods.setSettingPlease(
           currentObjectState.key,
@@ -1156,6 +1188,19 @@ export async function settingsEmbed<K extends keyof TS>(
           settingState: {},
         });
 
+        await safeReply({
+          interaction: confirmInteraction,
+          replyOptions: {
+            components: [
+              await constructModalContainer(
+                `**${dotCheck({ string: "🗑️", twoSides: true, includeString: true })}Iterable object cleared**`,
+                "All child objects were deleted.",
+                Sokolors.Red,
+              ),
+            ],
+            flags: ["IsComponentsV2", "Ephemeral"],
+          },
+        });
         await safeEdit({
           interaction: replyInteraction,
           editOptions: {
@@ -1268,7 +1313,7 @@ export async function settingsEmbed<K extends keyof TS>(
 
           await baseObjectViewPrefixGenerator(lbl, updatedState);
           objectEntriesGenerator(subCtl, updatedState.settingState, lbl);
-          baseObjectViewSuffixGenerator(subCtl, lbl, updatedState);
+          baseObjectViewSuffixGenerator(subCtl, lbl, updatedState, true);
 
           await safeEdit({ interaction: replyInteraction, editOptions: { components: [lbl] } });
         } else

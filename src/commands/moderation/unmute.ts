@@ -22,7 +22,7 @@ export const data = new SlashCommandSubcommandBuilder()
     bool
       .setName("silent")
       .setDescription(
-        "If true, the user won't be notified about this action (overrides the server setting).",
+        "If true, the user won’t be notified about this action (overrides the server setting).",
       ),
   );
 
@@ -56,7 +56,7 @@ export async function run(
   if (!target?.isCommunicationDisabled())
     return await errorEmbed({
       interaction,
-      title: "You can't unmute this user.",
+      title: "You can’t unmute this user.",
       reason: "The user was never muted.",
     });
 

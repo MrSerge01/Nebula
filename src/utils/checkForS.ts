@@ -4,5 +4,5 @@
  * @returns Returns the name with ' or 's.
  */
 export function checkForS(name: string): string {
-  return name.toLowerCase().endsWith("s") ? `${name}'` : `${name}'s`;
+  return name.toLowerCase().endsWith("s") ? `${name}’` : `${name}’s`;
 }

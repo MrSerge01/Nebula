@@ -33,7 +33,7 @@ export async function run(
   )
     return await errorEmbed({
       interaction,
-      title: "You can't execute this command.",
+      title: "You can’t execute this command.",
       reason: "You need the **Manage Server** permission.",
     });
 
@@ -48,7 +48,7 @@ export async function run(
 
   const news = await getNews(interaction.guild.id, id);
   if (!news)
-    return await errorEmbed({ interaction, title: "The specified news post doesn't exist." });
+    return await errorEmbed({ interaction, title: "The specified news post doesn’t exist." });
 
   const newsChannel = (await safeChannel(
     interaction.guild,

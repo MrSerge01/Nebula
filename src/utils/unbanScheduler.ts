@@ -32,7 +32,7 @@ export async function scheduleUnban(
           return await errorEmbed({
             client,
             title: `Failed to unban user ${userID} in guild ${guildID}.`,
-            reason: "User not found in the guild's ban list's cache.",
+            reason: "User not found in the guild’s ban list’s cache.",
             log: true,
             forward: true,
             fileName: "unbanScheduler",

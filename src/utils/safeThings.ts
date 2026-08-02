@@ -133,7 +133,7 @@ export async function safeEdit(options: {
   if (interaction.isButton() || interaction.isAnySelectMenu())
     return await interaction.update(editOptions);
 
-  throw new Error("Should've probably used safeReply instead of safeEdit.");
+  throw new Error("Should’ve probably used safeReply instead of safeEdit.");
 }
 
 /**
@@ -143,7 +143,7 @@ export async function safeEdit(options: {
  */
 export function safeAlertChannel(guild: Guild): TextChannel {
   const me = guild.members.me;
-  if (!me) throw new Error("how??? this shouldn't happen…");
+  if (!me) throw new Error("how??? this shouldn’t happen…");
 
   const channel =
     guild.systemChannel ??

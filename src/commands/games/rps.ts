@@ -89,7 +89,7 @@ export async function run(
     if (buttonInteraction.user.id != opponent.id && buttonInteraction.user.id != user.id)
       return await errorEmbed({
         interaction: buttonInteraction,
-        title: "You aren't participating.",
+        title: "You aren’t participating.",
       });
 
     playerChoices.set(buttonInteraction.user.id, cID.split("_", 2)[1] as RPSChoice);
@@ -135,7 +135,7 @@ export async function run(
             [
               `**${user.displayName}** ${rpsEmojis[p1Choice]} vs ${rpsEmojis[p2Choice]} **${opponent.displayName}**\n`,
               {
-                0: "## **It's a tie!**",
+                0: "## **It’s a tie!**",
                 1: `## **${user.displayName}**, you win!`,
                 2: opponent.bot
                   ? `## **Sokora** wins!`

@@ -165,14 +165,14 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
             ? [
                 new TextDisplayBuilder().setContent("## Sokora Canary pulled updates!"),
                 new TextDisplayBuilder().setContent(
-                  "Hello! This restart brought changes. We don't maintain a formal changelog for these quick patches, so here's a developer commit log, messages should be clear enough.",
+                  "Hello! This restart brought changes. We don’t maintain a formal changelog for these quick patches, so here’s a developer commit log, messages should be clear enough.",
                 ),
                 new TextDisplayBuilder().setContent(codeBlock("diff", dump)),
                 new TextDisplayBuilder().setContent(
                   hasTooManyCommits
                     ? // eslint-disable-next-line unicorn/string-content
                       `There's more commits that don't fit in this message (total is ${log.length}), see the full log [at this link](https://github.com/SokoraDesu/Sokora/compare/${log.at(-1)?.sha}...dev) or compare latest \`dev\` to \`${log.at(-1)?.sha.slice(0, 8)}\`.\nFor reference, changes are counted from the second the bot started up until ${timestamp}.`
-                    : "That's about it.",
+                    : "That’s about it.",
                 ),
                 new TextDisplayBuilder().setContent(
                   [
@@ -183,12 +183,12 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
               ]
             : [
                 new TextDisplayBuilder().setContent(
-                  "## Sokora Canary restarted, though there's nothing new",
+                  "## Sokora Canary restarted, though there’s nothing new",
                 ),
                 new TextDisplayBuilder().setContent(
                   [
-                    `Hello! This restart brought no new updates. For reference, shutdown was logged at ${timestamp} + 30', and no new commits exist since.`,
-                    "We'll hopefully have something new soon.",
+                    `Hello! This restart brought no new updates. For reference, shutdown was logged at ${timestamp} + 30’, and no new commits exist since.`,
+                    "We’ll hopefully have something new soon.",
                     "Thanks for using Sokora Canary!",
                   ].join("\n"),
                 ),

@@ -33,7 +33,7 @@ export default defineConfig(
         {
           patterns: {
             "\\.\\.\\.": "…",
-            // "'": "’", // TODO: breaks double-quoted strings
+            "'": "’",
             "·": "•",
           },
         },

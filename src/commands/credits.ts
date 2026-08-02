@@ -38,9 +38,9 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
                 "**Designers** • ArtyH, pibayar, proJM, Slider_on_the_black",
                 "**Translators** • SaFire",
                 "**Testers** • astol",
-                "\n> I thank everyone that was in the team and helped shape the project into what it is today. I hope that you'll have a bright future ahead of you.",
+                "\n> I thank everyone that was in the team and helped shape the project into what it is today. I hope that you’ll have a bright future ahead of you.",
                 String.raw`\- *Goos*`,
-                "\n-# If you're on this list and wish to remove/change your name, please contact us via contact@sokora.org",
+                "\n-# If you’re on this list and wish to remove/change your name, please contact us via contact@sokora.org",
               ].join("\n")
             : [
                 "**Founder** • Goos",
@@ -49,7 +49,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
                 "**Social relations** • Spoon",
                 "**Translators** • Dimkauzh, GraczNet, TrulyBlue",
                 "**Testers** • Blaze, fishy, flojo, Trynera",
-                "\n> I'm grateful for everyone's presence in the Sokora team. With every contribution and every idea, you help Sokora improve to one day be one of the best bots out there. Thank you.",
+                "\n> I’m grateful for everyone’s presence in the Sokora team. With every contribution and every idea, you help Sokora improve to one day be one of the best bots out there. Thank you.",
                 String.raw`\- *Goos*`,
               ].join("\n"),
         ),

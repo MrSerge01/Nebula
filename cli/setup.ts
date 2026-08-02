@@ -74,7 +74,7 @@ const main = async (): Promise<void> => {
     "Enter your user ID. Sokora might give it some use. (Optional.)",
   );
   if (ownerId.trim() != "") replaceInEnvironment("YOUR_USER_ID", ownerId);
-  console.log("You're good to go, happy coding!");
+  console.log("You’re good to go, happy coding!");
 };
 
 try {

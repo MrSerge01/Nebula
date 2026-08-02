@@ -18,7 +18,7 @@ import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("changelog")
-  .setDescription("Shows Sokora's changelog.")
+  .setDescription("Shows Sokora’s changelog.")
   .setContexts(0);
 
 type Label = "Added" | "Changed" | "Fixed" | "Removed";
@@ -33,7 +33,7 @@ async function genChangelog(
   return new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `## What's ${viewing.toLowerCase()} in ${changelog.ver}${changelog.codename ? ` • *${changelog.codename}*` : ""}`,
+        `## What’s ${viewing.toLowerCase()} in ${changelog.ver}${changelog.codename ? ` • *${changelog.codename}*` : ""}`,
       ),
       new TextDisplayBuilder().setContent(changelog.body[viewing]),
     )

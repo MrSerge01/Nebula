@@ -153,7 +153,7 @@ export async function errorEmbed(options: {
     if (!errorChannel) {
       console.error(error);
       console.log(
-        "hey, you don't have ERROR_CHANNEL_ID set in .env and the bot tried to forward an error message to undefined :D",
+        "hey, you don’t have ERROR_CHANNEL_ID set in .env and the bot tried to forward an error message to undefined :D",
       );
       return;
     }
@@ -229,7 +229,7 @@ export async function errorEmbed(options: {
       const modalContainer = new ContainerBuilder()
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
-            "## Thank you for reporting! You've made Goos proud 🥹\nWe'll look into this error and properly thank you in a future patch release 🫶",
+            "## Thank you for reporting! You’ve made Goos proud 🥹\nWe’ll look into this error and properly thank you in a future patch release 🫶",
           ),
         )
         .setAccentColor(await colorize({ hue: Sokolors.Purple }));
@@ -280,7 +280,7 @@ export async function errorEmbed(options: {
       if (!reportChannel) {
         console.error(error);
         console.log(
-          "hey, you don't have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
+          "hey, you don’t have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
         );
         collector.stop();
         return;
@@ -336,7 +336,7 @@ export async function buttonCheck(options: {
     return await errorEmbed({
       interaction: i,
       title:
-        "For some reason, this click would've caused the bot to error. Thankfully, this message right here prevents that.",
+        "For some reason, this click would’ve caused the bot to error. Thankfully, this message right here prevents that.",
     });
 
   if (!noExecuteError && interaction && i.user.id != interaction.user.id)

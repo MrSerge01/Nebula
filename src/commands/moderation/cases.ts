@@ -50,7 +50,7 @@ async function generateContainer(options: {
 
   const nothingMessage = [
     "Nothing to see here…",
-    "Ayay, no cases on this horizon cap'n!",
+    "Ayay, no cases on this horizon cap’n!",
     "Clean as a whistle!",
     "0 + 0 = ?",
   ];
@@ -113,7 +113,7 @@ export const data = new SlashCommandSubcommandBuilder()
   .setName("cases")
   .setDescription("Lists all cases of a user (or in a server).")
   .addUserOption(user =>
-    user.setName("user").setDescription("The user's cases that you want to see."),
+    user.setName("user").setDescription("The user’s cases that you want to see."),
   )
   .addNumberOption(number =>
     number.setName("id").setDescription("The ID of a specific case that you want to see."),
@@ -121,7 +121,7 @@ export const data = new SlashCommandSubcommandBuilder()
   .addStringOption(string =>
     string
       .setName("type")
-      .setDescription("The specific type of action you'd like to see.")
+      .setDescription("The specific type of action you’d like to see.")
       .setChoices(
         {
           name: "Bans",
@@ -159,7 +159,7 @@ export async function run(
   if (!(await safeMember(guild, interaction.user.id)).permissions.has("ModerateMembers"))
     return await errorEmbed({
       interaction,
-      title: "You can't execute this command.",
+      title: "You can’t execute this command.",
       reason: "You need the **Moderate Members** permission.",
     });
 

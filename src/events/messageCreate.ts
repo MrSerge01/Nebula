@@ -1,4 +1,3 @@
-// TODO: fix
 import {
   calculateLevel,
   getLevelRewards,
@@ -41,7 +40,7 @@ async function grantRewards(
     for (const _role of reward.roles) {
       const role = await safeRole(guild, _role);
       if (!member.roles.cache.has(role.id))
-        push(`**You've been rewarded the ${mention(role.id, "ROLE")} role!** Congrats.`);
+        push(`**You’ve been rewarded the ${mention(role.id, "ROLE")} role!** Congrats.`);
 
       await member.roles.add(role);
     }
@@ -59,7 +58,7 @@ async function grantRewards(
 
       if (!channel.permissionsFor(member).has("ViewChannel"))
         push(
-          `**You've been rewarded access to the ${mention(channel.id, "CHANNEL")}> channel!** Congrats.`,
+          `**You’ve been rewarded access to the ${mention(channel.id, "CHANNEL")}> channel!** Congrats.`,
         );
 
       await channel.permissionOverwrites.set([

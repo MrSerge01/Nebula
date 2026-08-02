@@ -37,7 +37,6 @@ export async function newsEmbed(
   const news = await getNews(guild.id, id);
   const image = willEdit ? news?.imageURL : imageURL;
   const timestamp = willEdit ? news?.createdAt.valueOf() : Date.now();
-  // [TODO] fix typing so we don't need this assertion; when willEdit is true news should not be null
   if (!timestamp) throw new Error("this should never happen");
   const container = new ContainerBuilder()
     .addTextDisplayComponents(

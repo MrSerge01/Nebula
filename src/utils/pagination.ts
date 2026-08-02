@@ -103,13 +103,13 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
       ? new ContainerBuilder()
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-              `## You're viewing page ${functionPage + 1}.\nThis is the last page, since you went out of bounds (there aren't ${value} pages).`,
+              `## You’re viewing page ${functionPage + 1}.\nThis is the last page, since you went out of bounds (there aren’t ${value} pages).`,
             ),
           )
           .setAccentColor(await colorize({ hue: Sokolors.Yellow }))
       : new ContainerBuilder()
           .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`## You're viewing page ${functionPage + 1}.`),
+            new TextDisplayBuilder().setContent(`## You’re viewing page ${functionPage + 1}.`),
           )
           .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 

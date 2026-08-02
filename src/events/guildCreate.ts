@@ -30,7 +30,7 @@ export default (async function run(guild) {
         IS_CANARY
           ? [
               "## Hey!! You are running **Sokora Canary**!",
-              "You probably already know what Sokora is so we'll skip the welcome text.\n",
+              "You probably already know what Sokora is so we’ll skip the welcome text.\n",
               "**Note that this bot will sometimes try to ping the server owner without asking.** As a Canary bot, whenever our devs push an update, you get it immediately, and a message with the commit log will be sent to the *first available server channel*, pinging the owner.\n",
               "> By using this bot you get to try features early, which also means you get to find issues before anyone else. The idea is simple: you deliberatedly test the bot in all ways you know and report any bug (or general feedback) you find to us. YOU HELP A LOT BY DOING THIS, THANK YOU SO MUCH!!",
               "Users who successfully report issues will be credited on the next stable release. Thank you again, happy testing!",

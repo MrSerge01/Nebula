@@ -28,7 +28,7 @@ export const data = new SlashCommandSubcommandBuilder()
     bool
       .setName("silent")
       .setDescription(
-        "If true, the user won't be notified about this action (overrides the server setting).",
+        "If true, the user won’t be notified about this action (overrides the server setting).",
       ),
   );
 
@@ -65,14 +65,14 @@ export async function run(
   if (!duration || !durationMs || durationMs > MILLISEC_28D || durationMs <= 0)
     return await errorEmbed({
       interaction,
-      title: `You can't mute ${user.username}.`,
+      title: `You can’t mute ${user.username}.`,
       reason: "The duration is invalid or is above the 28 day limit.",
     });
 
   if ((await safeMember(guild, user.id)).isCommunicationDisabled())
     return await errorEmbed({
       interaction,
-      title: `You can't mute ${user.username}.`,
+      title: `You can’t mute ${user.username}.`,
       reason: "The user is already muted.",
     });
 
