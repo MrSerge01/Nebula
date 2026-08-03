@@ -10,7 +10,7 @@ import {
   type ChatInputCommandInteraction,
 } from "discord.js";
 import { version } from "package";
-import { CANARY } from "src/canary";
+import { IS_CANARY } from "src/canary";
 import { colorize, Sokolors } from "utils/colorize";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { replace } from "utils/replace";
@@ -36,7 +36,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
 
   let commit: GHCommit | null = null;
 
-  if (CANARY) {
+  if (IS_CANARY) {
     const response = await fetch(
       `https://api.github.com/repos/SokoraDesu/Sokora/commits?per_page=1`,
       {

@@ -7,12 +7,12 @@ import {
 } from "database/moderation";
 import type { TypeOfDefinition } from "database/types";
 import {
-  Client,
   ContainerBuilder,
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
+  type Client,
   type InteractionResponse,
   type Message,
   type User,
@@ -21,14 +21,15 @@ import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import ms from "enhanced-ms";
 import { capitalize } from "utils/capitalize";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { mention } from "utils/mention";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { randomize } from "utils/randomize";
-import { safeMember, safeReply, safeUser } from "utils/safeThings";
+import { safeEdit, safeMember, safeUser } from "utils/safeThings";
 
 async function generateContainer(options: {
-  client: Client<boolean>;
+  client: Client;
   cases: TypeOfDefinition<Case>[];
   page: number;
   type: ModType | null;
@@ -49,7 +50,7 @@ async function generateContainer(options: {
 
   const nothingMessage = [
     "Nothing to see here…",
-    "Ayay, no cases on this horizon cap'n!",
+    "Ayay, no cases on this horizon cap’n!",
     "Clean as a whistle!",
     "0 + 0 = ?",
   ];
@@ -88,7 +89,7 @@ async function generateContainer(options: {
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `## ${id ? capitalize(displayedCases[0].type?.toLowerCase()) : type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length)} ${id ? `#${id}` : user ? `of ${user.username}` : "in the server"}`,
+        `## ${id ? capitalize(displayedCases[0].type?.toLowerCase()) : (type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length))} ${id ? `#${id}` : (user ? `of ${user.username}` : "in the server")}`,
       ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
@@ -112,7 +113,7 @@ export const data = new SlashCommandSubcommandBuilder()
   .setName("cases")
   .setDescription("Lists all cases of a user (or in a server).")
   .addUserOption(user =>
-    user.setName("user").setDescription("The user's cases that you want to see."),
+    user.setName("user").setDescription("The user’s cases that you want to see."),
   )
   .addNumberOption(number =>
     number.setName("id").setDescription("The ID of a specific case that you want to see."),
@@ -120,7 +121,7 @@ export const data = new SlashCommandSubcommandBuilder()
   .addStringOption(string =>
     string
       .setName("type")
-      .setDescription("The specific type of action you'd like to see.")
+      .setDescription("The specific type of action you’d like to see.")
       .setChoices(
         {
           name: "Bans",
@@ -158,7 +159,7 @@ export async function run(
   if (!(await safeMember(guild, interaction.user.id)).permissions.has("ModerateMembers"))
     return await errorEmbed({
       interaction,
-      title: "You can't execute this command.",
+      title: "You can’t execute this command.",
       reason: "You need the **Moderate Members** permission.",
     });
 
@@ -192,14 +193,14 @@ export async function run(
   });
 
   if (pages <= 1) return;
-  const collector = reply.createMessageComponentCollector({ time: 60_000 });
+  const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
-    collector.resetTimer({ time: 60_000 });
+    collector.resetTimer({ time: COLLECTOR_DURATION });
     if (buttonInteraction.customId == "please") return;
 
     page = await handlePages({ i: buttonInteraction, page, pages, collector });
-    await safeReply({
+    await safeEdit({
       interaction: buttonInteraction,
       editOptions: {
         components: [

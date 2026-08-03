@@ -1,1 +1,1 @@
-export const CANARY = process.env.CANARY === "true";
+export const IS_CANARY = process.env.CANARY === "true";

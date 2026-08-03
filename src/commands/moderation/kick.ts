@@ -20,7 +20,7 @@ export const data = new SlashCommandSubcommandBuilder()
     bool
       .setName("silent")
       .setDescription(
-        "If true, the user won't be notified about this action (overrides the server setting).",
+        "If true, the user won’t be notified about this action (overrides the server setting).",
       ),
   );
 
@@ -51,13 +51,13 @@ export async function run(
   )
     return;
 
-  const silent =
+  const isSilent =
     interaction.options.getBoolean("silent") ??
-    ((await getSetting(guild.id, "moderation", "silent")) as boolean);
+    (await getSetting(guild.id, "moderation", "silent"));
 
   try {
     await modEmbed(
-      { interaction, user, action: "Kicked", dm: true, dbAction: "KICK", silent },
+      { interaction, user, action: "Kicked", shouldDm: true, dbAction: "KICK", isSilent },
       reason,
     );
     await (await safeMember(guild, user.id)).kick(reason ?? undefined);

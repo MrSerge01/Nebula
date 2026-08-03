@@ -13,6 +13,7 @@ import {
   type InteractionCollector,
 } from "discord.js";
 import { colorize, Sokolors } from "./colorize";
+import { COLLECTOR_DURATION } from "./constants";
 import { modalSubmit } from "./modalSubmit";
 import { replace } from "./replace";
 import { safeReply } from "./safeThings";
@@ -29,30 +30,30 @@ interface HandlePagesOptions {
  * Includes: button to go left, button to jump to a page (modal!), button to go right.
  * @param pages Total amount of pages.
  * @param argumentPage Page to skip to.
- * @param disabled Disables the buttons if true.
+ * @param isDisabled Disables the buttons if true.
  * @returns Action row containing the pagination buttons.
  */
 export function pagedButtons(
   pages: number,
   argumentPage?: number,
-  disabled?: boolean,
+  isDisabled?: boolean,
 ): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId("left")
       .setEmoji(replace("(leftArrow)"))
       .setStyle(ButtonStyle.Primary)
-      .setDisabled(disabled ?? false),
+      .setDisabled(isDisabled ?? false),
     new ButtonBuilder()
       .setCustomId("pagecount")
       .setLabel(`${argumentPage ? argumentPage + 1 : 1} of ${pages}`)
       .setStyle(ButtonStyle.Secondary)
-      .setDisabled(disabled ?? false),
+      .setDisabled(isDisabled ?? false),
     new ButtonBuilder()
       .setCustomId("right")
       .setEmoji(replace("(rightArrow)"))
       .setStyle(ButtonStyle.Primary)
-      .setDisabled(disabled ?? false),
+      .setDisabled(isDisabled ?? false),
   );
 }
 
@@ -87,7 +88,7 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
   await i.showModal(modal);
   const modalInteraction = await modalSubmit(i);
   if (!modalInteraction) return functionPage;
-  collector.resetTimer({ time: 60_000 });
+  collector.resetTimer({ time: COLLECTOR_DURATION });
   const value = Number.parseInt(modalInteraction.fields.getTextInputValue("page_input"));
 
   if (!Number.isNaN(value)) {
@@ -102,13 +103,13 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
       ? new ContainerBuilder()
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-              `## You're viewing page ${functionPage + 1}.\nThis is the last page, since you went out of bounds (there aren't ${value} pages).`,
+              `## You’re viewing page ${functionPage + 1}.\nThis is the last page, since you went out of bounds (there aren’t ${value} pages).`,
             ),
           )
           .setAccentColor(await colorize({ hue: Sokolors.Yellow }))
       : new ContainerBuilder()
           .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`## You're viewing page ${functionPage + 1}.`),
+            new TextDisplayBuilder().setContent(`## You’re viewing page ${functionPage + 1}.`),
           )
           .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 

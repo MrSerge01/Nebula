@@ -3,8 +3,8 @@ import { type Client, ContainerBuilder, TextDisplayBuilder } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "./colorize";
 import { logChannel } from "./logChannel";
-import { mention } from "./mention";
 import { safeGuild, safeMember } from "./safeThings";
+import { mention } from "./mention";
 
 // eslint-disable-next-line @typescript-eslint/require-await
 export async function scheduleUnban(
@@ -32,7 +32,7 @@ export async function scheduleUnban(
           return await errorEmbed({
             client,
             title: `Failed to unban user ${userID} in guild ${guildID}.`,
-            reason: "User not found in the guild's ban list's cache.",
+            reason: "User not found in the guild’s ban list’s cache.",
             log: true,
             forward: true,
             fileName: "unbanScheduler",
@@ -82,7 +82,8 @@ export async function scheduleUnban(
 
 export async function rescheduleUnbans(client: Client): Promise<void> {
   const now = Date.now();
-  for (const ban of await getPendingBans(now)) {
+  const bans = await getPendingBans(now);
+  for (const ban of bans) {
     if (!ban.expiresAt) continue;
     if (typeof ban.expiresAt != "number" || Number.isNaN(ban.expiresAt)) {
       await errorEmbed({

@@ -8,6 +8,7 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { errorCheck, modEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
+import { MILLISEC_6H } from "utils/constants";
 import { safeChannel } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -65,12 +66,13 @@ export async function run(
         "You somehow ran the command without a time value being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
     });
 
-  const timeMs = ms(time);
+  const timeMs = ms(time) ?? 0;
   const reason = interaction.options.getString("reason");
-  let title = `Set the slowdown to ${ms(ms(time), "fullPrecision")}`;
+  const title = timeMs
+    ? `Set the slowdown to ${ms(timeMs, "fullPrecision")}`
+    : "Removed the slowdown";
 
-  if (!timeMs) title = "Removed the slowdown";
-  if (timeMs > 21_600_000)
+  if (timeMs > MILLISEC_6H)
     return await errorEmbed({
       interaction,
       title: "You have provided a duration longer than 6 hours.",
@@ -79,7 +81,7 @@ export async function run(
   if (!channel.isTextBased() || channel.isDMBased())
     return await errorEmbed({
       interaction,
-      title: "You have provided a channel that can't be slowed down.",
+      title: "You have provided a channel that can’t be slowed down.",
     });
 
   await Promise.all([

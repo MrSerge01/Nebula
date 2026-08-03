@@ -16,18 +16,18 @@ export const data = new SlashCommandSubcommandBuilder()
   .addStringOption(option =>
     option
       .setName("expression")
-      .setDescription("The mathematical expression to calculate (e.g., 'sin(pi/4)', '10*2+(6/3)')")
+      .setDescription("The mathematical expression to calculate (e.g., ’sin(pi/4)’, ’10*2+(6/3)’)")
       .setRequired(true),
   );
 
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
-  const expr = interaction.options.getString("expression", true);
+  const expression = interaction.options.getString("expression", true);
   let result: unknown;
 
   try {
-    result = math.evaluate(expr);
+    result = math.evaluate(expression);
     if (typeof result != "number" || Number.isNaN(result) || !Number.isFinite(result))
       throw new Error("Invalid result");
   } catch (error) {
@@ -35,15 +35,15 @@ export async function run(
       interaction,
       title: "Invalid expression.",
       reason: String(error).includes("Invalid result")
-        ? `Preferably, provide expressions with a result a computer can manage (expr. \`${expr}\` gave a result above compute limit).`
-        : "Please provide a valid mathematical expression. Examples: 'sin(pi/4)', '10*2+(6/3)', 'sqrt(25)'",
+        ? `Preferably, provide expressions with a result a computer can manage (expr. \`${expression}\` gave a result above compute limit).`
+        : "Please provide a valid mathematical expression. Examples: ’sin(pi/4)’, ’10*2+(6/3)’, ’sqrt(25)’",
     });
   }
 
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent("## Calculation result"),
-      new TextDisplayBuilder().setContent(`\`${expr}\` = **${result}**`),
+      new TextDisplayBuilder().setContent(`\`${expression}\` = **${result}**`),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
 

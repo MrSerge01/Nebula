@@ -25,8 +25,9 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { modalSubmit } from "utils/modalSubmit";
-import { safeReply } from "utils/safeThings";
+import { safeEdit, safeReply } from "utils/safeThings";
 
 export const data = new SlashCommandBuilder()
   .setName("import")
@@ -36,10 +37,8 @@ export const data = new SlashCommandBuilder()
 function safeStringify(object: unknown): string {
   try {
     const string_ = JSON.stringify(object, null, 2);
-    if (string_.length < 3800) return string_;
-    return (
-      string_.slice(0, 3800) + "\n// etc… (had to trim it because of discord character limits)"
-    );
+    if (string_.length < MAX_INPUT_CHARS) return string_;
+    return `${string_.slice(0, MAX_INPUT_CHARS)}\n// etc… (had to trim it because of discord character limits)`;
   } catch {
     return "[Unserializable data, please report this as an issue]";
   }
@@ -109,7 +108,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       userID: "172002275412279296",
     },
     {
-      content: "🔵  •  MEE6\n-# Import from [MEE6](http://mee6.xyz/)",
+      content: "🔵  •  MEE6\n-# Import from [MEE6](https://mee6.xyz/)",
       id: "MEE6",
       userID: "159985870458322944",
     },
@@ -120,15 +119,13 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     },
   ];
 
-  const containerComponents = [];
-  for (const bot of bots)
-    containerComponents.push(
-      new SectionBuilder()
-        .addTextDisplayComponents(new TextDisplayBuilder().setContent(bot.content))
-        .setButtonAccessory(
-          new ButtonBuilder().setCustomId(bot.id).setLabel("Import").setStyle(ButtonStyle.Primary),
-        ),
-    );
+  const containerComponents = Array.from(bots, bot =>
+    new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(bot.content))
+      .setButtonAccessory(
+        new ButtonBuilder().setCustomId(bot.id).setLabel("Import").setStyle(ButtonStyle.Primary),
+      ),
+  );
 
   const container = new ContainerBuilder().addSectionComponents(containerComponents);
   const reply = await safeReply({
@@ -140,25 +137,24 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   });
 
   if (!reply) {
-    await collapse("For some reason, a reply wasn't sent your way.", interaction);
+    await collapse("For some reason, a reply wasn’t sent your way.", interaction);
     return;
   }
 
-  const collector = reply?.createMessageComponentCollector({ time: 240_000 });
+  const collector = reply?.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
 
-    collector.resetTimer({ time: 240_000 });
-    let cID = buttonInteraction.customId;
+    collector.resetTimer({ time: COLLECTOR_DURATION });
+    const cID = buttonInteraction.customId;
     if (cID == "please") return;
 
-    cID = cID as keyof typeof SupportedBots;
     const bots = {
       name: cID === "MEE6" ? cID.toUpperCase() : cID,
       data: [
         "- User XP",
-        cID === "TATSU" ? "-# Note: Tatsu doesn't have role rewards." : "- Role rewards",
-        "-# Settings like difficulty (which dictate the amount of XP needed to levelup) can't be imported. Levels might immediately change when chatting if you don't manually change the difficulty (and the current one differs too much from this one, which isn't necessarily the case).",
+        cID === "TATSU" ? "-# Note: Tatsu doesn’t have role rewards." : "- Role rewards",
+        "-# Settings like difficulty (which dictate the amount of XP needed to levelup) can’t be imported. Levels might immediately change when chatting if you don’t manually change the difficulty (and the current one differs too much from this one, which isn’t necessarily the case).",
       ].join("\n"),
     };
 
@@ -173,12 +169,12 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         lurkr_api: lurkrKey,
       });
 
-      let levels =
+      const levels =
         cID === "MEE6"
           ? await leveler.GetLeaderboard(SupportedBots.MEE6)
-          : cID === "LURKR" && lurkrKey
+          : (cID === "LURKR" && lurkrKey
             ? await leveler.GetLeaderboard(SupportedBots.LURKR)
-            : await leveler.GetLeaderboard(SupportedBots.TATSU);
+            : await leveler.GetLeaderboard(SupportedBots.TATSU));
 
       const switchContainer = new ContainerBuilder()
         .addActionRowComponents(
@@ -194,13 +190,13 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             [
               `Thanks for switching to Sokora! We will import leveling info from **${bots.name}** that we can gather. This includes a total of **${levels.length} entries**.`,
               `Data we can import from ${bots.name} is:\n${bots.data}`,
-              `You may now import data by **merging** (adding imported XP to Sokora's XP) or by **overwriting** (removing Sokora's leveling data, then adding imported XP data). You can also review the JSON data that is to be imported, just in case.`,
+              `You may now import data by **merging** (adding imported XP to Sokora’s XP) or by **overwriting** (removing Sokora’s leveling data, then adding imported XP data). You can also review the JSON data that is to be imported, just in case.`,
             ].join("\n\n"),
           ),
         );
 
       const replyInteraction = modalInteraction ?? buttonInteraction;
-      await safeReply({
+      await safeEdit({
         interaction: replyInteraction,
         editOptions: { components: [await containerHelper(switchContainer, { buttons: true })] },
       });
@@ -209,14 +205,14 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       let content;
       switch (cID) {
         case "back": {
-          await safeReply({ interaction, editOptions: { components: [container] } });
+          await safeEdit({ interaction, editOptions: { components: [container] } });
           break;
         }
         case "check": {
           const levelData = safeStringify(levels);
           const checkContainer = new ContainerBuilder().addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-              `## This is what we'll import from ${bots.name}\n${
+              `## This is what we’ll import from ${bots.name}\n${
                 levelData.length <= 2048
                   ? codeBlock(levelData)
                   : "The level data is an attachment due to it being too large."
@@ -232,7 +228,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             checkContainer.addFileComponents(new FileBuilder().setURL("attachment://levels.txt"));
           }
 
-          await safeReply({
+          await safeEdit({
             interaction: buttonInteraction,
             editOptions: {
               components: [await containerHelper(checkContainer, { buttons: true, json: true })],
@@ -242,7 +238,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           break;
         }
         case "return": {
-          await safeReply({
+          await safeEdit({
             interaction: buttonInteraction,
             editOptions: { components: [switchContainer] },
           });
@@ -252,7 +248,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         case "overwrite": {
           content = `## ${cID == "merge" ? "Updating" : "Overwriting"} data for all users…`;
           const res = [];
-          await safeReply({
+          await safeEdit({
             interaction: buttonInteraction,
             editOptions: {
               components: [await containerHelper(new ContainerBuilder(), { content })],
@@ -260,14 +256,14 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           });
 
           if (!guild || !guildID) return;
-          const difficulty = (await getSetting(guildID, "leveling", "difficulty")) as number;
+          const difficulty = await getSetting(guildID, "leveling", "difficulty");
 
           for (const user of guild.members.cache) {
             if (user[1].user.bot) continue;
             const imported = levels.find(lev => lev.uid == user[1].id);
             if (!imported) {
               res.push(
-                `${user[1].user.username} wasn't imported (had no data saved in the imported dataset)`,
+                `${user[1].user.username} wasn’t imported (had no data saved in the imported dataset)`,
               );
               continue;
             }
@@ -281,7 +277,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           }
 
           content = `## Done!\n${res.join("\n")}`;
-          await safeReply({
+          await safeEdit({
             interaction: buttonInteraction,
             editOptions: {
               components: [await containerHelper(new ContainerBuilder(), { content })],
@@ -291,7 +287,10 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       }
     }
 
-    if (cID != "LURKR") return await construct();
+    if (cID != "LURKR") {
+      await construct();
+      return;
+    }
     const modal = new ModalBuilder()
       .setCustomId(cID)
       .setTitle(`•  API key to import`)
@@ -302,7 +301,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             new TextInputBuilder()
               .setCustomId("setting")
               .setPlaceholder("Type in the value")
-              .setMaxLength(3800)
+              .setMaxLength(MAX_INPUT_CHARS)
               .setStyle(TextInputStyle.Paragraph)
               .setRequired(true),
           ),
@@ -310,7 +309,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
 
     await buttonInteraction.showModal(modal);
     const modalInteraction = await modalSubmit(buttonInteraction);
-    collector.resetTimer({ time: 240_000 });
+    collector.resetTimer({ time: COLLECTOR_DURATION });
     if (!modalInteraction) return;
 
     try {

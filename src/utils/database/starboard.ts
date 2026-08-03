@@ -49,14 +49,16 @@ export async function setStarred(
     stars,
     timestamp,
   };
-  // [TODO] TypeError: Binding expected string, TypedArray, boolean, number, bigint or null
   await db.begin(async tx => {
     await tx`DELETE FROM starboard WHERE "guild" = ${guildID} AND "message" = ${messageID};`;
     await tx`INSERT INTO starboard ${db(insObject)};`;
   });
 }
 
-export async function deleteStarred(guildID: string, messageID: string) {
+export async function deleteStarred(
+  guildID: string,
+  messageID: string,
+): Promise<Awaited<ReturnType<typeof errorEmbed>>> {
   try {
     await db`DELETE FROM starboard WHERE "guild" = ${guildID} AND "message" = ${messageID}`;
   } catch (error) {

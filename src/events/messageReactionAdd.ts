@@ -47,12 +47,12 @@ export default (async function run(reaction, user) {
   const { guild, author, content, createdAt, url, id, attachments } = message;
   if (!guild) return;
 
-  const starEmoji = ((await getSetting(guild.id, "starboard", "emoji")) as string) || "⭐";
+  const starEmoji = await getSetting(guild.id, "starboard", "emoji");
   if (reaction.emoji.name != starEmoji) return;
   if (!(await getSetting(guild.id, "starboard", "enabled"))) return;
   if (!content && attachments.size === 0) return;
 
-  const starboardChannelId = (await getSetting(guild.id, "starboard", "channel")) as string;
+  const starboardChannelId = await getSetting(guild.id, "starboard", "channel");
   if (!starboardChannelId) return;
 
   const starboardChannel = await safeChannel(guild, starboardChannelId);
@@ -69,7 +69,7 @@ export default (async function run(reaction, user) {
     return;
 
   let starCount = reaction.count ?? 0;
-  const threshold = Number((await getSetting(guild.id, "starboard", "threshold")) as string);
+  const threshold = await getSetting(guild.id, "starboard", "threshold");
   if (reaction.users.valueOf().has(message.author.id)) starCount--;
   if (starCount < threshold) return;
 

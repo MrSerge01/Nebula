@@ -21,7 +21,7 @@ export const data = new SlashCommandSubcommandBuilder()
   .addStringOption(option =>
     option
       .setName("function")
-      .setDescription("The function to graph (e.g., 'x^2' or 'sin(x)')")
+      .setDescription("The function to graph (e.g., ’x^2’ or ’sin(x)’)")
       .setRequired(true),
   )
   .addNumberOption(option => option.setName("xmin").setDescription("Minimum x value"))
@@ -61,7 +61,7 @@ export async function run(
       }
     }
 
-    const configuration: ChartConfiguration = {
+    const config: ChartConfiguration = {
       type: "line",
       data: {
         datasets: [
@@ -118,10 +118,9 @@ export async function run(
       },
     };
 
-    const attachment = new AttachmentBuilder(
-      await chartJSNodeCanvas.renderToBuffer(configuration),
-      { name: "graph.png" },
-    );
+    const attachment = new AttachmentBuilder(await chartJSNodeCanvas.renderToBuffer(config), {
+      name: "graph.png",
+    });
     const container = new ContainerBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent("## Function graph"),

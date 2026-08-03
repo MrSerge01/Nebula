@@ -12,6 +12,7 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { randomize } from "utils/randomize";
 
 type RPSChoice = "rock" | "paper" | "scissors";
@@ -75,7 +76,7 @@ export async function run(
 
   const reply = await interaction.reply({ components: [baseContainer], flags: "IsComponentsV2" });
   const playerChoices = new Map<string, RPSChoice>();
-  const collector = reply.createMessageComponentCollector({ time: 60_000 });
+  const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
 
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (!reply) return;
@@ -88,10 +89,10 @@ export async function run(
     if (buttonInteraction.user.id != opponent.id && buttonInteraction.user.id != user.id)
       return await errorEmbed({
         interaction: buttonInteraction,
-        title: "You aren't participating.",
+        title: "You aren’t participating.",
       });
 
-    playerChoices.set(buttonInteraction.user.id, cID.split("_")[1] as RPSChoice);
+    playerChoices.set(buttonInteraction.user.id, cID.split("_", 2)[1] as RPSChoice);
     if (opponent.bot) collector.stop("game-complete");
     else {
       await buttonInteraction.reply({
@@ -134,7 +135,7 @@ export async function run(
             [
               `**${user.displayName}** ${rpsEmojis[p1Choice]} vs ${rpsEmojis[p2Choice]} **${opponent.displayName}**\n`,
               {
-                0: "## **It's a tie!**",
+                0: "## **It’s a tie!**",
                 1: `## **${user.displayName}**, you win!`,
                 2: opponent.bot
                   ? `## **Sokora** wins!`
@@ -148,9 +149,9 @@ export async function run(
             hue:
               winner == 0
                 ? Sokolors.Blue
-                : winner == 2 && opponent.bot
+                : (winner == 2 && opponent.bot
                   ? Sokolors.Red
-                  : Sokolors.Green,
+                  : Sokolors.Green),
           }),
         );
 

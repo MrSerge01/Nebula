@@ -4,13 +4,14 @@ import type { ChatInputCommandInteraction, Guild, TextChannel } from "discord.js
 import { newsEmbed } from "embeds/newsEmbed";
 import { channelCheck } from "./channelCheck";
 import { safeChannel } from "./safeThings";
+import { isInteractionSafe } from "./types";
 
 /**
  * Sends news to a channel.
  * @param {Guild} guild Guild where the channel is in.
  * @param {ChatInputCommandInteraction} interaction Command interaction.
  * @param {object} newsOptions Options to send the news post.
- * @param {?boolean} edit Whether or not should the function make a new message with some reused elements.
+ * @param {?boolean} willEdit Whether or not should the function make a new message with some reused elements.
  * @returns News message in a channel.
  */
 export async function sendChannelNews(
@@ -23,13 +24,15 @@ export async function sendChannelNews(
     id: number;
     imageURL?: string | null;
   },
-  edit?: boolean,
+  willEdit?: boolean,
 ): Promise<void> {
   const { title, body, author, id, imageURL } = newsOptions;
 
+  if (!isInteractionSafe(interaction)) return;
+
   const channel = (await safeChannel(
-    guild,
-    ((await getSetting(guild.id, "news", "channel")) as string) ?? interaction.channel?.id,
+    interaction.guild,
+    (await getSetting(interaction.guild.id, "news", "channel")) ?? interaction.channel.id,
   )) as TextChannel;
 
   if (
@@ -46,7 +49,7 @@ export async function sendChannelNews(
     components: [await newsEmbed(guild, { title, body, author, id, imageURL })],
     flags: "IsComponentsV2",
   });
-  if (edit) {
+  if (willEdit) {
     await updateNews(guild.id, id, title, body, message.id);
     return;
   }

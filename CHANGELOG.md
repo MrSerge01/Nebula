@@ -10,15 +10,15 @@
 - Importing levelling data from MEE6, Tatsu, and Lurkr.
 - (WIP) Level rewards.
 - Upload one image to your news. (Cannot edit or remove images, nor add images from the edit modal.)
-- Pinging users and roles, linking channels and adding custom timestamps to news. Discord doesn't allow this from the modal editor, so it uses a Dynamic Variables-ish syntax (Dynamic Mentions). See `/help variables` for info.
-- Removing a user's messages when banning them. Use `/moderation ban user:@USER del:true` for this.
+- Pinging users and roles, linking channels and adding custom timestamps to news. Discord doesn’t allow this from the modal editor, so it uses a Dynamic Variables-ish syntax (Dynamic Mentions). See `/help variables` for info.
+- Removing a user’s messages when banning them. Use `/moderation ban user:@USER del:true` for this.
 - Functional `/changelog` command (view all version logs directly from the bot).
 - Settings changes logging.
 
 ### Changed
 
 - Changed the formula to calculate levels and XP, it should now be better.
-- Tweaked colors to ensure they're consistent across all embeds.
+- Tweaked colors to ensure they’re consistent across all embeds.
 
 ### Fixed
 
@@ -30,13 +30,13 @@
 - `/news`:
   - "News" are now "News posts".
   - Instead of "adding" news, you "post" news.
-- Colors from the profile picture not working reliably (especially when the picture's dominant color is grayscale.)
+- Colors from the profile picture not working reliably (especially when the picture’s dominant color is grayscale.)
 
 ## 0.3.3 - 07/07/2026
 
 ### Fixed
 
-- _No reason provided_ in some embeds that don't have any way to provide a reason (thanks fishy)
+- _No reason provided_ in some embeds that don’t have any way to provide a reason (thanks fishy)
 - Flipped 2FA value in /server and /serverboard (i.e when the server has 2FA, it shows as "No 2FA") (thanks fishy)
 - /ping fix + CV2
 
@@ -44,12 +44,12 @@
 
 ### Changed
 
-- User can't use any commands in DMs (thanks @userandaname)
+- User can’t use any commands in DMs (thanks @userandaname)
 - You can use /user info for people outside of the server
 
 ### Fixed
 
-- Top.gg reminders are fixed once more, now they should send **only** when you didn't vote
+- Top.gg reminders are fixed once more, now they should send **only** when you didn’t vote
 - Attempt to fix temporary bans not unbanning the user due to Sokora not finding them through the cache (by fetching the ban list instead)
 - "Unknown guild" error in serverboard
 
@@ -85,10 +85,10 @@
 - Added `/help variables` to show help with _Dynamic (variables)_.
 - Added `/ping` to view bot ping and latency.
 - Gave a proper name to replaceable variables (`Dynamic (variables)`), and added more options:
-  - `(serverowner)` - Server owner's name
-  - `(currentdate)` - Current date in the 'July 10, 2025' format
-  - `(currentdate, simple)` - Current date in the '7/10/25' format
-  - `(currentdate, detailed)` - Current date in the 'July 10, 2025, at 1:11 PM' format
+  - `(serverowner)` - Server owner’s name
+  - `(currentdate)` - Current date in the ’July 10, 2025’ format
+  - `(currentdate, simple)` - Current date in the ’7/10/25’ format
+  - `(currentdate, detailed)` - Current date in the ’July 10, 2025, at 1:11 PM’ format
 - Added user settings as a feature.
   - Added TopGG reminders setting.
 - Moderation
@@ -123,7 +123,7 @@
 - Moderation
   - Fixed the bot crashing because of too large messages being deleted.
   - Fixed a `Jump to message` option being shown on deleted messages (you cannot jump to a deleted message).
-  - Fixed the bot showing "Application didn't respond" when unmuting someone muted by another bot.
+  - Fixed the bot showing "Application didn’t respond" when unmuting someone muted by another bot.
   - Fixed the bot unable to send a moderation log when a deleted / edited message is too large. It will instead upload two text files containing old and new messages.
 - _Many other fixes were made, not all of them are tracked._
 
@@ -134,7 +134,7 @@
 - Settings
   - Commands to change settings. Use the new embeds to change settings from there.
 - Changelog
-  - Changelog itself won't be shown in embeds anymore (it's too long). `/changelog` will show a link to this file.
+  - Changelog itself won’t be shown in embeds anymore (it’s too long). `/changelog` will show a link to this file.
 
 ## 0.2.0 - Kaishi - 24/12/2024
 
@@ -154,7 +154,7 @@
 - Edit logs will let you jump to the message that got edited
 
 - `/settings`
-  - Autocompletes with channels/users/roles (you don't have to copy IDs now :tada:)
+  - Autocompletes with channels/users/roles (you don’t have to copy IDs now :tada:)
   - In the embed it will show links to channels/users/roles instead of showing IDs
 
 - `/about`
@@ -164,12 +164,12 @@
 ### Fixed
 
 - News
-  - Major issue related to the database, where the guild wasn't provided to ensure that news would be unique to every server, **thank you @Golem642!!!!**
-  - `/news` edit's modal errored when sending
+  - Major issue related to the database, where the guild wasn’t provided to ensure that news would be unique to every server, **thank you @Golem642!!!!**
+  - `/news` edit’s modal errored when sending
 
 - Moderation commands
   - `/moderation clear` removed one more message than the user provided
-  - `/moderation unban` errored internally (it should send an error embed) when the user didn\'t have the "Ban Members" permission
+  - `/moderation unban` errored internally (it should send an error embed) when the user didn\’t have the "Ban Members" permission
 - Typos
   - warn mentions in `/moderation warn` are now warning to be more consistent
   - Removed old markdown remnants from `/moderation slowdown`

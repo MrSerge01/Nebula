@@ -5,7 +5,6 @@ import {
   FileBuilder,
   MediaGalleryBuilder,
   MediaGalleryItemBuilder,
-  Message,
   TextDisplayBuilder,
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
@@ -37,12 +36,11 @@ export default (async function run(message) {
         reason: `Message ${message} lacks the guild.`,
       });
 
-    if (!(await getSetting(guild.id, "moderation", "events"))?.toString().includes("messageDelete"))
-      return;
+    if (!(await getSetting(guild.id, "moderation", "events"))?.includes("messageDelete")) return;
 
     let media: { image: string | null; video: string | null; thumbnail: string | null };
     try {
-      media = await fetchMedia(message as Message<boolean>);
+      media = await fetchMedia(message);
     } catch (error) {
       return await errorEmbed({
         client,
@@ -62,9 +60,9 @@ export default (async function run(message) {
         ),
         new TextDisplayBuilder().setContent(
           content.length <= 2048
-            ? content && content.length > 0
+            ? (content && content.length > 0
               ? content
-              : "*Empty message*"
+              : "*Empty message*")
             : "*The deleted message is an attachment below due to it being too large.*",
         ),
       )
@@ -80,7 +78,7 @@ export default (async function run(message) {
     if (thumbnail != null) mediaFiles.push(thumbnail);
     if (image != null) mediaFiles.push(image);
     if (video != null) mediaFiles.push(video);
-    if (mediaFiles.length >= 1)
+    if (mediaFiles.length > 0)
       container.addMediaGalleryComponents(
         new MediaGalleryBuilder().addItems(
           mediaFiles.map(url => new MediaGalleryItemBuilder().setURL(url)),

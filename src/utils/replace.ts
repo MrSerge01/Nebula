@@ -13,12 +13,13 @@ export function replace(
   text: string,
   replaceText?: { text: string; replacement: string | number }[],
 ): string {
-  for (const mention of replaceText ?? [
+  const replacements = replaceText ?? [
     { text: "(madeWith)", replacement: `Made with ${randomize(emojis)} by the Sokora team` },
     { text: "(leftArrow)", replacement: "1527734899841171456" },
     { text: "(rightArrow)", replacement: "1527735966855598231" },
     { text: "(discord)", replacement: "1266797021126459423" },
-  ])
+  ];
+  for (const mention of replacements)
     if (text.includes(mention.text))
       text = text.replaceAll(mention.text, mention.replacement.toString());
 

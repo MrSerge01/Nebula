@@ -1,4 +1,4 @@
-import { resetSetting } from "database/settings";
+import { resetSetting, type TS } from "database/settings";
 import {
   ChannelType,
   ContainerBuilder,
@@ -12,17 +12,18 @@ import {
 } from "discord.js";
 import { colorize, Sokolors } from "./colorize";
 import { mention } from "./mention";
+import type { SettingKeyFor } from "database/types";
 
 /** Checks if a channel that the user specified as the value of any setting (moderation.channel for example) is valid.
  * "Valid" = Exists, is either a Text or News channel, and Sokora has the requested permissions for it (either send, view, or both).
  * @param options Options.
  * @returns Status of the channel. (if the bot can view it/send in it or not)
  */
-export async function channelCheck(options: {
+export async function channelCheck<K extends keyof TS>(options: {
   channel: Channel | GuildBasedChannel | null;
   setting: {
-    category: string;
-    setting: string;
+    category: K;
+    setting: SettingKeyFor<K>;
   };
   permType: "View" | "Send";
   guild: Guild;
@@ -44,10 +45,10 @@ export async function channelCheck(options: {
       new TextDisplayBuilder().setContent("## A channel is misconfigured in your server!"),
       new TextDisplayBuilder().setContent(
         channel
-          ? isValid(channel)
-            ? `Sokora needs ${permType == "View" ? "**View Channel**" : "both **View Channel** and **Send Messages**"} permission in ${mention(channel.id, "CHANNEL")}, requested by setting \`${setting.category}.${setting.setting}\`, but it doesn't have it anymore. **This setting has been reset to default.**`
-            : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that is neither a text nor an announcements channel! We cannot send messages to ${mention(channel.id, "CHANNEL")}. **This setting has been reset to default.**`
-          : `Sokora's \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that no longer exists! **This setting has been reset to default.**`,
+          ? (isValid(channel)
+            ? `Sokora needs ${permType == "View" ? "**View Channel**" : "both **View Channel** and **Send Messages**"} permission in ${mention(channel.id, "CHANNEL")}, requested by setting \`${setting.category}.${setting.setting}\`, but it doesn’t have it anymore. **This setting has been reset to default.**`
+            : `Sokora’s \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that is neither a text nor an announcements channel! We cannot send messages to ${mention(channel.id, "CHANNEL")}. **This setting has been reset to default.**`)
+          : `Sokora’s \`${setting.category}.${setting.setting}\` setting was configured to send messages to a channel that no longer exists! **This setting has been reset to default.**`,
       ),
       new TextDisplayBuilder().setContent(`-# This is coming from ${guild.name} • ID: ${guild.id}`),
     )

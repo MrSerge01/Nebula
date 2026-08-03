@@ -12,12 +12,13 @@ import {
 } from "discord.js";
 import { buttonCheck } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { replace } from "utils/replace";
 import { getChangelog, getVersions } from "../utils/changelog";
 
 export const data = new SlashCommandBuilder()
   .setName("changelog")
-  .setDescription("Shows Sokora's changelog.")
+  .setDescription("Shows Sokora’s changelog.")
   .setContexts(0);
 
 type Label = "Added" | "Changed" | "Fixed" | "Removed";
@@ -32,7 +33,7 @@ async function genChangelog(
   return new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `## What's ${viewing.toLowerCase()} in ${changelog.ver}${changelog.codename ? ` • *${changelog.codename}*` : ""}`,
+        `## What’s ${viewing.toLowerCase()} in ${changelog.ver}${changelog.codename ? ` • *${changelog.codename}*` : ""}`,
       ),
       new TextDisplayBuilder().setContent(changelog.body[viewing]),
     )
@@ -40,8 +41,8 @@ async function genChangelog(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...Object.keys(changelog.body).map(v =>
           new ButtonBuilder()
-            .setCustomId(v + "+" + changelog.ver)
             .setLabel(v)
+            .setCustomId(`${v}+${changelog.ver}`)
             .setStyle(
               {
                 Fixed: ButtonStyle.Secondary,
@@ -59,9 +60,9 @@ async function genChangelog(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...list.map(v =>
           new ButtonBuilder()
-            .setCustomId(v.ver)
             .setLabel(v.ver)
-            .setStyle(v.minor ? ButtonStyle.Primary : ButtonStyle.Secondary)
+            .setCustomId(v.ver)
+            .setStyle(v.isMinor ? ButtonStyle.Primary : ButtonStyle.Secondary)
             .setDisabled(v.ver === changelog.ver),
         ),
       ),
@@ -78,9 +79,8 @@ async function genChangelog(
 
 function getDefaultCategoryToView(changelog: ReturnType<typeof getChangelog>): Label {
   if (changelog.body.Added) return "Added";
-  else if (changelog.body.Changed) return "Changed";
-  else if (changelog.body.Removed) return "Removed";
-  else return "Fixed";
+  if (changelog.body.Changed) return "Changed";
+  return changelog.body.Removed ? "Removed" : "Fixed";
 }
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -100,16 +100,16 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     components: [container],
     flags: ["Ephemeral", "IsComponentsV2"],
   });
-  const collector = reply.createMessageComponentCollector({ time: 60_000 });
+  const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
     if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+    collector.resetTimer({ time: COLLECTOR_DURATION });
 
-    collector.resetTimer({ time: 60_000 });
     const cID = buttonInteraction.customId;
     if (cID == "please") return;
 
     const split = cID.replace("-", "").split("+");
-    const newVersion = ["Added", "Changed", "Fixed", "Removed"].some(s => cID.startsWith(s + "+"))
+    const newVersion = ["Added", "Changed", "Fixed", "Removed"].some(s => cID.startsWith(`${s}+`))
       ? split[1]
       : split[0];
 

@@ -24,7 +24,7 @@ import { safeMember, safeMembers } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("info")
-  .setDescription("Shows your (or another user's) info.")
+  .setDescription("Shows your (or another user’s) info.")
   .addUserOption(user => user.setName("user").setDescription("Select the user."));
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -51,7 +51,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     const rolesLength = memberRoles.length;
     const xp = await getUserXp(guild.id, target.id);
     const nextLevelXp = await getXpForNextLevel(guild.id, user.id);
-    const difficulty = (await getSetting(guild.id, "leveling", "difficulty")) as number;
+    const difficulty = await getSetting(guild.id, "leveling", "difficulty");
     const level = calculateLevel({ difficulty, xp });
 
     if (target.premiumSinceTimestamp)
@@ -102,9 +102,9 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     new TextDisplayBuilder().setContent(`## ${name}`),
     new TextDisplayBuilder().setContent(
       [
-        name != user.displayName
-          ? `...also known as **${user.displayName}** *(@${user.username})*`
-          : `...also known as **@${user.username}**`,
+        name == user.displayName
+          ? `…also known as **@${user.username}**`
+          : `…also known as **${user.displayName}** *(@${user.username})*`,
         "**Member since**",
         createdText,
       ].join("\n"),

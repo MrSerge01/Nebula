@@ -27,7 +27,7 @@ export async function run(
   if (!guild || !(await safeMember(guild, userID)).permissions.has("ManageGuild"))
     return await errorEmbed({
       interaction,
-      title: "You can't execute this command.",
+      title: "You can’t execute this command.",
       reason: "You need the **Manage Server** permission.",
     });
 

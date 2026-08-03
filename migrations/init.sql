@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS starboard (
   "timestamp" TIMESTAMP
 );
 
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS parameters JSONB;
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'settings_pk') THEN

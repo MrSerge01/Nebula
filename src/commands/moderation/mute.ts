@@ -8,6 +8,7 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { errorCheck, modEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
+import { MILLISEC_28D } from "utils/constants";
 import { safeMember } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -27,7 +28,7 @@ export const data = new SlashCommandSubcommandBuilder()
     bool
       .setName("silent")
       .setDescription(
-        "If true, the user won't be notified about this action (overrides the server setting).",
+        "If true, the user won’t be notified about this action (overrides the server setting).",
       ),
   );
 
@@ -59,26 +60,28 @@ export async function run(
   )
     return;
 
-  if (!duration || !ms(duration) || ms(duration) > ms("28d") || ms(duration) <= 0)
+  const durationMs = duration ? ms(duration) : null;
+
+  if (!duration || !durationMs || durationMs > MILLISEC_28D || durationMs <= 0)
     return await errorEmbed({
       interaction,
-      title: `You can't mute ${user.username}.`,
+      title: `You can’t mute ${user.username}.`,
       reason: "The duration is invalid or is above the 28 day limit.",
     });
 
   if ((await safeMember(guild, user.id)).isCommunicationDisabled())
     return await errorEmbed({
       interaction,
-      title: `You can't mute ${user.username}.`,
+      title: `You can’t mute ${user.username}.`,
       reason: "The user is already muted.",
     });
 
   const time = new Date(
-    Date.parse(new Date().toISOString()) + Date.parse(new Date(ms(duration)).toISOString()),
+    Date.parse(new Date().toISOString()) + Date.parse(new Date(durationMs).toISOString()),
   ).toISOString();
-  const silent =
+  const isSilent =
     interaction.options.getBoolean("silent") ??
-    ((await getSetting(guild.id, "moderation", "silent")) as boolean);
+    (await getSetting(guild.id, "moderation", "silent"));
 
   try {
     await modEmbed(
@@ -86,11 +89,11 @@ export async function run(
         interaction,
         user,
         action: "Muted",
-        duration: ms(duration),
-        dm: true,
+        duration: durationMs,
+        shouldDm: true,
         dbAction: "MUTE",
-        expiresAt: new Date(ms(duration)),
-        silent,
+        expiresAt: new Date(durationMs),
+        isSilent,
       },
       reason,
     );

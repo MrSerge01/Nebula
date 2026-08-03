@@ -26,7 +26,7 @@ export const data = new SlashCommandSubcommandBuilder()
     bool
       .setName("silent")
       .setDescription(
-        "If true, the user won't be notified about this action (overrides the server setting).",
+        "If true, the user won’t be notified about this action (overrides the server setting).",
       ),
   );
 
@@ -54,9 +54,6 @@ export async function run(
         "You somehow ran the command without an ID being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
     });
 
-  const warns = await listUserCases(guild.id, user.id, "WARN");
-  const newWarns = warns.filter(warn => warn.id != id);
-
   if (
     await errorCheck("Moderate Members", {
       interaction,
@@ -67,27 +64,35 @@ export async function run(
   )
     return;
 
+  const warns = await listUserCases(guild.id, user.id, "WARN");
+  const newWarns = warns.filter(warn => warn.id != id);
+
   if (newWarns.length == warns.length)
     return await errorEmbed({ interaction, title: `There is no warning with the id of ${id}.` });
 
   try {
     await removeCase(guild.id, id);
   } catch (error) {
-    return await errorEmbed({ interaction, error, forward: true, fileName: "delwarn" });
+    return await errorEmbed({
+      interaction,
+      error,
+      forward: true,
+      fileName: "delwarn",
+    });
   }
 
-  const silent =
+  const isSilent =
     interaction.options.getBoolean("silent") ??
-    ((await getSetting(guild.id, "moderation", "silent")) as boolean);
+    (await getSetting(guild.id, "moderation", "silent"));
 
   await modEmbed({
     interaction,
     user,
-    dm: true,
+    shouldDm: true,
     customText: {
       logTitle: `Removed a warning from ${mention(user.id, "USER")}`,
       dmTitle: "Your warning has been removed",
     },
-    silent,
+    isSilent,
   });
 }

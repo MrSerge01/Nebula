@@ -4,6 +4,7 @@ import type {
   ChatInputCommandInteraction,
   ModalSubmitInteraction,
 } from "discord.js";
+import { COLLECTOR_DURATION } from "./constants";
 
 /**
  * Collects a modal submit interaction.
@@ -15,7 +16,7 @@ export async function modalSubmit(
 ): Promise<ModalSubmitInteraction | undefined> {
   try {
     return await interaction.awaitModalSubmit({
-      time: 240_000,
+      time: COLLECTOR_DURATION,
       filter: m => m.user.id === interaction.user.id,
     });
   } catch {

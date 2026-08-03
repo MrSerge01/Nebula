@@ -24,6 +24,7 @@ import {
   type ModalSubmitInteraction,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { mention } from "utils/mention";
 import { modalSubmit } from "utils/modalSubmit";
 import { safeChannel, safeReply } from "utils/safeThings";
@@ -67,11 +68,11 @@ export async function errorEmbed(options: {
   const error = errorType(options.error);
   const stack = error.stack;
 
-  function addContent(fwdContainer: boolean): string {
+  function addContent(shouldFwdContainer: boolean): string {
     const content = [];
     if (title) content.push(`**${title}**`);
     if (reason) content.push(reason);
-    if (!fwdContainer && !title && !reason) {
+    if (!shouldFwdContainer && !title && !reason) {
       content.push(
         "The bot has experienced an internal error.\nPretty please join the support server if you wish to report the issue! https://discord.gg/c6C25P4BuY",
       );
@@ -85,21 +86,21 @@ export async function errorEmbed(options: {
     return content.join("\n");
   }
 
-  function showErrors(container: ContainerBuilder, emojis: boolean): ContainerBuilder {
+  function showErrors(container: ContainerBuilder, shouldUseEmojis: boolean): ContainerBuilder {
     return container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         [
-          emojis ? "**💬 • Error message**" : "**error message**",
+          shouldUseEmojis ? "**💬 • Error message**" : "**error message**",
           `${codeBlock(error.message)}${fileName ? `in \`${fileName}\`` : ""}`,
         ].join("\n"),
       ),
       new TextDisplayBuilder().setContent(
         [
-          emojis ? "**📜 • Error stack**" : "**error stack**",
+          shouldUseEmojis ? "**📜 • Error stack**" : "**error stack**",
           stack
-            ? stack.length <= 2048
+            ? (stack.length <= 2048
               ? codeBlock(stack)
-              : "The error stacktrace is an attachment below due to it being too large."
+              : "The error stacktrace is an attachment below due to it being too large.")
             : "No error stacktrace.",
         ].join("\n"),
       ),
@@ -152,7 +153,7 @@ export async function errorEmbed(options: {
     if (!errorChannel) {
       console.error(error);
       console.log(
-        "hey, you don't have ERROR_CHANNEL_ID set in .env and the bot tried to forward an error message to undefined :D",
+        "hey, you don’t have ERROR_CHANNEL_ID set in .env and the bot tried to forward an error message to undefined :D",
       );
       return;
     }
@@ -184,7 +185,7 @@ export async function errorEmbed(options: {
       replyOptions: { components: [container], files, flags: ["Ephemeral", "IsComponentsV2"] },
     });
 
-    const collector = reply.createMessageComponentCollector({ time: 240_000 });
+    const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
     collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
       const modal = new ModalBuilder()
         .setCustomId("modalpls")
@@ -196,7 +197,7 @@ export async function errorEmbed(options: {
               new TextInputBuilder()
                 .setCustomId("description")
                 .setPlaceholder("Pleasepleasepleasepleasepleasplesae 🥹")
-                .setMaxLength(3800)
+                .setMaxLength(MAX_INPUT_CHARS)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true),
             ),
@@ -206,7 +207,7 @@ export async function errorEmbed(options: {
               new TextInputBuilder()
                 .setCustomId("explanation")
                 .setPlaceholder("Now how the hell did you reproduce the issue…? please say ❤️‍🩹")
-                .setMaxLength(3800)
+                .setMaxLength(MAX_INPUT_CHARS)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(false),
             ),
@@ -219,7 +220,7 @@ export async function errorEmbed(options: {
 
       await buttonInteraction.showModal(modal);
       const modalInteraction = await modalSubmit(buttonInteraction);
-      collector.resetTimer({ time: 240_000 });
+      collector.resetTimer({ time: COLLECTOR_DURATION });
       if (!modalInteraction) {
         collector.stop();
         return;
@@ -228,7 +229,7 @@ export async function errorEmbed(options: {
       const modalContainer = new ContainerBuilder()
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
-            "## Thank you for reporting! You've made Goos proud 🥹\nWe'll look into this error and properly thank you in a future patch release 🫶",
+            "## Thank you for reporting! You’ve made Goos proud 🥹\nWe’ll look into this error and properly thank you in a future patch release 🫶",
           ),
         )
         .setAccentColor(await colorize({ hue: Sokolors.Purple }));
@@ -251,7 +252,7 @@ export async function errorEmbed(options: {
         const actualMediaGallery = media
           .filter(
             item =>
-              item.contentType?.startsWith("image/") || item.contentType?.startsWith("video/"),
+              item.contentType?.startsWith("image/") ?? item.contentType?.startsWith("video/"),
           )
           .map(image => new MediaGalleryItemBuilder().setURL(image.url))
           .toReversed();
@@ -279,7 +280,7 @@ export async function errorEmbed(options: {
       if (!reportChannel) {
         console.error(error);
         console.log(
-          "hey, you don't have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
+          "hey, you don’t have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
         );
         collector.stop();
         return;
@@ -335,7 +336,7 @@ export async function buttonCheck(options: {
     return await errorEmbed({
       interaction: i,
       title:
-        "For some reason, this click would've caused the bot to error. Thankfully, this message right here prevents that.",
+        "For some reason, this click would’ve caused the bot to error. Thankfully, this message right here prevents that.",
     });
 
   if (!noExecuteError && interaction && i.user.id != interaction.user.id)

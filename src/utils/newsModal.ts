@@ -1,4 +1,4 @@
-import { getNews } from "database/news";
+import type { getNews } from "database/news";
 import {
   FileUploadBuilder,
   LabelBuilder,
@@ -6,6 +6,7 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import { MAX_INPUT_CHARS } from "./constants";
 
 /**
  * Sends a modal that lets you write/edit a news post.
@@ -30,7 +31,7 @@ export function newsModal(newsPost?: Awaited<ReturnType<typeof getNews>>): Modal
         new TextInputBuilder()
           .setCustomId("body")
           .setPlaceholder("Write your news post here")
-          .setMaxLength(3800)
+          .setMaxLength(MAX_INPUT_CHARS)
           .setStyle(TextInputStyle.Paragraph)
           .setValue(newsPost ? newsPost.body : "")
           .setRequired(true),
