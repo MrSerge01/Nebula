@@ -10,9 +10,9 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { safeEdit, safeUser } from "utils/safeThings";
-import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("leaderboard")

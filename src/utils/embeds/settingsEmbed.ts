@@ -64,13 +64,13 @@ import {
   UserSelectMenuBuilder,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { dotCheck } from "utils/dotCheck";
 import { humanizeSettings, humanizeSettingType } from "utils/humanizeSettings";
 import { modalSubmit } from "utils/modalSubmit";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { safeEdit, safeReply } from "utils/safeThings";
 import { setMap } from "utils/setMap";
-import { COLLECTOR_DURATION } from "utils/times";
 import { buttonCheck } from "./errorEmbed";
 
 const OBJECTS_PER_ITR_PAGE = 10;
@@ -643,7 +643,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
             new TextInputBuilder()
               .setCustomId("setting")
               .setPlaceholder("Type in the value")
-              .setMaxLength(3800)
+              .setMaxLength(MAX_INPUT_CHARS)
               .setStyle(TextInputStyle.Paragraph)
               .setRequired(true)
               .setValue((previousValue as string | number | undefined)?.toString() ?? ""),

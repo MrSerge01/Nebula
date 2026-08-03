@@ -19,9 +19,9 @@ import {
   TextInputStyle,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { modalSubmit } from "utils/modalSubmit";
 import { safeEdit, safeReply } from "utils/safeThings";
-import { COLLECTOR_DURATION } from "utils/times";
 
 async function getContainers(
   isPreviewBool: boolean,
@@ -214,7 +214,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
               new TextInputBuilder()
                 .setCustomId("setting")
                 .setPlaceholder("Type in the value")
-                .setMaxLength(3800)
+                .setMaxLength(MAX_INPUT_CHARS)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true)
                 .setValue((previewText as string | number | undefined)?.toString() ?? ""),

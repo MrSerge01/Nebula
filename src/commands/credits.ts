@@ -10,9 +10,9 @@ import {
 } from "discord.js";
 import { buttonCheck } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { replace } from "utils/replace";
 import { safeEdit } from "utils/safeThings";
-import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("credits")

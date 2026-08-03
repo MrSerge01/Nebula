@@ -4,7 +4,7 @@ import type {
   ChatInputCommandInteraction,
   ModalSubmitInteraction,
 } from "discord.js";
-import { COLLECTOR_DURATION } from "./times";
+import { COLLECTOR_DURATION } from "./constants";
 
 /**
  * Collects a modal submit interaction.

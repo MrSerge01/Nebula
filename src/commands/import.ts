@@ -25,9 +25,9 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { modalSubmit } from "utils/modalSubmit";
 import { safeEdit, safeReply } from "utils/safeThings";
-import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("import")
@@ -37,8 +37,8 @@ export const data = new SlashCommandBuilder()
 function safeStringify(object: unknown): string {
   try {
     const string_ = JSON.stringify(object, null, 2);
-    if (string_.length < 3800) return string_;
-    return `${string_.slice(0, 3800)}\n// etc… (had to trim it because of discord character limits)`;
+    if (string_.length < MAX_INPUT_CHARS) return string_;
+    return `${string_.slice(0, MAX_INPUT_CHARS)}\n// etc… (had to trim it because of discord character limits)`;
   } catch {
     return "[Unserializable data, please report this as an issue]";
   }
@@ -301,7 +301,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             new TextInputBuilder()
               .setCustomId("setting")
               .setPlaceholder("Type in the value")
-              .setMaxLength(3800)
+              .setMaxLength(MAX_INPUT_CHARS)
               .setStyle(TextInputStyle.Paragraph)
               .setRequired(true),
           ),

@@ -12,8 +12,8 @@ import {
 } from "discord.js";
 import { buttonCheck } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { replace } from "utils/replace";
-import { COLLECTOR_DURATION } from "utils/times";
 import { getChangelog, getVersions } from "../utils/changelog";
 
 export const data = new SlashCommandBuilder()

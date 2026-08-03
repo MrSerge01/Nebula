@@ -8,8 +8,8 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { errorCheck, modEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
+import { MILLISEC_28D } from "utils/constants";
 import { safeMember } from "utils/safeThings";
-import { MILLISEC_28D } from "utils/times";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("mute")

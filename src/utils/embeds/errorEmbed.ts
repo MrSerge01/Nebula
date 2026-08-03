@@ -24,11 +24,11 @@ import {
   type ModalSubmitInteraction,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { mention } from "utils/mention";
 import { modalSubmit } from "utils/modalSubmit";
 import { safeChannel, safeReply } from "utils/safeThings";
 import { errorType } from "../errorType";
-import { COLLECTOR_DURATION } from "utils/times";
 
 /**
  * Sends a container containing an error.
@@ -197,7 +197,7 @@ export async function errorEmbed(options: {
               new TextInputBuilder()
                 .setCustomId("description")
                 .setPlaceholder("Pleasepleasepleasepleasepleasplesae 🥹")
-                .setMaxLength(3800)
+                .setMaxLength(MAX_INPUT_CHARS)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true),
             ),
@@ -207,7 +207,7 @@ export async function errorEmbed(options: {
               new TextInputBuilder()
                 .setCustomId("explanation")
                 .setPlaceholder("Now how the hell did you reproduce the issue…? please say ❤️‍🩹")
-                .setMaxLength(3800)
+                .setMaxLength(MAX_INPUT_CHARS)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(false),
             ),

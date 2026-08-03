@@ -12,8 +12,8 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { randomize } from "utils/randomize";
-import { COLLECTOR_DURATION } from "utils/times";
 
 type RPSChoice = "rock" | "paper" | "scissors";
 const rpsChoices: RPSChoice[] = ["rock", "paper", "scissors"];

@@ -7,12 +7,12 @@ import {
 } from "database/moderation";
 import type { TypeOfDefinition } from "database/types";
 import {
-  type Client,
   ContainerBuilder,
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
+  type Client,
   type InteractionResponse,
   type Message,
   type User,
@@ -21,12 +21,12 @@ import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import ms from "enhanced-ms";
 import { capitalize } from "utils/capitalize";
 import { colorize, Sokolors } from "utils/colorize";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { mention } from "utils/mention";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { randomize } from "utils/randomize";
 import { safeEdit, safeMember, safeUser } from "utils/safeThings";
-import { COLLECTOR_DURATION } from "utils/times";
 
 async function generateContainer(options: {
   client: Client;

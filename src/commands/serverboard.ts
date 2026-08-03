@@ -10,9 +10,9 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { serverEmbed } from "embeds/serverEmbed";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { handlePages } from "utils/pagination";
 import { safeEdit, safeGuild } from "utils/safeThings";
-import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandBuilder()
   .setName("serverboard")

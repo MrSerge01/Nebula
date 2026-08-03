@@ -8,8 +8,8 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { errorCheck, modEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
+import { MILLISEC_6H } from "utils/constants";
 import { safeChannel } from "utils/safeThings";
-import { MILLISEC_6H } from "utils/times";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("slowdown")

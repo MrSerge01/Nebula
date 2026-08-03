@@ -10,9 +10,9 @@ import {
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { newsEmbed } from "embeds/newsEmbed";
+import { COLLECTOR_DURATION } from "utils/constants";
 import { handlePages } from "utils/pagination";
 import { safeEdit } from "utils/safeThings";
-import { COLLECTOR_DURATION } from "utils/times";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("view")

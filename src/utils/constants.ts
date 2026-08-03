@@ -5,3 +5,5 @@ export const MILLISEC_28D = 2_419_200_000;
 
 /** 240 000 milliseconds */
 export const COLLECTOR_DURATION = 240_000;
+
+export const MAX_INPUT_CHARS = 3600;

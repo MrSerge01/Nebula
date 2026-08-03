@@ -13,10 +13,10 @@ import {
   type InteractionCollector,
 } from "discord.js";
 import { colorize, Sokolors } from "./colorize";
+import { COLLECTOR_DURATION } from "./constants";
 import { modalSubmit } from "./modalSubmit";
 import { replace } from "./replace";
 import { safeReply } from "./safeThings";
-import { COLLECTOR_DURATION } from "./times";
 
 interface HandlePagesOptions {
   i: ButtonInteraction;
