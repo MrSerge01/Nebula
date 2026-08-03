@@ -95,8 +95,8 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
         ),
       );
     } else {
-      const oldValueString = `☎️ • **Old value**${oldString.includes("\n") ? "\n" + codeBlock("yaml", oldString) : ` • \`${oldString}\``}`;
-      const newValueString = `📱 • **New value**${newString.includes("\n") ? "\n" + codeBlock("yaml", newString) : ` • \`${newString}\``}`;
+      const oldValueString = `☎️ • **Old value**${oldString.includes("\n") ? `\n${codeBlock("yaml", oldString)}` : ` • \`${oldString}\``}`;
+      const newValueString = `📱 • **New value**${newString.includes("\n") ? `\n${codeBlock("yaml", newString)}` : ` • \`${newString}\``}`;
 
       container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(`${oldValueString}\n${newValueString}`),

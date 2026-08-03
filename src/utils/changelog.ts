@@ -26,7 +26,7 @@ export function getChangelog(version: string): TParsedChangelog {
   const categories = base.filter(s => s.startsWith("### ")).map(s => s.replace("### ", ""));
   const entries: [keyof TParsedChangelog["body"], string][] = [];
   for (const category of categories) {
-    const index = base.findIndex(s => s.startsWith("### " + category));
+    const index = base.findIndex(s => s.startsWith(`### ${category}`));
     const index2_ = base.slice(index + 1).findIndex(s => s.startsWith("### "));
     const newBase = base
       .slice(index, index2_ === -1 ? base.length : index + 1 + index2_)

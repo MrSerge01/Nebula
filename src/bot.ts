@@ -1,4 +1,3 @@
-import pLimit from "p-limit";
 import { Api } from "@top-gg/sdk";
 import { Chart, registerables } from "chart.js";
 import { updateDatabase } from "database/index";
@@ -15,6 +14,7 @@ import { errorEmbed } from "embeds/errorEmbed";
 import { registerGuildCommands } from "handlers/commands";
 import { loadEasterEggs, loadEvents } from "handlers/events";
 import fs from "node:fs";
+import pLimit from "p-limit";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { safeAlertChannel, safeUser } from "utils/safeThings";
@@ -141,7 +141,7 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
         `${c.commit.message
           .trim()
           .split("\n")
-          .map(s => "+ " + s)
+          .map(s => `+ ${s}`)
           .join("\n")}\n^ by ${c.commit.author?.name} in \`${c.sha.slice(0, 8)}\`\n`,
     )
     .join("\n");

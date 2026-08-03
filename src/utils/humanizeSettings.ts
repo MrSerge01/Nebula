@@ -37,7 +37,7 @@ export function humanizeSettingType(def: SingleSettingDefinition): string {
 
   if (type == "BOOL") typeString = "boolean";
   else if (type == "INTEGER") typeString = "number";
-  else if (type == "SELECT") typeString = "any of: " + def.choices.map(s => `\`${s}\``).join(", ");
+  else if (type == "SELECT") typeString = `any of: ${def.choices.map(s => `\`${s}\``).join(", ")}`;
   else typeString = type.toLowerCase();
-  return isOptional ? typeString + " (optional)" : typeString;
+  return isOptional ? `${typeString} (optional)` : typeString;
 }

@@ -46,7 +46,9 @@ import {
   codeBlock,
   ContainerBuilder,
   type Guild,
+  type InteractionResponse,
   LabelBuilder,
+  type Message,
   type MessageActionRowComponentBuilder,
   ModalBuilder,
   type ModalSubmitInteraction,
@@ -359,7 +361,6 @@ async function baseObjectViewPrefixGenerator<K extends keyof TS, S extends Setti
 ): Promise<ContainerBuilder> {
   lbl.setAccentColor(await colorize({ hue: Sokolors.Blue }));
   const actionRow = new ActionRowBuilder<ButtonBuilder>();
-
   if (currentState.views != "create_or_save")
     actionRow.addComponents(
       new ButtonBuilder()
@@ -371,10 +372,10 @@ async function baseObjectViewPrefixGenerator<K extends keyof TS, S extends Setti
   if (pgCount && pgCount > 1)
     actionRow.addComponents(pagedButtons(pgCount, currentState.page).components);
 
-  if (actionRow.components.length > 0) {
-    lbl.addActionRowComponents(actionRow);
-    lbl.addSeparatorComponents(new SeparatorBuilder().setDivider(false));
-  }
+  if (actionRow.components.length > 0)
+    lbl
+      .addActionRowComponents(actionRow)
+      .addSeparatorComponents(new SeparatorBuilder().setDivider(false));
 
   return lbl;
 }
@@ -615,14 +616,13 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
   methods?: MethodsObject,
 ): Promise<undefined | SettingReturnType<K, SettingKeyFor<K>>> {
   const { def, key } = ctl;
+  const uID = interaction.user.id;
   const cID = interaction.customId as SettingKeyFor<K>;
   const setting: SingleSettingDefinition = methods
     ? (def as unknown as SettingDefinitionRecord).settings[cID]
     : def.properties[cID];
 
-  let value: ObjectState<K, S>["settingState"] = methods
-    ? {}
-    : { ...OSMGet(interaction.user.id)?.settingState };
+  let value: ObjectState<K, S>["settingState"] = methods ? {} : { ...OSMGet(uID)?.settingState };
   const previousValue = methods ? await methods.getSettingPlease(key, cID) : value[cID];
 
   switch (setting.type) {
@@ -643,7 +643,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
             new TextInputBuilder()
               .setCustomId("setting")
               .setPlaceholder("Type in the value")
-              .setMaxLength(4000)
+              .setMaxLength(3800)
               .setStyle(TextInputStyle.Paragraph)
               .setRequired(true)
               .setValue((previousValue as string | number | undefined)?.toString() ?? ""),
@@ -705,7 +705,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
     }
     case "OBJECT": {
       if (!methods) return;
-      const updatedState = OSMSet(interaction.user.id, {
+      const updatedState = OSMSet(uID, {
         views: "default",
         settingState: setting.iterable ? {} : (t(previousValue) ?? {}),
         key,
@@ -723,7 +723,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
               MkControlObject(ctl.key, cID, ctl.id),
               methods,
               updatedState,
-              interaction.user.id,
+              uID,
             ),
           ],
         },
@@ -851,22 +851,21 @@ export async function settingsEmbed<K extends keyof TS>(
   type S = SettingKeyFor<K>;
   type SI = SettingInteraction<K, S>;
   const ctl = MkControlObject(key, undefined, interaction.guild.id);
+  const uID = interaction.user.id;
   const resetting = (): ResetState => {
-    return ResetStateMachine.getOrInsertComputed(interaction.user.id, () => ({
+    return ResetStateMachine.getOrInsertComputed(uID, () => ({
       working: false,
       targets: new Set(),
     }));
   };
   const resetResetting = (): void => {
-    ResetStateMachine.set(interaction.user.id, { working: false, targets: new Set() });
+    ResetStateMachine.set(uID, { working: false, targets: new Set() });
   };
   const safelyGetObjectState = (): ObjectState<K, S> => {
-    const currentState = OSMGet(interaction.user.id);
+    const currentState = OSMGet(uID);
     if (!currentState)
       throw new Error(
-        "JS-side problem: how the f*ck did we get ’undefined’ when reading ObjectStateMachine for this user (" +
-          interaction.user.id +
-          ") over a control click? It should already exist by here.",
+        `JS-side problem: how the f*ck did we get ’undefined’ when reading ObjectStateMachine for this user (${uID}) over a control click? It should already exist by here.`,
       );
 
     return currentState as unknown as ObjectState<K, S>;
@@ -874,7 +873,7 @@ export async function settingsEmbed<K extends keyof TS>(
 
   // reset on 1st launch of the command
   resetResetting();
-  ObjectStateMachine.delete(interaction.user.id);
+  ObjectStateMachine.delete(uID);
 
   async function fullyResetResetting(replyInteraction: SI): Promise<void> {
     await safeEdit({
@@ -894,10 +893,30 @@ export async function settingsEmbed<K extends keyof TS>(
   collector.on("collect", async (replyInteraction: SI) => {
     collector.resetTimer({ time: COLLECTOR_DURATION });
     const cID = replyInteraction.customId;
+
+    async function updateBaseObjectContainer(
+      currentObjectState: ObjectState<K, SettingKeyFor<K>>,
+      updatedState: ObjectState<K, SettingKeyFor<K>>,
+    ): Promise<Message | InteractionResponse> {
+      return await safeEdit({
+        interaction: replyInteraction,
+        editOptions: {
+          components: [
+            await constructBaseObjectView(
+              MkControlObject(ctl.key, currentObjectState.setting, ctl.id),
+              methods,
+              updatedState,
+              uID,
+            ),
+          ],
+        },
+      });
+    }
+
     switch (cID) {
       /// RESET CTL ///
       case EXEMPT_CIDs.RESET: {
-        ResetStateMachine.set(interaction.user.id, { working: true, targets: new Set() });
+        ResetStateMachine.set(uID, { working: true, targets: new Set() });
         await safeEdit({
           interaction: replyInteraction,
           editOptions: {
@@ -986,26 +1005,14 @@ export async function settingsEmbed<K extends keyof TS>(
       case EXEMPT_CIDs.OBJECT_GO_BACK: {
         const previousState = safelyGetObjectState();
         if (previousState.views === "itr_obj_child") {
-          const updatedState = OSMSet(interaction.user.id, {
+          const updatedState = OSMSet(uID, {
             ...previousState,
             views: "default",
             settingState: {},
             openSettingGuid: undefined,
           });
 
-          await safeEdit({
-            interaction: replyInteraction,
-            editOptions: {
-              components: [
-                await constructBaseObjectView(
-                  MkControlObject(ctl.key, previousState.setting, ctl.id),
-                  methods,
-                  updatedState,
-                  interaction.user.id,
-                ),
-              ],
-            },
-          });
+          await updateBaseObjectContainer(previousState, updatedState);
         } else {
           await safeEdit({
             interaction: replyInteraction,
@@ -1013,7 +1020,7 @@ export async function settingsEmbed<K extends keyof TS>(
               components: [await constructBaseSettingsEmbed(ctl, methods, { mode: "normal" })],
             },
           });
-          ObjectStateMachine.delete(interaction.user.id);
+          ObjectStateMachine.delete(uID);
         }
         break;
       }
@@ -1044,50 +1051,29 @@ export async function settingsEmbed<K extends keyof TS>(
             replyOptions: {
               components: [
                 await constructModalContainer(
-                  `${dotCheck({
-                    doubleSpace: true,
-                    twoSides: true,
-                    includeString: true,
-                    string: "✅",
-                  })}**Object created successfully!**`,
+                  `${dotCheck({ string: "✅", twoSides: true, includeString: true })}**Object created successfully!**`,
                   "All settings were stored successfully.",
-                  Sokolors.Blue,
+                  Sokolors.Green,
                 ),
               ],
               flags: ["Ephemeral", "IsComponentsV2"],
             },
           });
 
-          const updatedState = OSMSet(interaction.user.id, {
+          const updatedState = OSMSet(uID, {
             ...currentObjectState,
             views: "default",
             settingState: {},
           });
 
-          await safeEdit({
-            interaction: replyInteraction,
-            editOptions: {
-              components: [
-                await constructBaseObjectView(
-                  MkControlObject(ctl.key, currentObjectState.setting, ctl.id),
-                  methods,
-                  updatedState,
-                  interaction.user.id,
-                ),
-              ],
-            },
-          });
+          await updateBaseObjectContainer(currentObjectState, updatedState);
         } else
           await safeReply({
             interaction,
             replyOptions: {
               components: [
                 await constructModalContainer(
-                  `${dotCheck({
-                    includeString: true,
-                    doubleSpace: true,
-                    string: "❌",
-                  })}**Something went wrong!**`,
+                  `${dotCheck({ string: "❌", twoSides: true, includeString: true })}**Something went wrong!**`,
                   "We had some sort of error and don’t exactly know which. Care to try again?",
                   Sokolors.Red,
                 ),
@@ -1101,7 +1087,7 @@ export async function settingsEmbed<K extends keyof TS>(
         const currentObjectState = safelyGetObjectState();
         const lbl = new ContainerBuilder();
         const subCtl = MkControlObject(ctl.key, currentObjectState.setting, ctl.id);
-        const updatedState = OSMSet(interaction.user.id, {
+        const updatedState = OSMSet(uID, {
           ...currentObjectState,
           views: "create_or_save",
         });
@@ -1133,7 +1119,7 @@ export async function settingsEmbed<K extends keyof TS>(
           t<K, S>(result),
         );
 
-        const updatedState = OSMSet(interaction.user.id, {
+        const updatedState = OSMSet(uID, {
           ...currentObjectState,
           views: "default",
           settingState: {},
@@ -1152,20 +1138,7 @@ export async function settingsEmbed<K extends keyof TS>(
             flags: ["IsComponentsV2", "Ephemeral"],
           },
         });
-        await safeEdit({
-          interaction: replyInteraction,
-          editOptions: {
-            components: [
-              await constructBaseObjectView(
-                MkControlObject(ctl.key, currentObjectState.setting, ctl.id),
-                methods,
-                updatedState,
-                interaction.user.id,
-              ),
-            ],
-          },
-        });
-
+        await updateBaseObjectContainer(currentObjectState, updatedState);
         break;
       }
       case EXEMPT_CIDs.OBJECT_CLEAR: {
@@ -1182,7 +1155,7 @@ export async function settingsEmbed<K extends keyof TS>(
           t<K, S>([]),
         );
 
-        const updatedState = OSMSet(interaction.user.id, {
+        const updatedState = OSMSet(uID, {
           ...currentObjectState,
           views: "default",
           settingState: {},
@@ -1201,20 +1174,7 @@ export async function settingsEmbed<K extends keyof TS>(
             flags: ["IsComponentsV2", "Ephemeral"],
           },
         });
-        await safeEdit({
-          interaction: replyInteraction,
-          editOptions: {
-            components: [
-              await constructBaseObjectView(
-                MkControlObject(ctl.key, currentObjectState.setting, ctl.id),
-                methods,
-                updatedState,
-                interaction.user.id,
-              ),
-            ],
-          },
-        });
-
+        await updateBaseObjectContainer(currentObjectState, updatedState);
         break;
       }
       case EXEMPT_CIDs.PG_CNT:
@@ -1233,27 +1193,14 @@ export async function settingsEmbed<K extends keyof TS>(
           collector,
         });
 
-        const updatedState = OSMSet(interaction.user.id, {
+        const updatedState = OSMSet(uID, {
           ...currentObjectState,
           views: "default",
           settingState: {},
           page,
         });
 
-        await safeEdit({
-          interaction: replyInteraction,
-          editOptions: {
-            components: [
-              await constructBaseObjectView(
-                MkControlObject(ctl.key, currentObjectState.setting, ctl.id),
-                methods,
-                updatedState,
-                interaction.user.id,
-              ),
-            ],
-          },
-        });
-
+        await updateBaseObjectContainer(currentObjectState, updatedState);
         break;
       }
       default: {
@@ -1264,7 +1211,7 @@ export async function settingsEmbed<K extends keyof TS>(
           const targetsSoFar = new Set(resetState.targets);
           if (targetsSoFar.has(cID)) targetsSoFar.delete(cID);
           else targetsSoFar.add(cID);
-          ResetStateMachine.set(interaction.user.id, { working: true, targets: targetsSoFar });
+          ResetStateMachine.set(uID, { working: true, targets: targetsSoFar });
 
           await safeEdit({
             interaction: replyInteraction,
@@ -1277,7 +1224,7 @@ export async function settingsEmbed<K extends keyof TS>(
               ],
             },
           });
-        } else if (ObjectStateMachine.has(interaction.user.id)) {
+        } else if (ObjectStateMachine.has(uID)) {
           const currentObjectState = safelyGetObjectState();
           const subCtl = MkControlObject(ctl.key, currentObjectState.setting, ctl.id);
           const lbl = new ContainerBuilder();
@@ -1295,7 +1242,7 @@ export async function settingsEmbed<K extends keyof TS>(
                 `Attempted to load setting with GUID ${guid}, but such setting does not exist!`,
               );
 
-            updatedState = OSMSet(interaction.user.id, {
+            updatedState = OSMSet(uID, {
               ...currentObjectState,
               views: "itr_obj_child",
               openSettingGuid: guid,
@@ -1308,7 +1255,7 @@ export async function settingsEmbed<K extends keyof TS>(
                 "settingState (return of toggleHandler) should NOT be undefined while collecting DEFAULT CASE and within an OBJECT view.",
               );
 
-            updatedState = OSMSet(interaction.user.id, { ...currentObjectState, settingState });
+            updatedState = OSMSet(uID, { ...currentObjectState, settingState });
           }
 
           await baseObjectViewPrefixGenerator(lbl, updatedState);
@@ -1323,8 +1270,13 @@ export async function settingsEmbed<K extends keyof TS>(
   });
 
   collector.on("end", async () => {
-    await reply.delete();
-    ObjectStateMachine.delete(interaction.user.id);
-    ResetStateMachine.delete(interaction.user.id);
+    try {
+      await reply.delete();
+      ObjectStateMachine.delete(uID);
+      ResetStateMachine.delete(uID);
+    } catch (error) {
+      if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
+      throw error;
+    }
   });
 }

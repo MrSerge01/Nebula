@@ -214,7 +214,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
               new TextInputBuilder()
                 .setCustomId("setting")
                 .setPlaceholder("Type in the value")
-                .setMaxLength(4000)
+                .setMaxLength(3800)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true)
                 .setValue((previewText as string | number | undefined)?.toString() ?? ""),
@@ -245,6 +245,15 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         break;
       }
       // No default
+    }
+  });
+
+  collector.on("end", async () => {
+    try {
+      await interaction.deleteReply();
+    } catch (error) {
+      if (Error.isError(error) && error.message.toLowerCase().includes("unknown message")) return;
+      throw error;
     }
   });
 }

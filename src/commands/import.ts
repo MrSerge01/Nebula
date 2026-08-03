@@ -38,9 +38,7 @@ function safeStringify(object: unknown): string {
   try {
     const string_ = JSON.stringify(object, null, 2);
     if (string_.length < 3800) return string_;
-    return (
-      string_.slice(0, 3800) + "\n// etc… (had to trim it because of discord character limits)"
-    );
+    return `${string_.slice(0, 3800)}\n// etc… (had to trim it because of discord character limits)`;
   } catch {
     return "[Unserializable data, please report this as an issue]";
   }

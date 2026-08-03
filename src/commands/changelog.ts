@@ -13,8 +13,8 @@ import {
 import { buttonCheck } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { replace } from "utils/replace";
-import { getChangelog, getVersions } from "../utils/changelog";
 import { COLLECTOR_DURATION } from "utils/times";
+import { getChangelog, getVersions } from "../utils/changelog";
 
 export const data = new SlashCommandBuilder()
   .setName("changelog")
@@ -42,7 +42,7 @@ async function genChangelog(
         ...Object.keys(changelog.body).map(v =>
           new ButtonBuilder()
             .setLabel(v)
-            .setCustomId(v + "+" + changelog.ver)
+            .setCustomId(`${v}+${changelog.ver}`)
             .setStyle(
               {
                 Fixed: ButtonStyle.Secondary,
@@ -109,7 +109,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     if (cID == "please") return;
 
     const split = cID.replace("-", "").split("+");
-    const newVersion = ["Added", "Changed", "Fixed", "Removed"].some(s => cID.startsWith(s + "+"))
+    const newVersion = ["Added", "Changed", "Fixed", "Removed"].some(s => cID.startsWith(`${s}+`))
       ? split[1]
       : split[0];
 
