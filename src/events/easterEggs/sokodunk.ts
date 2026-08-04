@@ -18,9 +18,6 @@ export async function run(message: Message): Promise<void> {
     return;
 
   await (message.channel as TextChannel).send(
-    randomize([
-      "https://klipy.com/gifs/sokoballing-2",
-      "https://klipy.com/gifs/sokoballing"
-    ]),
+    randomize(["https://klipy.com/gifs/sokoballing-2", "https://klipy.com/gifs/sokoballing"]),
   );
 }

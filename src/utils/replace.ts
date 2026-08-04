@@ -15,9 +15,9 @@ export function replace(
 ): string {
   const replacements = replaceText ?? [
     { text: "(madeWith)", replacement: `Made with ${randomize(emojis)} by the Sokora team` },
-    { text: "(leftArrow)", replacement: "1527734899841171456" },
-    { text: "(rightArrow)", replacement: "1527735966855598231" },
-    { text: "(discord)", replacement: "1266797021126459423" },
+    { text: "(leftArrow)", replacement: process.env.LEFT_ARROW ?? "⬅️" },
+    { text: "(rightArrow)", replacement: process.env.RIGHT_ARROW ?? "➡️" },
+    { text: "(discord)", replacement: process.env.DISCORD ?? "🏠" },
   ];
   for (const mention of replacements)
     if (text.includes(mention.text))
