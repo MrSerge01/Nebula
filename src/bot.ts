@@ -205,6 +205,9 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
 client.once("clientReady", async () => {
   if (process.env.TOPGG_TOKEN) setInterval(topggHandler, MILLISEC_6H);
 
+  // runs before yellAtEveryoneThatCanaryUpdated() to ensure the file exists
+  appendLog("startup");
+
   await updateDatabase(process.argv.includes("force-db-reset")); // Needs to be executed before anything else (since some things like rescheduleUnbans needs a DB in the first place)
   await Promise.all([
     loadEvents(client),
@@ -227,8 +230,6 @@ client.once("clientReady", async () => {
   // removeGlobalCommands(client)
   // registerGlobalCommands(client)
   Chart.register(...registerables);
-
-  appendLog("all up and running");
 });
 
 await client.login(process.env.TOKEN);
