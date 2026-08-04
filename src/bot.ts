@@ -48,14 +48,6 @@ process.on("exit", code => {
   appendLog(`died with status code ${code}`);
 });
 
-process.on("uncaughtException", error => {
-  appendLog(`uncaught exception: ${error.message}`);
-});
-
-process.on("unhandledRejection", reason => {
-  appendLog(`unhandled rejection: ${reason}`);
-});
-
 export const client = new Client({
   presence: {
     activities: [{ name: "your feedback!", type: ActivityType.Listening }],
@@ -194,7 +186,8 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
                 ),
               ];
 
-        await safeAlertChannel(guild).send({
+        const alertChannel = await safeAlertChannel(guild);
+        await alertChannel.send({
           components: [
             new ContainerBuilder()
               .addTextDisplayComponents(textDisplayComponents)

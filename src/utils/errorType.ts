@@ -4,7 +4,7 @@
  * @returns Typed error.
  */
 export function errorType(value: unknown): Error {
-  if (value instanceof Error) return value;
+  if (Error.isError(value)) return value;
 
   try {
     const stringified = JSON.stringify(value);

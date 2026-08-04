@@ -7,29 +7,38 @@
 
 ### Added
 
-- Importing levelling data from MEE6, Tatsu, and Lurkr.
-- (WIP) Level rewards.
+- Revamped the settings system's internals, added object-type settings and updated the settings pane (and gave it a proper name, "Peak Settings Editor"). See `/help settings` for info.
+- Importing levelling data from MEE6, Tatsu, and Lurkr. See `/help import` for info.
+- Level rewards, you can grant roles and/or channels as a reward for reaching a certain XP level.
+- Error reporting. Error embeds now have a Report button that triggers an in-app form to report bugs very easily.
 - Upload one image to your news. (Cannot edit or remove images, nor add images from the edit modal.)
 - Pinging users and roles, linking channels and adding custom timestamps to news. Discord doesn’t allow this from the modal editor, so it uses a Dynamic Variables-ish syntax (Dynamic Mentions). See `/help variables` for info.
 - Removing a user’s messages when banning them. Use `/moderation ban user:@USER del:true` for this.
 - Functional `/changelog` command (view all version logs directly from the bot).
 - Settings changes logging.
+- Added two new easter eggs, `slash` and `test`.
+- Added a public testing build (Sokora Canary).
 
 ### Changed
 
 - Changed the formula to calculate levels and XP, it should now be better.
 - Tweaked colors to ensure they’re consistent across all embeds.
+- Improved all pagination components.
+- Made all collectors last the same.
+- Made all containers use Discord Components V2, redesigning some of them.
+- Made some containers (like the leaderboard one) more compact to fit more data per page.
+- Updated `/about` and `/credits`.
 
 ### Fixed
 
 - Fixed `/moderation ban` not working on members not in the guild.
+- Fixed `/moderation lock` allowing to lock non-text channels (like a voice chat).
+- Fixed the way `/ping` calculates latency.
 - Fixed some minor issues with timestamps.
 - The "made with ❤️ by the Sokora team" footer in many embeds was supposed to randomize the emoji but it never did; fixed that too.
 - `/moderation cases` now requires only the case ID or only the user ID to output a result.
 - Reset button in `/settings` now appears when you change a text/integer setting.
-- `/news`:
-  - "News" are now "News posts".
-  - Instead of "adding" news, you "post" news.
+- "News" are now "News posts", and instead of "adding" news you now "post" news.
 - Colors from the profile picture not working reliably (especially when the picture’s dominant color is grayscale.)
 
 ## 0.3.3 - 07/07/2026

@@ -58,7 +58,7 @@ export default (async function run(guild) {
 
   await guild.commands.set(commands.map(command => command.data));
   try {
-    const welcomeChannel = safeAlertChannel(guild);
+    const welcomeChannel = await safeAlertChannel(guild);
     if (!welcomeChannel.permissionsFor(guild.client.user)?.has("SendMessages")) return;
     await welcomeChannel.send({ components: [container], flags: "IsComponentsV2" });
   } catch (error) {
