@@ -25,15 +25,18 @@ export default (async function run(guild) {
 
   container
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`## Welcome to ${client.user.username}!`),
+      new TextDisplayBuilder().setContent(
+        IS_CANARY
+          ? "## Hey!! You are running **Sokora Canary**!"
+          : `## Welcome to ${client.user.username}!`,
+      ),
       new TextDisplayBuilder().setContent(
         IS_CANARY
           ? [
-              "## Hey!! You are running **Sokora Canary**!",
               "You probably already know what Sokora is so we’ll skip the welcome text.\n",
-              "**Note that this bot will sometimes try to ping the server owner without asking.** As a Canary bot, whenever our devs push an update, you get it immediately, and a message with the commit log will be sent to the *first available server channel*, pinging the owner.\n",
-              "> By using this bot you get to try features early, which also means you get to find issues before anyone else. The idea is simple: you deliberatedly test the bot in all ways you know and report any bug (or general feedback) you find to us. YOU HELP A LOT BY DOING THIS, THANK YOU SO MUCH!!",
-              "Users who successfully report issues will be credited on the next stable release. Thank you again, happy testing!",
+              "**Note that this bot will sometimes try to ping the server owner without asking.** Whenever our devs push an update, you get it immediately, and a message with the commit log will be sent to your moderation logging channel (set that from settings; it’ll use the first available server channel otherwise), pinging the owner.\n",
+              "> By using this bot you get to try features early, which also means you get to find issues before anyone else. The idea is simple: you deliberately test the bot in all ways you know and report any bug (or general feedback) you find to us. YOU HELP A LOT BY DOING THIS, THANK YOU SO MUCH!!",
+              "\nUsers who successfully report issues will be credited in the next stable release. Thank you again, happy testing!",
             ].join("\n")
           : [
               "Sokora is a multipurpose Discord bot that lets you manage your servers easily.",
@@ -42,19 +45,22 @@ export default (async function run(guild) {
             ].join("\n"),
       ),
     )
-    .addSeparatorComponents(new SeparatorBuilder())
-    .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        [
-          "**Sokora is in an early stage of development.**",
-          "If you find bugs, please go to our [official server](https://discord.gg/c6C25P4BuY).",
-        ].join("\n"),
-      ),
-      new TextDisplayBuilder().setContent(`-# ${replace("(madeWith)")}`),
-    )
     .setAccentColor(
       await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Purple }),
     );
+
+  if (!IS_CANARY)
+    container
+      .addSeparatorComponents(new SeparatorBuilder())
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          [
+            "**Sokora is in an early stage of development.**",
+            "If you find bugs, please go to our [official server](https://discord.gg/c6C25P4BuY).",
+          ].join("\n"),
+        ),
+        new TextDisplayBuilder().setContent(`-# ${replace("(madeWith)")}`),
+      );
 
   await guild.commands.set(commands.map(command => command.data));
   try {
