@@ -93,7 +93,8 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(banner)),
     );
 
-  const createdText = `<:discord:${replace("(discord)")}> **${mention(user.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}**${
+  const discordEmoji = replace("(discord)");
+  const createdText = `${process.env.DISCORD ? `<:discord:${discordEmoji}>` : discordEmoji} **${mention(user.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}**${
     (await safeMembers(guild)).has(user.id)
       ? ` • **${mention((await safeMember(guild, user.id)).joinedAt?.valueOf() ?? 0, "DEFAULT_TIMESTAMP")}**`
       : ""
