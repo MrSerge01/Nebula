@@ -141,8 +141,12 @@ export async function registerGuildCommands(client: Client): Promise<void> {
   await loadCommands();
   const guilds = client.guilds.cache;
 
-  for (const guildID of guilds.keys())
+  for (const guildID of guilds.keys()) {
+    console.log("GUILD LOAD", guildID);
     await guilds.get(guildID)?.commands.set(commands.map(command => command.data));
+  }
+
+  console.log("Loaded guild commands");
 }
 
 export async function registerGlobalCommands(client: Client): Promise<void> {

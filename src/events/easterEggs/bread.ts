@@ -5,6 +5,6 @@ export async function run(message: Message): Promise<void> {
   if (!message.content.trim().toLowerCase().includes("bread")) return;
 
   await (Math.round(Math.random() * 100) <= 0.25
-    ? (message.channel as TextChannel).send("https://tenor.com/bOMAb.gif")
+    ? (message.channel as TextChannel).send("https://klipy.com/gifs/falling-toast-live-toast-reaction--kNPdBlRU5")
     : multiReact(message, "🍞🇧🇷🇪🇦🇩👍"));
 }

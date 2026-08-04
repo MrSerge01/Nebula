@@ -32,7 +32,7 @@ export async function fetchMedia(
 
   const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url);
   const isVideo = /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
-  const isGif = /tenor\.com\/view\//i.test(url) && /klipy\.com\/view\//i.test(url);
+  const isGif = /(tenor|klipy)\.com\/view\//i.test(url);
   const isWebsite = !isImage && !isGif && !isVideo;
 
   if (isImage) image = url;

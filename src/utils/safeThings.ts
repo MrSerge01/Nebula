@@ -1,5 +1,7 @@
+import { getSetting } from "database/settings";
 import {
   ChannelType,
+  type DMChannel,
   type AnySelectMenuInteraction,
   type BaseFetchOptions,
   type ButtonInteraction,
@@ -137,16 +139,32 @@ export async function safeEdit(options: {
 }
 
 /**
- * Finds a channel to send important stuff to. **This should be used as a fallback,** i.e. prioritize log channel. This is only for things like welcome, canary updates, or important alerts when the server owner is not DM-able.
- * It does not check for logChannel, whether this should change will be checked.
+ * Finds a channel to send important stuff to. This is only for things like welcome, canary updates or important alerts.
+ * It tries, in order: logChannel, guild's system channel, owner's DM and first text channel in guild Sokora can text to as a last resort.
+ *
+ * If SOMEHOW nowhere is it possible to message, throws an Error.
+ *
  * @param guild Guild to find a channel in.
  */
-export function safeAlertChannel(guild: Guild): TextChannel {
+export async function safeAlertChannel(
+  guild: Guild,
+  shouldDmOwner: true,
+): Promise<DMChannel | TextChannel>;
+export async function safeAlertChannel(guild: Guild, shouldDmOwner?: false): Promise<TextChannel>;
+export async function safeAlertChannel(
+  guild: Guild,
+  shouldDmOwner?: boolean,
+): Promise<DMChannel | TextChannel> {
   const me = guild.members.me;
   if (!me) throw new Error("how??? this shouldn’t happen…");
 
+  const logChannelId = await getSetting(guild.id, "moderation", "channel");
+  const logChannel = logChannelId ? await guild.channels.fetch(logChannelId) : null;
+
   const channel =
+    (logChannel?.type === ChannelType.GuildText ? logChannel : null) ??
     guild.systemChannel ??
+    (shouldDmOwner ? await (await guild.fetchOwner()).user.createDM() : null) ??
     guild.channels.cache
       .filter(c => c.type === ChannelType.GuildText)
       .filter(c => c.permissionsFor(me).has("SendMessages"))

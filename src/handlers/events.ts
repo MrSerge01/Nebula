@@ -19,6 +19,7 @@ export async function loadEvents(client: Client): Promise<void> {
       }
     ).default;
     events.push({ name: eventName, event: client.on(eventName, event) });
+    console.log("Loaded evt:", eventName);
   }
 }
 
@@ -46,6 +47,7 @@ export async function loadEasterEggs(): Promise<Message | InteractionResponse | 
 
         easterEggs.push(easterEgg);
         easterEggNames.push(easterEggName);
+        console.log("Loaded egg:", easterEggName);
       }
     } catch (error) {
       return await errorEmbed({

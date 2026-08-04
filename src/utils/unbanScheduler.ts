@@ -84,6 +84,7 @@ export async function rescheduleUnbans(client: Client): Promise<void> {
   const now = Date.now();
   const bans = await getPendingBans(now);
   for (const ban of bans) {
+    console.log("Rescheduling", ban.id);
     if (!ban.expiresAt) continue;
     if (typeof ban.expiresAt != "number" || Number.isNaN(ban.expiresAt)) {
       await errorEmbed({
@@ -101,4 +102,5 @@ export async function rescheduleUnbans(client: Client): Promise<void> {
       ? scheduleUnban(client, ban.guild, ban.userID, ban.moderator, delay)
       : removeCase(ban.guild, ban.id));
   }
+  console.log("Rescheduled bans.");
 }
