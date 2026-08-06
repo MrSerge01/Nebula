@@ -34,7 +34,7 @@ export default (async function run(guild) {
         IS_CANARY
           ? [
               "You probably already know what Sokora is so we’ll skip the welcome text.\n",
-              "**Note that this bot will sometimes try to ping the server owner without asking.** Whenever our devs push an update, you get it immediately, and a message with the commit log will be sent to your moderation logging channel (set that from settings; it’ll use the first available server channel otherwise), pinging the owner.\n",
+              "Whenever our devs push an update, you get it immediately, and **a message with the commit log will be sent**. This goes to your moderation logging channel if set and to the first available server channel otherwise. Set a moderation logging channel with `/settings moderation`, set `Channel` to whatever channel you want to use. Sokora Canary is unaware of regular Sokora’s settings, so do this even if Sokora already has one.\n",
               "> By using this bot you get to try features early, which also means you get to find issues before anyone else. The idea is simple: you deliberately test the bot in all ways you know and report any bug (or general feedback) you find to us. YOU HELP A LOT BY DOING THIS, THANK YOU SO MUCH!!",
               "\nUsers who successfully report issues will be credited in the next stable release. Thank you again, happy testing!",
             ].join("\n")
