@@ -153,6 +153,7 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
     client.guilds.cache.map(async guild =>
       limit(async () => {
         if (!user) return;
+        const alertChannel = await safeAlertChannel(guild);
         const textDisplayComponents =
           log.length > 0
             ? [
@@ -164,14 +165,11 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
                 new TextDisplayBuilder().setContent(
                   hasTooManyCommits
                     ? // eslint-disable-next-line unicorn/string-content
-                      `There's more commits that don't fit in this message (total is ${log.length}), see the full log [at this link](https://github.com/SokoraDesu/Sokora/compare/${log.at(-1)?.sha}...dev) or compare latest \`dev\` to \`${log.at(-1)?.sha.slice(0, 8)}\`.\nFor reference, changes are counted from the second the bot started up until ${timestamp}.`
+                      `There’s more commits that don’t fit in this message (total is ${log.length}), see the full log [at this link](https://github.com/SokoraDesu/Sokora/compare/${log.at(-1)?.sha}...dev) or compare latest \`dev\` to \`${log.at(-1)?.sha.slice(0, 8)}\`.\nFor reference, changes are counted from the second the bot started up until ${timestamp}.`
                     : "That’s about it.",
                 ),
                 new TextDisplayBuilder().setContent(
-                  [
-                    "**Enjoy testing, and thanks for using Sokora Canary!**",
-                    `-# By the way, get pinged, ${mention(guild.ownerId, "USER")}!`,
-                  ].join("\n"),
+                  `**Enjoy testing, and thanks for using Sokora Canary!**\n-# Sent to ${mention(alertChannel.id, "CHANNEL")}. Want to use another channel? Head to \`/settings moderation\` and change the Channel setting.`,
                 ),
               ]
             : [
@@ -187,7 +185,6 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
                 ),
               ];
 
-        const alertChannel = await safeAlertChannel(guild);
         await alertChannel.send({
           components: [
             new ContainerBuilder()
