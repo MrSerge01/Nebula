@@ -124,7 +124,8 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
       },
     },
   );
-  const log = (await response.json()) as GHCommit[];
+  const _log = (await response.json()) as GHCommit[];
+  const log = _log.filter(c => !c.commit.message.startsWith("Merge pull request"));
   const hasTooManyCommits = log.length > 6;
   const dump = log
     .slice(0, 6)
