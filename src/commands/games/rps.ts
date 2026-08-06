@@ -138,7 +138,7 @@ export async function run(
                 0: "## **It’s a tie!**",
                 1: `## **${user.displayName}**, you win!`,
                 2: opponent.bot
-                  ? `## **Sokora** wins!`
+                  ? `## **${opponent.displayName}** wins!`
                   : `## **${opponent.displayName}**, you win!`,
               }[winner],
             ].join("\n"),
