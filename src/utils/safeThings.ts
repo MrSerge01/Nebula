@@ -1,25 +1,25 @@
 import { getSetting } from "database/settings";
-import {
-  ChannelType,
-  type DMChannel,
-  type AnySelectMenuInteraction,
-  type BaseFetchOptions,
-  type ButtonInteraction,
-  type Channel,
-  type ChatInputCommandInteraction,
-  type Client,
-  type Collection,
-  type Guild,
-  type GuildMember,
-  type InteractionEditReplyOptions,
-  type InteractionReplyOptions,
-  type InteractionResponse,
-  type Message,
-  type MessagePayload,
-  type ModalSubmitInteraction,
-  type Role,
-  type TextChannel,
-  type User,
+import type {
+  DMChannel,
+  AnySelectMenuInteraction,
+  BaseFetchOptions,
+  ButtonInteraction,
+  Channel,
+  ChatInputCommandInteraction,
+  Client,
+  Collection,
+  Guild,
+  GuildMember,
+  InteractionEditReplyOptions,
+  InteractionReplyOptions,
+  InteractionResponse,
+  Message,
+  MessagePayload,
+  ModalSubmitInteraction,
+  Role,
+  TextChannel,
+  User,
+  NewsChannel,
 } from "discord.js";
 
 /**
@@ -154,19 +154,27 @@ export async function safeAlertChannel(guild: Guild, shouldDmOwner?: false): Pro
 export async function safeAlertChannel(
   guild: Guild,
   shouldDmOwner?: boolean,
-): Promise<DMChannel | TextChannel> {
+): Promise<DMChannel | NewsChannel | TextChannel> {
   const me = guild.members.me;
   if (!me) throw new Error("how??? this shouldn’t happen…");
 
   const logChannelId = await getSetting(guild.id, "moderation", "channel");
-  const logChannel = logChannelId ? await guild.channels.fetch(logChannelId) : null;
+  const _logChannel = logChannelId ? await guild.channels.fetch(logChannelId) : null;
+  const logChannel =
+    _logChannel &&
+    _logChannel.isTextBased() &&
+    !_logChannel.isThread() &&
+    _logChannel.isSendable() &&
+    !_logChannel.isVoiceBased()
+      ? _logChannel
+      : null;
 
-  const channel =
-    (logChannel?.type === ChannelType.GuildText ? logChannel : null) ??
+  const channel: NewsChannel | DMChannel | TextChannel | undefined =
+    logChannel ??
     guild.systemChannel ??
     (shouldDmOwner ? await (await guild.fetchOwner()).user.createDM() : null) ??
     guild.channels.cache
-      .filter(c => c.type === ChannelType.GuildText)
+      .filter(c => c.isTextBased() && !c.isThread() && c.isSendable() && !c.isVoiceBased())
       .filter(c => c.permissionsFor(me).has("SendMessages"))
       .sort((a, b) => a.position - b.position)
       .first();
