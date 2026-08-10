@@ -655,9 +655,8 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
       if (!modalInteraction) break;
 
       const modalValue = modalInteraction.fields.getTextInputValue("setting");
-      const newValue = (
-        setting.type === "INTEGER" || setting.type === "mINTEGER" ? Number(modalValue) : modalValue
-      ).toString();
+      const newValue =
+        setting.type === "INTEGER" || setting.type === "mINTEGER" ? Number(modalValue) : modalValue;
 
       const isNewValueValid = isSettingValueValid(newValue, {
         key: ctl.key,
@@ -676,6 +675,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
                 : newValue,
           };
 
+      const stringifiedValue = newValue.toString();
       await safeReply({
         interaction: modalInteraction,
         replyOptions: {
@@ -685,8 +685,8 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
                 ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
                 : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
               isNewValueValid
-                ? `The ${newValue.length < 50 ? "value" : "**value**"} has been set ${newValue.length >= 500 ? "successfully." : (newValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
-                : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${newValue?.length >= 500 ? "" : `\nData entered was:\n${codeBlock(newValue)}`}`,
+                ? `The ${stringifiedValue.length < 50 ? "value" : "**value**"} has been set ${stringifiedValue.length >= 500 ? "successfully." : (stringifiedValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
+                : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${stringifiedValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(stringifiedValue)}`}`,
               isNewValueValid ? Sokolors.Blue : Sokolors.Red,
             ),
           ],

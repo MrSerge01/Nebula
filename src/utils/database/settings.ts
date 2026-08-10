@@ -93,7 +93,7 @@ export const defLeveling = {
     naming: (a: { level: number; channels: string[]; roles: string[] }): string => {
       const channelCount = a.channels.length;
       const roleCount = a.roles.length;
-      return `Level **${a.level}**  •  **${channelCount ?? "no"}** ${pluralOrNot("channel", channelCount)}  •  **${roleCount ?? "no"}** ${pluralOrNot("role", roleCount)}`;
+      return `Level **${a.level}**  •  **${channelCount ?? "no"}** ${pluralOrNot("channel", channelCount ?? 0)}  •  **${roleCount ?? "no"}** ${pluralOrNot("role", roleCount ?? 0)}`;
     },
     properties: {
       $: {
@@ -172,7 +172,7 @@ export const defNews = {
       b.name.toLowerCase().localeCompare(a.name.toLowerCase()),
     naming: (a: { name: string; roles: string[]; channel: string }): string => {
       const roleCount = a.roles.length;
-      return `**${a.name}**  •  pings **${roleCount}** ${pluralOrNot("role", roleCount)}${a.channel ? `  •  sends to ${mention(a.channel, "CHANNEL")}` : ""}`;
+      return `**${a.name}**  •  pings **${roleCount}** ${pluralOrNot("role", roleCount ?? 0)}${a.channel ? `  •  sends to ${mention(a.channel, "CHANNEL")}` : ""}`;
     },
     properties: {
       $: {
