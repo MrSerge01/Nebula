@@ -222,14 +222,6 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
         )
           return false;
 
-        console.log(
-          isSettingValueValid(objectValue[property], {
-            key: config.key,
-            setting: config.setting,
-            def: propertyDefinition,
-          }),
-        );
-
         if (
           !isSettingValueValid(objectValue[property], {
             key: config.key,
@@ -254,9 +246,9 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
     case "mROLE":
     case "CHANNEL":
     case "mCHANNEL": {
-      if (typeof value === "object") return true;
       // can't validate they IDs on its own, use safeThings for that; this just checks format (numeric string)
       // https://stackoverflow.com/questions/175739/how-can-i-check-if-a-string-is-a-valid-number
+      if (typeof value === "object") return true;
       return typeof value === "string";
     }
     case "SELECT": {
