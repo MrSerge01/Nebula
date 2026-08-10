@@ -1,6 +1,5 @@
 import { getSetting } from "database/settings";
 import type {
-  DMChannel,
   AnySelectMenuInteraction,
   BaseFetchOptions,
   ButtonInteraction,
@@ -8,6 +7,7 @@ import type {
   ChatInputCommandInteraction,
   Client,
   Collection,
+  DMChannel,
   Guild,
   GuildMember,
   InteractionEditReplyOptions,
@@ -16,10 +16,10 @@ import type {
   Message,
   MessagePayload,
   ModalSubmitInteraction,
+  NewsChannel,
   Role,
   TextChannel,
   User,
-  NewsChannel,
 } from "discord.js";
 
 /**
@@ -158,26 +158,34 @@ export async function safeAlertChannel(
   const me = guild.members.me;
   if (!me) throw new Error("how??? this shouldn’t happen…");
 
+  const isTextableRegularChannel = (
+    c: Channel | null | undefined,
+  ): c is NewsChannel | DMChannel | TextChannel => {
+    if (!c) return false;
+    return (
+      !c.isDMBased() &&
+      c.viewable &&
+      c.permissionsFor(me).has("SendMessages") &&
+      c.isTextBased() &&
+      !c.isThread() &&
+      c.isSendable() &&
+      !c.isVoiceBased()
+    );
+  };
+
   const logChannelId = await getSetting(guild.id, "moderation", "channel");
   const _logChannel = logChannelId ? await guild.channels.fetch(logChannelId) : null;
-  const logChannel =
-    _logChannel &&
-    _logChannel.isTextBased() &&
-    !_logChannel.isThread() &&
-    _logChannel.isSendable() &&
-    !_logChannel.isVoiceBased()
-      ? _logChannel
-      : null;
+  const logChannel = isTextableRegularChannel(_logChannel) ? _logChannel : null;
+  const systemChannel = isTextableRegularChannel(guild.systemChannel) ? guild.systemChannel : null;
 
   const channel: NewsChannel | DMChannel | TextChannel | undefined =
     logChannel ??
-    guild.systemChannel ??
+    systemChannel ??
     (shouldDmOwner ? await (await guild.fetchOwner()).user.createDM() : null) ??
     guild.channels.cache
-      .filter(c => c.isTextBased() && !c.isThread() && c.isSendable() && !c.isVoiceBased())
-      .filter(c => c.permissionsFor(me).has("SendMessages"))
-      .sort((a, b) => a.position - b.position)
-      .first();
+      .filter(c => isTextableRegularChannel(c))
+      .sort((a, b) => b.position - a.position)
+      .last();
 
   if (!channel)
     throw new Error(

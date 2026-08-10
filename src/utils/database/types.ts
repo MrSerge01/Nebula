@@ -238,9 +238,7 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
     }
     case "INTEGER":
     case "mINTEGER": {
-      return (
-        typeof value === "number" || (typeof value === "string" && !Number.isNaN(Number(value)))
-      );
+      return typeof value === "number";
     }
     case "mUSER":
     case "USER":
@@ -250,6 +248,7 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
     case "mCHANNEL": {
       // can't validate they IDs on its own, use safeThings for that; this just checks format (numeric string)
       // https://stackoverflow.com/questions/175739/how-can-i-check-if-a-string-is-a-valid-number
+      if (typeof value === "object") return true;
       return typeof value === "string";
     }
     case "SELECT": {
@@ -257,7 +256,7 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
     }
     case "TEXT":
     case "mTEXT": {
-      return typeof value === "string" && (isOptional ?? value.trim().length > 0);
+      return typeof value === "string" && (isOptional || value.trim().length > 0);
     }
     case "TIMESTAMP":
     case "mTIMESTAMP": {

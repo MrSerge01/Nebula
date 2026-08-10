@@ -168,9 +168,6 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
                       `There’s more commits that don’t fit in this message (total is ${log.length}), see the full log [at this link](https://github.com/SokoraDesu/Sokora/compare/${log.at(-1)?.sha}...dev) or compare latest \`dev\` to \`${log.at(-1)?.sha.slice(0, 8)}\`.\nFor reference, changes are counted from the second the bot started up until ${timestamp}.`
                     : "That’s about it.",
                 ),
-                new TextDisplayBuilder().setContent(
-                  `**Enjoy testing, and thanks for using Sokora Canary!**\n-# Sent to ${mention(alertChannel.id, "CHANNEL")}. Want to use another channel? Head to \`/settings moderation\` and change the Channel setting.`,
-                ),
               ]
             : [
                 new TextDisplayBuilder().setContent(
@@ -180,7 +177,6 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
                   [
                     `Hello! This restart brought no new updates. For reference, shutdown was logged at ${timestamp} + 30’, and no new commits exist since.`,
                     "We’ll hopefully have something new soon.",
-                    "Thanks for using Sokora Canary!",
                   ].join("\n"),
                 ),
               ];
@@ -189,6 +185,11 @@ const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
           components: [
             new ContainerBuilder()
               .addTextDisplayComponents(textDisplayComponents)
+              .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(
+                  `**Enjoy testing, and thanks for using Sokora Canary!**\n-# Sent to ${mention(alertChannel.id, "CHANNEL")}. Want to use another channel? Head to \`/settings moderation\` and change the Channel setting.`,
+                ),
+              )
               .setAccentColor(
                 await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Green }),
               ),
