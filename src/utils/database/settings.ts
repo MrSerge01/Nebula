@@ -3,6 +3,8 @@ import { errorEmbed } from "embeds/errorEmbed";
 import { easterEggNames, eventNames } from "handlers/events";
 import { client } from "src/bot";
 import { dekominator, kominator } from "utils/kominator";
+import { mention } from "utils/mention";
+import { pluralOrNot } from "utils/pluralOrNot";
 import { safeMember, safeUser } from "utils/safeThings";
 import type { Satisfies } from "utils/types";
 import { db, values } from ".";
@@ -88,8 +90,11 @@ export const defLeveling = {
     iterable: true,
     emoji: "🌟",
     sorting: (a: { level: number }, b: { level: number }): number => b.level - a.level,
-    naming: (a: { level: number; channels: string[]; roles: string[] }): string =>
-      `LVL ${a.level}, ${a.channels?.length ?? "no"} channels, ${a.roles?.length ?? "no"} roles`,
+    naming: (a: { level: number; channels: string[]; roles: string[] }): string => {
+      const channelCount = a.channels.length;
+      const roleCount = a.roles.length;
+      return `Level **${a.level}**  •  **${channelCount ?? "no"}** ${pluralOrNot("channel", channelCount)}  •  **${roleCount ?? "no"}** ${pluralOrNot("role", roleCount)}`;
+    },
     properties: {
       $: {
         type: "TEXT",
@@ -143,7 +148,7 @@ export const defModeration = {
 export const defNews = {
   channel: {
     type: "CHANNEL",
-    desc: "Channel where news messages are sent.",
+    desc: "Channel where news posts are sent.",
     emoji: "📰",
   },
   role: {
@@ -157,6 +162,42 @@ export const defNews = {
     desc: "Whether or not the original message should be edited when a news message is updated.",
     val: true,
     emoji: "✏️",
+  },
+  categories: {
+    type: "OBJECT",
+    desc: "Configure news categories that ping certain roles and post in different channels.",
+    iterable: true,
+    emoji: "🗃️",
+    sorting: (a: { name: string }, b: { name: string }): number =>
+      b.name.toLowerCase().localeCompare(a.name.toLowerCase()),
+    naming: (a: { name: string; roles: string[]; channel: string }): string => {
+      const roleCount = a.roles.length;
+      return `**${a.name}**  •  pings **${roleCount}** ${pluralOrNot("role", roleCount)}${a.channel ? `  •  sends to ${mention(a.channel, "CHANNEL")}` : ""}`;
+    },
+    properties: {
+      $: {
+        type: "TEXT",
+        desc: "(Internal)",
+        val: "",
+      },
+      name: {
+        type: "TEXT",
+        desc: "The name of the category.",
+        emoji: "🪪",
+      },
+      roles: {
+        type: "ROLE",
+        desc: "The roles that the bot will ping when a news post gets sent.",
+        iterable: true,
+        emoji: "📢",
+      },
+      channel: {
+        type: "CHANNEL",
+        desc: "The channel that the news posts will be sent to. If unset, will use the default channel.",
+        optional: true,
+        emoji: "📰",
+      },
+    },
   },
 } satisfies SettingDefinitionRecord["settings"];
 

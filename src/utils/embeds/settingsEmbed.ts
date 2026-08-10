@@ -654,12 +654,17 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
       const modalInteraction = await modalSubmit(interaction as ButtonInteraction);
       if (!modalInteraction) break;
 
-      const newValue = modalInteraction.fields.getTextInputValue("setting");
+      const modalValue = modalInteraction.fields.getTextInputValue("setting");
+      const newValue = (
+        setting.type === "INTEGER" || setting.type === "mINTEGER" ? Number(modalValue) : modalValue
+      ).toString();
+
       const isNewValueValid = isSettingValueValid(newValue, {
         key: ctl.key,
         setting: ctl.subKey,
         def: setting,
       });
+
       if (isNewValueValid)
         if (methods) await methods.setSettingPlease(key, cID, newValue);
         else

@@ -1,6 +1,5 @@
 import { getSetting } from "database/settings";
 import type {
-  DMChannel,
   AnySelectMenuInteraction,
   BaseFetchOptions,
   ButtonInteraction,
@@ -8,6 +7,7 @@ import type {
   ChatInputCommandInteraction,
   Client,
   Collection,
+  DMChannel,
   Guild,
   GuildMember,
   InteractionEditReplyOptions,
@@ -16,10 +16,10 @@ import type {
   Message,
   MessagePayload,
   ModalSubmitInteraction,
+  NewsChannel,
   Role,
   TextChannel,
   User,
-  NewsChannel,
 } from "discord.js";
 
 /**
@@ -160,24 +160,27 @@ export async function safeAlertChannel(
 
   const logChannelId = await getSetting(guild.id, "moderation", "channel");
   const _logChannel = logChannelId ? await guild.channels.fetch(logChannelId) : null;
+  const guildChannel = guild.systemChannel;
   const logChannel =
     _logChannel &&
+    _logChannel.viewable &&
     _logChannel.isTextBased() &&
     !_logChannel.isThread() &&
     _logChannel.isSendable() &&
     !_logChannel.isVoiceBased()
       ? _logChannel
-      : null;
+      : (guildChannel && guildChannel.viewable && guildChannel.isSendable()
+        ? guildChannel
+        : null);
 
   const channel: NewsChannel | DMChannel | TextChannel | undefined =
     logChannel ??
-    guild.systemChannel ??
     (shouldDmOwner ? await (await guild.fetchOwner()).user.createDM() : null) ??
     guild.channels.cache
       .filter(c => c.isTextBased() && !c.isThread() && c.isSendable() && !c.isVoiceBased())
-      .filter(c => c.permissionsFor(me).has("SendMessages"))
-      .sort((a, b) => a.position - b.position)
-      .first();
+      .filter(c => c.viewable && c.permissionsFor(me).has("SendMessages"))
+      .sort((a, b) => b.position - a.position)
+      .last();
 
   if (!channel)
     throw new Error(
