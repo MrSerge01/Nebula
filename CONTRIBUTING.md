@@ -1,11 +1,17 @@
-# Sokora Contributing Guide
+# Contributing to Sokora
+
+We're thankful that you're willing to contribute to Sokora! This overall guide will help you get things done in a way appropriate for this project.
 
 ## Prerequisites
 
 - Basic knowledge of [TypeScript](https://typescriptlang.org/) and [discord.js](https://discord.js.org/).
 - [Bun](https://bun.sh) installed.
-- [PostgreSQL](https://www.postgresql.org/download/) installed.
-- Port 5432 on your machine free, Sokora needs it.
+- Either `A` or `B`:
+  - `A`
+    - [PostgreSQL](https://www.postgresql.org/download/) installed.
+    - Port 5432 on your machine free, Sokora needs it.
+  - `B`
+    - [Docker](https://www.docker.com/products/docker-desktop/) installed.
 
 ## Get started with contributing
 
@@ -20,7 +26,19 @@
 - Invite your bot to your server.
 - Reset and then copy your bot’s token.
 
-### PostgreSQL
+### Setting Sokora up
+
+- Run the setup utility with `bun run setup` and our CLI tool will install dependencies and write .env for you. It’ll ask for things like user token, control channel IDs, and whether you're using Docker for development or not.
+
+We asume you're using Docker, as it is our recommended way of developing.
+
+If you're NOT doing that, then refer to [the next section](#manual-setup-for-not-using-docker), and note there are prior steps to running the setup utility.
+
+### Manual setup for not using Docker
+
+If you prefer to run Sokora without going through a container, you must setup PostgreSQL locally before running the setup utility.
+
+#### PostgreSQL
 
 - Check if you already have PostgreSQL installed on your machine. If not, refer to your platform’s package manager or get it from [postgresql.org](https://www.postgresql.org/download/).
 - If you’re on Windows, proceed with the set up, remember your port (or keep it as `5432`) as it will be used later on.
@@ -31,82 +49,76 @@
 - Create a database like so: `CREATE DATABASE dbname OWNER ’name’;`
   - Check if the database has been created by quitting the default database with `\q` and launching `psql -U name -d dbname` where name and dbname are the same names you provided before.
 
-Follow to the next section to create a .env variable that’ll let Sokora access the database.
+#### Going back to the setup utility
 
-### Setting up .env
+Tell it you won't use Docker, then provide:
 
-- Run `bun run setup` and our CLI tool will install dependencies and write .env for you. It’ll ask you to paste in your bot’s token and the PostgreSQL credentials (assuming you’re NOT planning to run from Docker; it’ll ask that first).
-  - For the credentials, provide in order:
-    - The user you created (`name`).
-    - The database name (`dbname`).
-    - The password you created (`pass`).
-    - The host (leave empty unless you know it’s not `localhost` for some reason, which it should be set to by default).
-    - The port (check what it is by running `psql -U name -d dbname -c "SHOW port;"`).
+- The user you created (`name`).
+- The database name (`dbname`).
+- The password you created (`pass`).
+- The host (leave empty unless you know it’s not `localhost` for some reason, which it should be set to by default).
+- The port (check what it is by running `psql -U name -d dbname -c "SHOW port;"`).
 
 ### Running
 
 If running on your local hardware, just run `bun dev`.
 
-If you prefer to run the Docker container (which we’d actually recommend!), run `docker compose up --build --watch`. Or just `./run.sh` if on macOS/Linux.
+If you prefer to run the Docker container, run `docker compose up --build --watch`. Or just `./run.sh` if on macOS/Linux.
 
 ## Contribution guide
 
 A few, simple guidelines onto how to contribute to Sokora.
 
-### Reminders
-
 Some things you should keep in mind at all times.
 
-- Ensure to run the static formatter and analyzer (via `bun run ql`) before committing.
+- Ensure to run the static formatter and analyzer (via `bun run ql`) before committing. It's relatively strict, fix any issues it reports and resort to ignore comments only if absolutely necessary.
 - Remember to commit changes to `bun.lock` file.
-- Do not repeat yourself, at all. Code duplication creates problems. Extract to functions.
-- Document via JSDoc anything that isn’t self-explanatory and other developers will have to touch often (like utility functions or important parts of important files).
-
-Below, other things you should keep in mind when you’re carrying specific tasks.
-
-- _I’m interacting with a setting that is specifically an ITERABLE OBJECT one._
-  - If you’re defining it for the first time, add the property `$: { type: "TEXT", desc: "", val: "" }`.
-  - If you need to delete/reference a specific value, filter by `$`. It’s a GUID.
-- _I’m finding a way for all of settingsEmbed.ts to be PROPERLY everything to be typed._
-  - Choose a mansion you’d like us to buy for you.
-  - For reference, due to the guy building our type system assuming TypeScript is a better language than it actually is (see PR #91), we’ve hit some compiler limitations that make it very hard to convey what we’re doing to the compiler without it erroring out. This section of CONTRIBUTING.md was created because we were actually going to tolerate getting `settingsEmbed.ts` (one of the most important files of the bot!) to production with a truckload of TypeErrors. By now this has been resolved, but using bad practices and type casts everywhere. Anyone who achieves proper typing for this is an absolute hero and will probably be rewarded in some sort of way.
-
-### Code styling guidelines
-
-A few guides onto how code contributed to Sokora should look like.
-
-- Use `camelCase` for both variables and function names.
-- Keep lines reasonably short, don’t fear linebreaks. Of course, longer lines are valid where needed.
-- Use early returns to avoid nesting.
-- Avoid curly braces when an `if`/`else`/`throw`/`return` statement can be one-lined.
-- Avoid non-nullish assertions, they are valid only when absolutely needed.
-- Use the functions from `safeThings` instead of using the cache or fetching to:
+- Do not repeat yourself, at all. Code duplication creates problems. Extract.
+- Document via JSDoc anything that isn’t _actually_ self-explanatory and other developers will have to touch often (like utility functions or important parts of important files).
+- Use the functions from `safeThings` instead of using `discord.js` provided methods for the following actions:
   - Reply to an interaction (`safeReply`)
+  - Edit a message (`safeEdit`)
   - Get members (`safeMembers`)
   - Get a channel (`safeChannel`)
   - Get a role (`safeRole`)
   - Get an individual member (`safeMember`)
   - Get a user (`safeUser`)
   - Get a guild (`safeGuild`)
+  - Get a channel to send important bot messages to (`safeAlertChannel`)
+
+Below, other things you should keep in mind when you’re carrying specific tasks.
+
+- _I’m interacting with a setting that is specifically an ITERABLE OBJECT one._
+  - If you’re defining it for the first time, add the property `$: { type: "TEXT", desc: "", val: "" }`.
+  - If you need to delete/reference a specific value, filter by `$`. It’s a GUID.
+- _I’m finding a way for all of settingsEmbed.ts to be PROPERLY typed._
+  - Choose a mansion you’d like us to buy for you.
+  - For reference, due to the guy building our type system assuming TypeScript is a better language than it actually is (see PR #91), we’ve hit some TypeScript limitations that make it very hard to convey what we’re doing to the compiler without it erroring out. This section of CONTRIBUTING.md was created because we were actually going to tolerate getting `settingsEmbed.ts` (one of the most important files of the bot!) to production with a truckload of TypeErrors. By now this has been resolved, but using bad practices and type casts everywhere. Anyone who achieves proper typing for this is an absolute hero and will probably be rewarded in some sort of way.
+
+### Coding guidelines
+
+A few guides onto how code contributed to Sokora should look like.
+
+- Use `camelCase` for both variables and function names. Use `CONST_CASE` for constant values that are shared, exported or not.
+- Use early returns to avoid nesting.
+- Avoid non-nullish assertions, they are valid only when absolutely needed.
 - Prefer, when possible, `Promise.all` over having several `await` statements.
 
-### Subete commit system (WIP)
+There's not a deep style guide since the code QL task should be able to handle everything on its own.
 
-We’ve created an alternative to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), aimed at improving its functionality. It’ll be required to be used to contribute to this project when it gets proper documentation via a website.
+### Commit guidelines
 
-Full layout: `![<type>@[scope] [part]] <description>`, where:
+We require all commits to strictly follow a very specific commit convention we've made.
 
-- `!` signifies a breaking change.
-- `type` is the type of the commit, e.g `fix`, `feat`, `refactor`, etc.
-- `scope` is where the changes happened.
-- `part` shows the part of the commit.
-- And finally, `description` is where the changes are described.
+```bash
+![<type>@[scope] [part]] <description> [>
 
-#### Examples
+extended description]
 
-`[fix@settingsEmbed pt3] fixed OBJECT type`
-`[chore] Update enhanced-ms to 4.3.0`
-`![fix@settings] types have been fixed`
+[tags]
+```
+
+Please refer to [the Subete commit guidelines](./docs/subecommits.md).
 
 ---
 

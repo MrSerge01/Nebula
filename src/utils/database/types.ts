@@ -145,7 +145,9 @@ export type SettingValueFromDef<T> = T extends {
   ? BaseSettingValueFromDef<T> | undefined
   : T extends { val: SettingSettableValue }
     ? BaseSettingValueFromDef<T>
-    : BaseSettingValueFromDef<T> | undefined;
+    : T extends { iterable: true }
+      ? BaseSettingValueFromDef<T>
+      : BaseSettingValueFromDef<T> | undefined;
 
 export type SettingsFor<K extends keyof TS> = TS[K]["settings"];
 
@@ -238,7 +240,9 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
     }
     case "INTEGER":
     case "mINTEGER": {
-      return typeof value === "number";
+      return (
+        typeof value === "number" || (typeof value === "string" && !Number.isNaN(Number(value)))
+      );
     }
     case "mUSER":
     case "USER":
@@ -248,7 +252,6 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
     case "mCHANNEL": {
       // can't validate they IDs on its own, use safeThings for that; this just checks format (numeric string)
       // https://stackoverflow.com/questions/175739/how-can-i-check-if-a-string-is-a-valid-number
-      if (typeof value === "object") return true;
       return typeof value === "string";
     }
     case "SELECT": {

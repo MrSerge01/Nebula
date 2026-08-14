@@ -1,7 +1,5 @@
-import { type InteractionResponse, type Message, PermissionFlagsBits } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
+import { PermissionFlagsBits } from "discord.js";
 import { easterEggNames, eventNames } from "handlers/events";
-import { client } from "src/bot";
 import { dekominator, kominator } from "utils/kominator";
 import { mention } from "utils/mention";
 import { pluralOrNot } from "utils/pluralOrNot";
@@ -314,6 +312,27 @@ export const defEaster = {
   },
 } satisfies SettingDefinitionRecord["settings"];
 
+export const defInterkora = {
+  enabled: {
+    type: "BOOL",
+    desc: "Enable/disable Interkora.",
+    val: false,
+    emoji: "✅",
+  },
+  whitelist: {
+    type: "USER",
+    emoji: "📑",
+    desc: "List of users/bots authorized to use Interkora. Owners and users with Administrator are always allowed.",
+    iterable: true,
+  },
+  webhook_whitelist: {
+    type: "TEXT",
+    emoji: "📑",
+    desc: "List of webhook IDs authorized to use Interkora.",
+    iterable: true,
+  },
+} satisfies SettingDefinitionRecord["settings"];
+
 const topggPrecondition: SettingPrecondition<"BOOL"> = async (
   interaction,
   newValue,
@@ -362,6 +381,10 @@ export const settingsDefinition = {
     description: "Enable/disable easter eggs.",
     settings: defEaster,
   },
+  interkora: {
+    description: "Enable/disable the Interkora system.",
+    settings: defInterkora,
+  },
   topgg: { description: "Change settings about Top.gg.", settings: defTopgg },
 };
 
@@ -374,6 +397,7 @@ export const serverSettingsKeys = [
   "serverboard",
   "starboard",
   "welcome",
+  "interkora",
 ] as (keyof TS)[];
 export const userSettingsKeys = ["topgg"] as (keyof TS)[];
 
@@ -528,54 +552,4 @@ export async function resetSetting<K extends keyof TS>(
 export async function resetSettingCategory(entityID: string, key: keyof TS): Promise<void> {
   const [table, ent] = clause(db, key);
   await db`DELETE FROM ${table} WHERE ${ent} = ${entityID} AND "key" LIKE ${`${key}%`};`;
-}
-
-export async function listPublicServers(): Promise<
-  {
-    guildID: string;
-    showInvite: boolean;
-    inviteChannelId: string | undefined;
-  }[]
-> {
-  const publicGuildSet = new Set(
-    values<TypeOfDefinition<Def>>(
-      await db`SELECT * FROM settings WHERE "key" = ${"serverboard.shown"} AND "value" = ${"true"};`,
-    ).map(entry => entry.guildID),
-  );
-
-  const inviteGuildsSet = new Set(
-    values<TypeOfDefinition<Def>>(
-      await db`SELECT * FROM settings WHERE "key" = ${"serverboard.server_invite"} AND "value" = ${"true"};`,
-    ).map(entry => entry.guildID),
-  );
-
-  return Promise.all(
-    [...publicGuildSet].map(async (entry: unknown) => {
-      if (typeof entry != "string")
-        throw new Error(`Somehow ’${entry}’ was not of type string in listPublicServers.`);
-
-      const inviteChannel = await getSetting(entry, "serverboard", "invite_channel");
-      return {
-        guildID: entry,
-        showInvite: inviteGuildsSet.has(entry),
-        inviteChannelId: inviteChannel?.toString(),
-      };
-    }),
-  );
-}
-
-export async function deletePublicServer(
-  guildID: string,
-): Promise<Message | InteractionResponse | undefined> {
-  try {
-    await db`DELETE FROM settings WHERE "guildID" = ${guildID} AND "key" = ${"serverboard.shown"} AND "value" = ${"true"};`;
-  } catch (error) {
-    return await errorEmbed({
-      client,
-      error,
-      log: true,
-      forward: true,
-      fileName: "database/settings",
-    });
-  }
 }

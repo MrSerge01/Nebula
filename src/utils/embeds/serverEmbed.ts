@@ -4,6 +4,7 @@ import {
   ContainerBuilder,
   GuildMFALevel,
   GuildNSFWLevel,
+  type GuildPremiumTier,
   GuildVerificationLevel,
   SectionBuilder,
   SeparatorBuilder,
@@ -14,6 +15,7 @@ import {
   type StageChannel,
   type TextChannel,
   type VoiceChannel,
+  type GuildMember,
 } from "discord.js";
 import { logChannel } from "utils/logChannel";
 import { pagedButtons } from "utils/pagination";
@@ -34,18 +36,37 @@ interface Options {
   pages?: number;
 }
 
+interface ServerEmbedData {
+  inviteChannel: string | undefined | 1;
+  boostTier: GuildPremiumTier;
+  owner: GuildMember;
+  description: string | undefined;
+  createdAt: string;
+  boostCount: number;
+  boosterCount: number;
+  safetyLevel: "Unrestricted" | "Low" | "Mid" | "High" | "Very high";
+  has2fa: boolean;
+  channelCount: number;
+  memberCount: number;
+  textChannelCount: number;
+  voiceChannelCount: number;
+  nsfwLevel: "Age restricted" | "Explicit" | "Safe";
+  /** [1st 3 role mention list, role len, role len - 3] */
+  roles: [string[], number, number];
+  iconUrl: string | undefined;
+}
+
 /**
- * Gives you a CONTAINER containing information about the guild.
- * @param options Options of the container.
- * @returns Container that contains the guild info.
+ * Returns data for building a server embed. Values are formatted where possible, but prioritize being API-serializable.
+ *
+ * @param {Options} options
  */
-export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
-  const { page, pages, guild, invite, shouldDisableButtons } = options;
-  const { premiumTier: boostTier, premiumSubscriptionCount: boostCount } = guild;
+export async function serverEmbedData(options: Options): Promise<ServerEmbedData> {
+  const { guild, invite } = options;
+  const { premiumTier, premiumSubscriptionCount: boostCount } = guild;
   const boosters = guild.members.cache.filter(member => member.premiumSince);
   const client = guild.client.user.id;
   const owner = await guild.fetchOwner();
-  const icon = guild.iconURL() ?? undefined;
 
   const roles = guild.roles.cache;
   const sortedRoles = [...roles].toSorted((role1, role2) => role2[1].position - role1[1].position);
@@ -66,52 +87,138 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
         channel.type == ChannelType.GuildVoice || channel.type == ChannelType.GuildStageVoice,
     ).size,
   };
-  const channelCount = channelSizes.text + channelSizes.voice;
+
+  const safetySetupString = {
+    [GuildVerificationLevel.None]: "Unrestricted",
+    [GuildVerificationLevel.Low]: "Low",
+    [GuildVerificationLevel.Medium]: "Mid",
+    [GuildVerificationLevel.High]: "High",
+    [GuildVerificationLevel.VeryHigh]: "Very high",
+  }[guild.verificationLevel];
+
+  let inviteChannel: 1 | string | undefined;
+
+  if (invite?.show) {
+    const clientMember = await safeMember(guild, client);
+    if (
+      !clientMember.permissions.has("CreateInstantInvite") ||
+      !clientMember.permissions.has("ManageGuild")
+    )
+      inviteChannel = 1;
+    else {
+      const invites = await guild.invites.fetch();
+      const previousInvite = invites.find(invite => invite.inviter?.id == client);
+      const id =
+        invite.channel ??
+        guild.channels.cache
+          ?.filter(channel => channel.isTextBased() && !channel.isThread())
+          ?.find(channel => channel.position == 0)?.id;
+
+      if (id) {
+        const possibleInviteChannel = await safeChannel(guild, id);
+
+        const inviteChannelPerSe =
+          possibleInviteChannel?.isTextBased() &&
+          !possibleInviteChannel.isThread() &&
+          !possibleInviteChannel.isDMBased()
+            ? possibleInviteChannel
+            : guild.rulesChannel;
+
+        if (!inviteChannelPerSe) inviteChannel = undefined;
+        else if (inviteChannelPerSe.permissionsFor(client)?.has("CreateInstantInvite"))
+          inviteChannel = previousInvite
+            ? previousInvite.url
+            : (await inviteChannelPerSe.createInvite({ maxAge: 0, reason: "Serverboard invite" }))
+                .url;
+        else inviteChannel = 1;
+      } else inviteChannel = 1;
+    }
+  }
+
+  return {
+    owner,
+    createdAt: mention(guild.createdAt.valueOf(), "DEFAULT_TIMESTAMP"),
+    iconUrl: guild.iconURL() ?? undefined,
+    description: guild.description ?? undefined,
+    inviteChannel,
+    boostTier: premiumTier,
+    safetyLevel: safetySetupString as "Unrestricted",
+    nsfwLevel:
+      guild.nsfwLevel == GuildNSFWLevel.Explicit
+        ? "Explicit"
+        : (guild.nsfwLevel == GuildNSFWLevel.Safe
+          ? "Safe"
+          : "Age restricted"),
+    has2fa: guild.mfaLevel == GuildMFALevel.Elevated,
+    memberCount: guild.memberCount,
+    textChannelCount: channelSizes.text,
+    voiceChannelCount: channelSizes.voice,
+    boostCount: boostCount ?? 0,
+    channelCount: channelSizes.text + channelSizes.voice,
+    boosterCount: boosters.size,
+    roles: [
+      sortedRoles.slice(0, 3).map(role => mention(role[0], "ROLE")),
+      rolesLength,
+      Math.max(0, rolesLength - 3),
+    ],
+  };
+}
+
+/**
+ * Gives you a CONTAINER containing information about the guild.
+ * @param options Options of the container.
+ * @returns Container that contains the guild info.
+ */
+export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
+  const { page, pages, guild, shouldDisableButtons } = options;
+  const {
+    channelCount,
+    textChannelCount,
+    voiceChannelCount,
+    createdAt,
+    owner,
+    iconUrl,
+    inviteChannel,
+    memberCount,
+    has2fa,
+    safetyLevel,
+    nsfwLevel,
+    boostTier,
+    boostCount,
+    boosterCount,
+    roles,
+  } = await serverEmbedData(options);
 
   const generalValues = [
     `Owned by **${owner.user.displayName}**`,
-    `Created on **${mention(guild.createdAt.valueOf(), "DEFAULT_TIMESTAMP")}**`,
+    `Created on **${createdAt}**`,
   ].join("\n");
 
   const safetyValues: (string | null)[] = [
-    `**${
-      {
-        [GuildVerificationLevel.None]: "Unrestricted",
-        [GuildVerificationLevel.Low]: "Low",
-        [GuildVerificationLevel.Medium]: "Mid",
-        [GuildVerificationLevel.High]: "High",
-        [GuildVerificationLevel.VeryHigh]: "Very high",
-      }[guild.verificationLevel]
-    }** level`,
-    `**${guild.mfaLevel == GuildMFALevel.None ? "No" : "Has"}** 2FA`,
+    `**${safetyLevel}** level`,
+    `**${has2fa ? "Has" : "No"}** 2FA`,
   ];
 
-  if (guild.nsfwLevel != GuildNSFWLevel.Default)
-    safetyValues.push(
-      `**${guild.nsfwLevel == GuildNSFWLevel.Explicit ? "Explicit" : (guild.nsfwLevel == GuildNSFWLevel.Safe ? "Safe" : "Age restricted")}**`,
-    );
+  if (guild.nsfwLevel != GuildNSFWLevel.Default) safetyValues.push(`**${nsfwLevel}**`);
 
   const statValues: (string | null)[] = [
-    `**${guild.memberCount?.toLocaleString("en-US")}** members`,
-    channelSizes.voice > 0
-      ? `**${channelCount}** ${pluralOrNot("channel", channelCount)} • **${channelSizes.text}** text and **${channelSizes.voice}** voice`
+    `**${memberCount}** members`,
+    voiceChannelCount > 0
+      ? `**${channelCount}** ${pluralOrNot("channel", channelCount)} • **${textChannelCount}** text and **${voiceChannelCount}** voice`
       : `**${channelCount}** text ${pluralOrNot("channel", channelCount)}`,
   ];
 
   if (boostTier)
     statValues.push(
-      `${boostTier ? `Level **${boostTier}**` : "**No** level"} • **${boostCount}** ${pluralOrNot("boost", boostCount ?? 0)} • **${boosters.size}** ${pluralOrNot("booster", boosters.size)}`,
+      `${boostTier ? `Level **${boostTier}**` : "**No** level"} • **${boostCount}** ${pluralOrNot("boost", boostCount ?? 0)} • **${boosterCount}** ${pluralOrNot("booster", boosterCount)}`,
     );
 
   if (options.roles)
     statValues.push(
-      `**${roles.size - 1}** ${pluralOrNot("role", roles.size - 1)} • ${
-        roles.size == 1
+      `**${roles[1]}** ${pluralOrNot("role", roles[1])} • ${
+        roles[1] == 0
           ? "*None*"
-          : `${sortedRoles
-              .slice(0, 3)
-              .map(role => mention(role[0], "ROLE"))
-              .join(" • ")}${rolesLength > 3 ? ` and **${rolesLength - 3}** more` : ""}`
+          : `${roles[0].join(" • ")}${roles[2] > 0 ? ` and **${roles[2]}** more` : ""}`
       }`,
     );
 
@@ -123,11 +230,11 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
     new TextDisplayBuilder().setContent([generalValues, safetyValues.join(" • ")].join("\n")),
   ];
 
-  if (icon)
+  if (iconUrl)
     container.addSectionComponents(
       new SectionBuilder()
         .addTextDisplayComponents(start)
-        .setThumbnailAccessory(new ThumbnailBuilder().setURL(icon)),
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(iconUrl)),
     );
   else container.addTextDisplayComponents(start);
 
@@ -140,83 +247,51 @@ export async function serverEmbed(options: Options): Promise<ContainerBuilder> {
 
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(statValues.join("\n")));
 
-  if (invite?.show) {
-    async function noPerms(
-      channel?: NewsChannel | TextChannel | StageChannel | VoiceChannel,
-    ): Promise<ContainerBuilder> {
-      await resetSetting(guild.id, "serverboard", "server_invite");
-      await resetSetting(guild.id, "serverboard", "invite_channel");
-      const errorContainer = new ContainerBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent("## Serverboard is misconfigured in your server!"),
-          new TextDisplayBuilder().setContent(
+  async function noPerms(
+    channel?: NewsChannel | TextChannel | StageChannel | VoiceChannel,
+  ): Promise<ContainerBuilder> {
+    await resetSetting(guild.id, "serverboard", "server_invite");
+    await resetSetting(guild.id, "serverboard", "invite_channel");
+    const errorContainer = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent("## Serverboard is misconfigured in your server!"),
+        new TextDisplayBuilder().setContent(
+          [
+            "⁉️ • What happened",
             [
-              "⁉️ • What happened",
-              [
-                "Sokora does not have the **Create Invite** and **Manage Server** permissions to create an invitation, but `serverboard.server_invite` is enabled.",
-                `Please give Sokora the permission${channel ? ` for ${channel.name}` : ""} and enable the settings again in **/settings serverboard**.`,
-              ].join("\n"),
+              "Sokora does not have the **Create Invite** and **Manage Server** permissions to create an invitation, but `serverboard.server_invite` is enabled.",
+              `Please give Sokora the permission${channel ? ` for ${channel.name}` : ""} and enable the settings again in **/settings serverboard**.`,
             ].join("\n"),
-          ),
-          new TextDisplayBuilder().setContent(
-            `This is coming from ${guild.name} • ID: ${guild.id}`,
-          ),
-        )
-        .setAccentColor(await colorize({ hue: Sokolors.Red }));
+          ].join("\n"),
+        ),
+        new TextDisplayBuilder().setContent(`This is coming from ${guild.name} • ID: ${guild.id}`),
+      )
+      .setAccentColor(await colorize({ hue: Sokolors.Red }));
 
-      await logChannel(guild, { components: [errorContainer], flags: "IsComponentsV2" }, true, {
-        isSilent: false,
-        user: owner.user,
-        options: { components: [container], flags: "IsComponentsV2" },
-      });
+    await logChannel(guild, { components: [errorContainer], flags: "IsComponentsV2" }, true, {
+      isSilent: false,
+      user: owner.user,
+      options: { components: [container], flags: "IsComponentsV2" },
+    });
 
-      return container;
-    }
-
-    const clientMember = await safeMember(guild, client);
-    if (
-      !clientMember.permissions.has("CreateInstantInvite") ||
-      !clientMember.permissions.has("ManageGuild")
-    )
-      return noPerms();
-
-    const invites = await guild.invites.fetch();
-    const previousInvite = invites.find(invite => invite.inviter?.id == client);
-    const id =
-      invite.channel ??
-      guild.channels.cache
-        ?.filter(channel => channel.isTextBased() && !channel.isThread())
-        ?.find(channel => channel.position == 0)?.id;
-
-    if (!id) return container;
-    const possibleInviteChannel = await safeChannel(guild, id);
-
-    const inviteChannel =
-      possibleInviteChannel?.isTextBased() &&
-      !possibleInviteChannel.isThread() &&
-      !possibleInviteChannel.isDMBased()
-        ? possibleInviteChannel
-        : guild.rulesChannel;
-
-    if (!inviteChannel) return container;
-    if (!inviteChannel.permissionsFor(client)?.has("CreateInstantInvite"))
-      return noPerms(inviteChannel);
-
-    const inviteUrl = previousInvite
-      ? previousInvite.url
-      : await inviteChannel.createInvite({ maxAge: 0, reason: "Serverboard invite" });
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`This server allows you to join from here! ${inviteUrl}`),
-    );
+    return container;
   }
+
+  if (inviteChannel == 1) return await noPerms();
+
+  if (inviteChannel != undefined)
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `This server allows you to join from here! ${inviteChannel}`,
+      ),
+    );
 
   if (pages && pages > 1)
     container.addActionRowComponents(pagedButtons(pages, page, shouldDisableButtons));
 
   container
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# Server ID: ${guild.id}`))
-    .setAccentColor(await colorize({ avatar: icon, hue: Sokolors.Blue }));
+    .setAccentColor(await colorize({ avatar: iconUrl, hue: Sokolors.Blue }));
 
   return container;
 }

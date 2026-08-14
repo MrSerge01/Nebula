@@ -138,6 +138,22 @@ export async function safeEdit(options: {
   throw new Error("Should’ve probably used safeReply instead of safeEdit.");
 }
 
+const isTextableRegularChannel = (
+  c: Channel | null | undefined,
+  me: GuildMember,
+): c is NewsChannel | DMChannel | TextChannel => {
+  if (!c) return false;
+  return (
+    !c.isDMBased() &&
+    c.viewable &&
+    c.permissionsFor(me).has("SendMessages") &&
+    c.isTextBased() &&
+    !c.isThread() &&
+    c.isSendable() &&
+    !c.isVoiceBased()
+  );
+};
+
 /**
  * Finds a channel to send important stuff to. This is only for things like welcome, canary updates or important alerts.
  * It tries, in order: logChannel, guild's system channel, owner's DM and first text channel in guild Sokora can text to as a last resort.
@@ -158,32 +174,18 @@ export async function safeAlertChannel(
   const me = guild.members.me;
   if (!me) throw new Error("how??? this shouldn’t happen…");
 
-  const isTextableRegularChannel = (
-    c: Channel | null | undefined,
-  ): c is NewsChannel | DMChannel | TextChannel => {
-    if (!c) return false;
-    return (
-      !c.isDMBased() &&
-      c.viewable &&
-      c.permissionsFor(me).has("SendMessages") &&
-      c.isTextBased() &&
-      !c.isThread() &&
-      c.isSendable() &&
-      !c.isVoiceBased()
-    );
-  };
-
   const logChannelId = await getSetting(guild.id, "moderation", "channel");
   const _logChannel = logChannelId ? await guild.channels.fetch(logChannelId) : null;
-  const logChannel = isTextableRegularChannel(_logChannel) ? _logChannel : null;
-  const systemChannel = isTextableRegularChannel(guild.systemChannel) ? guild.systemChannel : null;
+  const logChannel = isTextableRegularChannel(_logChannel, me) ? _logChannel : null;
+  const dmChannel = shouldDmOwner ? await (await guild.fetchOwner()).user.createDM() : null;
+  const sysChannel = isTextableRegularChannel(guild.systemChannel, me) ? guild.systemChannel : null;
 
   const channel: NewsChannel | DMChannel | TextChannel | undefined =
     logChannel ??
-    systemChannel ??
-    (shouldDmOwner ? await (await guild.fetchOwner()).user.createDM() : null) ??
+    sysChannel ??
+    dmChannel ??
     guild.channels.cache
-      .filter(c => isTextableRegularChannel(c))
+      .filter(c => isTextableRegularChannel(c, me))
       .sort((a, b) => b.position - a.position)
       .last();
 

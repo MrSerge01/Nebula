@@ -1,3 +1,4 @@
+export const MILLISEC_15M = 900_000;
 export const MILLISEC_30M = 1_800_000;
 export const MILLISEC_6H = 21_600_000;
 export const MILLISEC_12H = 43_200_000;
