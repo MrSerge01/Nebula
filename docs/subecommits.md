@@ -138,12 +138,15 @@ Exclamations are to be used linearly. You cannot just use more than what it corr
 ## Frequently Asked Questions
 
 > Is there a way to avoid using parts for related commits?
-> Short answer: No.
-> Long answer: Group your changes. Parts are used for several commits that target the same goal, e.g. adding a specific feature (where pt1 could be a needed refactor and pt2 the actual implementation). Grouping everything makes this go away, though it is considered a bad practice (the more atomic a commit is, within fair limits, the better).
+
+Short answer: **No.**
+
+Long answer: **Group your changes.** Parts are used for several commits that target the same goal, e.g. adding a specific feature (where pt1 could be a needed refactor and pt2 the actual implementation). Grouping everything makes this go away, though it is considered a bad practice (the more atomic a commit is, within fair limits, the better).
 
 > What if I really can't fit the short description in 48 chars?
-> Short answer: Your commit probably does too much.
-> Long answer: Check the writing is duplicating nothing. A common mistake is [fix] fixed … where the verb does the tag's job. Another mistake is, when a commit does many things, trying to find shorter terms to describe the contents of the commit; if it doesn't fit, just leave that for the extended description and limit the short description to what the commit touches. E.g., [fix] cart page + password validation <, and then the extended description tells what the actual fixes are.
+
+Short answer: **Your commit probably does too much.**
+Long answer: **Check the writing is duplicating nothing.** A common mistake is `[fix] fixed …` where the verb does the tag's job. Another mistake is, when a commit does many things, trying to find shorter terms to describe the contents of the commit; if it doesn't fit, just leave that for the extended description and limit the short description to what the commit touches. E.g., `[fix] cart page + password validation >`, and then the extended description tells what the actual fixes are.
 
 <!-- we'll do this later on
 ## Formal Specification
