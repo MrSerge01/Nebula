@@ -25,6 +25,11 @@ export type Replacements = { text: ReplaceableStrings; replacement: string | num
 
 export type Satisfies<K, T extends K> = T;
 
+export interface Mention {
+  type: "USER" | "ROLE" | "CHANNEL" | "TIMESTAMP";
+  res: string;
+}
+
 /**
  * Force typescript to recognize a variable as a certain type (useful for polymorphic const variables for example)
  * @param _v The variable you want to force the type of

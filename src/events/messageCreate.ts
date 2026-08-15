@@ -25,6 +25,7 @@ import { channelCheck } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { safeChannel, safeMember, safeRole } from "utils/safeThings";
+import { interkora } from "utils/interkora";
 import type { Event } from "utils/types";
 
 const cooldowns = new Map<string, number>();
@@ -70,8 +71,10 @@ async function grantRewards(
 export default (async function run(message) {
   const author = message.author;
 
-  // [TODO]: text API
-  if (message.content.startsWith("s!")) return;
+  if (message.content.startsWith("s!")) {
+    await interkora(message);
+    return;
+  }
 
   if (author.bot) return;
   const guild = message.guild;
