@@ -209,7 +209,7 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
     );
   }
 
-  if (value === undefined && isOptional) return true;
+  if (typeof value === "object" || (value === undefined && isOptional)) return true;
 
   switch (def.type) {
     case "OBJECT": {
