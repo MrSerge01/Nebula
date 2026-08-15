@@ -30,7 +30,7 @@ We're thankful that you're willing to contribute to Sokora! This overall guide w
 
 - Run the setup utility with `bun run setup` and our CLI tool will install dependencies and write .env for you. It’ll ask for things like user token, control channel IDs, and whether you're using Docker for development or not.
 
-We asume you're using Docker, as it is our recommended way of developing.
+We assume you're using Docker, as it is our recommended way of developing.
 
 If you're NOT doing that, then refer to [the next section](#manual-setup-for-not-using-docker), and note there are prior steps to running the setup utility.
 

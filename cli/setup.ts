@@ -67,15 +67,15 @@ const main = async (): Promise<void> => {
     );
   }
   const errorsId = await readHiddenInput(
-    "Enter an error channel ID. Sokora will send detailed error logs here whenever a command breaks. (Optional.)",
+    "Enter an error channel ID. Sokora will send detailed error logs here whenever a command breaks. (optional)",
   );
   if (errorsId.trim() != "") replaceInEnvironment("YOUR_ERROR_CHANNEL_ID", errorsId);
   const reportsId = await readHiddenInput(
-    "Enter an error channel ID. Sokora will send detailed error logs here whenever a command breaks. (Optional.)",
+    "Enter an error channel ID. Sokora will send detailed error logs here whenever a command breaks. (optional)",
   );
   if (reportsId.trim() != "") replaceInEnvironment("YOUR_REPORT_CHANNEL_ID", reportsId);
   const ownerId = await readHiddenInput(
-    "Enter your user ID. Sokora might give it some use. (Optional.)",
+    "Enter your user ID. Sokora might give it some use. (optional)",
   );
   if (ownerId.trim() != "") replaceInEnvironment("YOUR_USER_ID", ownerId);
   console.log("You’re good to go, happy coding!");

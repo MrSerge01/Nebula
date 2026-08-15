@@ -138,10 +138,10 @@ export async function safeEdit(options: {
   throw new Error("Should’ve probably used safeReply instead of safeEdit.");
 }
 
-const isTextableRegularChannel = (
+function isTextableRegularChannel(
   c: Channel | null | undefined,
   me: GuildMember,
-): c is NewsChannel | DMChannel | TextChannel => {
+): c is NewsChannel | DMChannel | TextChannel {
   if (!c) return false;
   return (
     !c.isDMBased() &&
@@ -152,7 +152,7 @@ const isTextableRegularChannel = (
     c.isSendable() &&
     !c.isVoiceBased()
   );
-};
+}
 
 /**
  * Finds a channel to send important stuff to. This is only for things like welcome, canary updates or important alerts.
