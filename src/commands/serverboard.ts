@@ -1,10 +1,9 @@
-import { deletePublicServer, listPublicServers } from "database/settings";
+import { fetchServerboard, type ServerboardEntry } from "database/serverboard";
 import {
   SlashCommandBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type ContainerBuilder,
-  type Guild,
   type InteractionResponse,
   type Message,
 } from "discord.js";
@@ -12,7 +11,7 @@ import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { serverEmbed } from "embeds/serverEmbed";
 import { COLLECTOR_DURATION } from "utils/constants";
 import { handlePages } from "utils/pagination";
-import { safeEdit, safeGuild } from "utils/safeThings";
+import { safeEdit } from "utils/safeThings";
 
 export const data = new SlashCommandBuilder()
   .setName("serverboard")
@@ -23,35 +22,19 @@ export const data = new SlashCommandBuilder()
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
-  const guildList: { guild: Guild; showInvite: boolean; inviteChannelId: string | undefined }[] = (
-    await Promise.all(
-      (await listPublicServers()).map(async entry => {
-        try {
-          return {
-            guild: await safeGuild(interaction.client, entry.guildID),
-            showInvite: entry.showInvite,
-            inviteChannelId: entry.inviteChannelId,
-          };
-        } catch (error) {
-          if (String(error).toLowerCase().includes("unknown guild")) {
-            await deletePublicServer(entry.guildID);
-            return null;
-          }
-          await errorEmbed({
-            interaction,
-            error,
-            title: "Serverboard error.",
-            log: true,
-            forward: true,
-            fileName: "serverboard",
-          });
-          return null;
-        }
-      }),
-    )
-  )
-    .filter(entry => entry != null)
-    .toSorted((a, b) => b.guild.memberCount - a.guild.memberCount);
+  let guildList: ServerboardEntry[];
+  try {
+    guildList = await fetchServerboard(interaction.client);
+  } catch (error) {
+    return await errorEmbed({
+      interaction,
+      error,
+      title: "Serverboard error.",
+      log: true,
+      forward: true,
+      fileName: "serverboard",
+    });
+  }
 
   const pages = guildList.length;
   if (!pages)
