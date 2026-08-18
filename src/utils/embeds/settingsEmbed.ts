@@ -675,7 +675,6 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
                 : newValue,
           };
 
-      const stringifiedValue = newValue.toString();
       await safeReply({
         interaction: modalInteraction,
         replyOptions: {
@@ -685,8 +684,8 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
                 ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
                 : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
               isNewValueValid
-                ? `The ${stringifiedValue.length < 50 ? "value" : "**value**"} has been set ${stringifiedValue.length >= 500 ? "successfully." : (stringifiedValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
-                : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${stringifiedValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(stringifiedValue)}`}`,
+                ? `The ${modalValue.length < 50 ? "value" : "**value**"} has been set ${modalValue.length >= 500 ? "successfully." : (modalValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
+                : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${modalValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(modalValue)}`}`,
               isNewValueValid ? Sokolors.Blue : Sokolors.Red,
             ),
           ],

@@ -88,11 +88,12 @@ export const defLeveling = {
     iterable: true,
     emoji: "🌟",
     sorting: (a: { level: number }, b: { level: number }): number => b.level - a.level,
-    naming: (a: { level: number; channels: string[]; roles: string[] }): string => {
-      const channelCount = a.channels.length;
-      const roleCount = a.roles.length;
+    naming: (a: { level: number; channels?: string[]; roles?: string[] }): string => {
+      const channelCount = a.channels?.length;
+      const roleCount = a.roles?.length;
       return `Level **${a.level}**  •  **${channelCount ?? "no"}** ${pluralOrNot("channel", channelCount ?? 0)}  •  **${roleCount ?? "no"}** ${pluralOrNot("role", roleCount ?? 0)}`;
     },
+    validation: (a: { channels?: string[]; roles?: string[] }): boolean => !a.channels && !a.roles,
     properties: {
       $: {
         type: "TEXT",
@@ -459,7 +460,7 @@ export function getSettingDef<K extends keyof TS, S extends SettingKeyFor<K>>(
  * @param key Key, e.g. `leveling`, `moderation`.
  * @param setting Specific setting to get.
  * @returns The setting's value.
- * @important Do not mix user and guild IDs. That's the only we cannot type-check.
+ * @important Do not mix user and guild IDs. That's the only thing we cannot type-check.
  */
 export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>(
   entityID: string,
@@ -487,7 +488,6 @@ export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>
   if (!value_ || (typeof value_ == "string" && value_ == "null")) return fallback();
 
   const value = set.iterable && set.type != "OBJECT" ? kominator(value_) : value_;
-
   if (Array.isArray(value)) {
     const result = value.map(valuelet => switchTypes(valuelet, set)) as SettingReturnType<K, S>;
     return set.iterable && set.type === "OBJECT"

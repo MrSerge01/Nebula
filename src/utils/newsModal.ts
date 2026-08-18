@@ -1,19 +1,28 @@
 import type { getNews } from "database/news";
+import { getSetting } from "database/settings";
 import {
   FileUploadBuilder,
+  type Guild,
+  type GuildBasedChannel,
   LabelBuilder,
   ModalBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
 import { MAX_INPUT_CHARS } from "./constants";
+import { safeChannel } from "./safeThings";
 
 /**
  * Sends a modal that lets you write/edit a news post.
  * @param newsPost Already existing news post. If provided, the modal will be editing said post.
  * @returns News modal.
  */
-export function newsModal(newsPost?: Awaited<ReturnType<typeof getNews>>): ModalBuilder {
+export async function newsModal(
+  newsPost?: Awaited<ReturnType<typeof getNews>>,
+  guild?: Guild,
+): Promise<ModalBuilder> {
   const modal = new ModalBuilder()
     .setCustomId(newsPost ? "editnews" : "postnews")
     .setTitle(newsPost ? `•  Edit news post: ${newsPost.title}` : "•  Write your news post")
@@ -38,14 +47,43 @@ export function newsModal(newsPost?: Awaited<ReturnType<typeof getNews>>): Modal
       ),
     );
 
-  if (!newsPost)
+  if (!newsPost) {
+    if (guild) {
+      const categories = await getSetting(guild.id, "news", "categories");
+      if (categories) {
+        const options = await Promise.all(
+          categories.map(async category => {
+            return new StringSelectMenuOptionBuilder()
+              .setLabel(category.name)
+              .setDescription(
+                `Sends to #${((await safeChannel(guild, category.channel ?? (await getSetting(guild.id, "news", "channel")))) as GuildBasedChannel).name}`,
+              )
+              .setValue(category.$);
+          }),
+        );
+
+        modal.addLabelComponents(
+          new LabelBuilder()
+            .setLabel("What news category does your post belong to?")
+            .setStringSelectMenuComponent(
+              new StringSelectMenuBuilder()
+                .setCustomId("category")
+                .setMaxValues(1)
+                .setOptions(options)
+                .setRequired(false),
+            ),
+        );
+      }
+    }
+
     modal.addLabelComponents(
       new LabelBuilder()
         .setLabel("Upload a banner image if you want")
         .setFileUploadComponent(
-          new FileUploadBuilder().setCustomId("image").setMinValues(0).setRequired(false),
+          new FileUploadBuilder().setCustomId("images").setMaxValues(10).setRequired(false),
         ),
     );
+  }
 
   return modal;
 }

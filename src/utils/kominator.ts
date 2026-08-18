@@ -14,6 +14,12 @@ export function kominator(string: string | undefined): string[] {
  * @param {string[]} strings Array to join.
  * @returns A string with all elements of the array, joined.
  */
-export function dekominator(strings: string[]): string {
+export function dekominator(strings: string[], shouldList?: boolean): string {
+  if (shouldList)
+    return strings
+      .map(string_ => string_.trim())
+      .join(", ")
+      .replaceAll(/\,(?=[^,]*$)/g, " and");
+
   return strings.map(string_ => string_.trim()).join(",");
 }

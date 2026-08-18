@@ -252,7 +252,8 @@ export async function errorEmbed(options: {
         const actualMediaGallery = media
           .filter(
             item =>
-              item.contentType?.startsWith("image/") ?? item.contentType?.startsWith("video/"),
+              item.contentType &&
+              (item.contentType.startsWith("image/") || item.contentType.startsWith("video/")),
           )
           .map(image => new MediaGalleryItemBuilder().setURL(image.url))
           .toReversed();

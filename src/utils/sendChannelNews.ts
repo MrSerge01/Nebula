@@ -23,30 +23,35 @@ export async function sendChannelNews(
     author: string;
     id: number;
     imageURL?: string | null;
+    categoryID?: string;
   },
   willEdit?: boolean,
 ): Promise<void> {
-  const { title, body, author, id, imageURL } = newsOptions;
-
+  const { title, body, author, id, imageURL, categoryID } = newsOptions;
   if (!isInteractionSafe(interaction)) return;
 
+  const category = (await getSetting(guild.id, "news", "categories"))?.find(
+    setting => setting.$ == categoryID,
+  );
   const channel = (await safeChannel(
-    interaction.guild,
-    (await getSetting(interaction.guild.id, "news", "channel")) ?? interaction.channel.id,
+    guild,
+    category?.channel ?? (await getSetting(guild.id, "news", "channel")) ?? interaction.channel.id,
   )) as TextChannel;
 
   if (
     !(await channelCheck({
       channel,
       guild,
-      permType: "View",
+      permType: "Send",
       setting: { category: "news", setting: "channel" },
     }))
   )
     return;
 
   const message = await channel.send({
-    components: [await newsEmbed(guild, { title, body, author, id, imageURL })],
+    components: [
+      await newsEmbed(guild, { title, body, author, id, imageURL, categoryRoles: category?.roles }),
+    ],
     flags: "IsComponentsV2",
   });
   if (willEdit) {

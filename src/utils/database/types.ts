@@ -105,6 +105,9 @@ export interface IterableObjectSetting extends ObjectBase {
   /** Naming callback for the OBJECT list. An OBJECT is passed to it and it should return a string representation. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   naming: (a: any) => string;
+  /** Validation callback for the OBJECT list. Returns a boolean if the user set the OBJECT up properly. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  validation?: (a: any) => boolean;
 }
 
 type PrimitiveSetting<K extends Exclude<FieldData, "SELECT" | "OBJECT">> = {
@@ -198,8 +201,9 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
   if (def.iterable) {
     const isArray = Array.isArray(value);
     if (isOptional && (value === undefined || (isArray && value.length > 0))) return true;
-
     if (!isArray) return false;
+    if (def.type === "OBJECT" && def.validation?.(value[0])) return false;
+
     return value.every(v =>
       isSettingValueValid(v, {
         key: config.key,

@@ -56,7 +56,7 @@ export async function run(
     return await errorEmbed({ interaction, title: "The specified news post doesn’t exist." });
 
   try {
-    await interaction.showModal(newsModal(news));
+    await interaction.showModal(await newsModal(news));
   } catch (error) {
     await errorEmbed({ interaction, error, forward: true, fileName: "edit" });
   }

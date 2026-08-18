@@ -9,6 +9,7 @@ import {
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
+import { dekominator } from "utils/kominator";
 import { modalSubmit } from "utils/modalSubmit";
 import { newsModal } from "utils/newsModal";
 import { replaceVariables } from "utils/replace";
@@ -32,7 +33,7 @@ export async function run(
     });
 
   try {
-    await interaction.showModal(newsModal());
+    await interaction.showModal(await newsModal(null, guild));
   } catch (error) {
     await errorEmbed({ interaction, error, forward: true, fileName: "post" });
   }
@@ -53,12 +54,25 @@ export async function run(
   );
 
   try {
+    const media = modalInteraction.fields.getUploadedFiles("images");
     await sendChannelNews(guild, interaction, {
       title,
       body,
       author: modalInteraction.user.displayName,
-      imageURL: modalInteraction.fields.getUploadedFiles("image")?.at(0)?.url ?? null,
+      imageURL: media
+        ? dekominator(
+            media
+              .filter(
+                item =>
+                  item.contentType &&
+                  (item.contentType.startsWith("image/") || item.contentType.startsWith("video/")),
+              )
+              .map(image => image.url)
+              .toReversed(),
+          )
+        : null,
       id: ((await getLatestNews(guild.id))[0]?.id ?? 0) + 1,
+      categoryID: modalInteraction.fields.getStringSelectValues("category")[0],
     });
   } catch (error) {
     return await errorEmbed({ interaction, error, forward: true, fileName: "post" });
