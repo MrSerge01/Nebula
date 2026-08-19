@@ -72,8 +72,6 @@ interface SettingBase {
   iterable?: boolean;
   /** Emoji that represents the setting, used in SE. */
   emoji?: string;
-  /** If true, `undefined` is an acceptable value. */
-  optional?: boolean;
 }
 
 interface PreconditionBase<F extends FieldData> {
@@ -134,35 +132,40 @@ export interface SettingDefinitionRecord {
 type BaseSettingSettableValue = string | boolean | number | Date | undefined;
 export type SettingSettableValue = BaseSettingSettableValue | BaseSettingSettableValue[];
 
-type BaseSettingValueFromDef<T> = T extends SingleSettingDefinition
-  ? T extends { iterable: true }
-    ? (T extends { type: "OBJECT" } ? SqlObjectType<T["properties"]> : SqlType<T["type"]>)[]
-    : T extends { type: "OBJECT" }
-      ? SqlObjectType<T["properties"]>
-      : SqlType<T["type"]>
-  : never;
+type BaseSettingValueFromDef<T extends SingleSettingDefinition> = T extends { iterable: true }
+  ? (T extends { type: "OBJECT" } ? SqlObjectType<T["properties"]> : SqlType<T["type"]>)[]
+  : T extends { type: "OBJECT" }
+    ? SqlObjectType<T["properties"]>
+    : SqlType<T["type"]>;
 
-export type SettingValueFromDef<T> = T extends {
-  optional: true;
-}
-  ? BaseSettingValueFromDef<T> | undefined
-  : T extends { val: SettingSettableValue }
-    ? BaseSettingValueFromDef<T>
-    : T extends { iterable: true }
+export type SettingValueFromDef<T extends SingleSettingDefinition> =
+  T["type"] extends Uppercase<T["type"]>
+    ? T extends { val: SettingSettableValue }
       ? BaseSettingValueFromDef<T>
-      : BaseSettingValueFromDef<T> | undefined;
+      : T extends { iterable: true }
+        ? BaseSettingValueFromDef<T>
+        : BaseSettingValueFromDef<T> | undefined
+    : BaseSettingValueFromDef<T> | undefined;
 
 export type SettingsFor<K extends keyof TS> = TS[K]["settings"];
 
 export type SettingKeyFor<K extends keyof TS> = keyof TS[K]["settings"] & string;
 
-export type SettingReturnType<
-  K extends keyof TS,
-  S extends keyof SettingsFor<K>,
-> = SettingValueFromDef<SettingsFor<K>[S]>;
+export type Setting<K extends keyof TS, S extends SettingKeyFor<K>> = SingleSettingDefinition &
+  TS[K]["settings"][S];
+
+export type GuidParameter<T extends SingleSettingDefinition> = T extends {
+  type: "OBJECT";
+}
+  ? string
+  : never;
+
+export type SettingReturnType<K extends keyof TS, S extends SettingKeyFor<K>> = SettingValueFromDef<
+  Setting<K, S>
+>;
 
 export type BulkedSettingReturnType<K extends keyof TS> = {
-  [S in keyof SettingsFor<K>]: SettingValueFromDef<SettingsFor<K>[S]>;
+  [S in SettingKeyFor<K>]: SettingValueFromDef<Setting<K, S>>;
 };
 
 /** Called "glue fix" because after some (tiny to be fair) research I'm starting to think that the Sokora type system goes beyond LANGUAGE LIMITATIONS (LMFAO).
@@ -171,7 +174,7 @@ export type BulkedSettingReturnType<K extends keyof TS> = {
  */
 export type SettingsGlueFix1<
   K extends keyof TS,
-  S extends keyof SettingsFor<K>,
+  S extends SettingKeyFor<K>,
 > = SingleSettingDefinition & { val?: SettingReturnType<K, S> };
 
 /**
@@ -196,7 +199,7 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
   },
 ): value is SettingReturnType<K, S> {
   const def = config.def ?? getSettingDef(config.key, config.setting);
-  const isOptional = def.optional ?? def.type.startsWith("m");
+  const isOptional = def.type.startsWith("m");
 
   if (def.iterable) {
     const isArray = Array.isArray(value);
@@ -222,10 +225,7 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
       const objectValue = value as Record<string, SettingSettableValue>;
       for (const [property, propertyDefinition] of Object.entries(def.properties)) {
         if (property == "$") continue;
-        if (
-          !Object.hasOwn(objectValue, property) &&
-          !(propertyDefinition.optional ?? propertyDefinition.type.startsWith("m"))
-        )
+        if (!Object.hasOwn(objectValue, property) && !propertyDefinition.type.startsWith("m"))
           return false;
 
         if (

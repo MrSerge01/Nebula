@@ -111,6 +111,10 @@ async function loadCommands(): Promise<Command[]> {
 
   for (const commandFile of sortedFiles) {
     const name = commandFile.name;
+    if (name === "test.ts" && !process.env.ENABLE_IRL_TEST_SUITE) {
+      console.debug("Skipping IRL test suite.");
+      continue;
+    }
     if (commandFile.isFile()) {
       pushCommand(
         commands,

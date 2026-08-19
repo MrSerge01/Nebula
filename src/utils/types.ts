@@ -31,13 +31,13 @@ export interface Mention {
 }
 
 /**
- * Force typescript to recognize a variable as a certain type (useful for polymorphic const variables for example)
+ * Force typescript to recognize a variable as a certain type *in place*. Useful for polymorphic const variables, for example.
  * @param _v The variable you want to force the type of
- * @returns true (the variable is now of the type specified in `<T>`)
+ * @returns The variable, now of the type specified in `<T>`
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-explicit-any, unicorn/consistent-boolean-name
-export function forceType<T>(_v: any): _v is T {
-  return true;
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-explicit-any
+export function as<T>(v: any): T {
+  return v as T;
 }
 
 /**

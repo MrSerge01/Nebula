@@ -10,5 +10,6 @@ RUN bun install
 COPY cli ./cli
 COPY src ./src
 COPY migrations ./migrations
+COPY tests ./tests
 
 CMD ["bun", "dev"]

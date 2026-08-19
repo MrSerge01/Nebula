@@ -107,14 +107,12 @@ export const defLeveling = {
       },
       channels: {
         type: "CHANNEL",
-        optional: true,
         iterable: true,
         desc: "Channels granted by this level.",
         emoji: "📑",
       },
       roles: {
         type: "ROLE",
-        optional: true,
         iterable: true,
         desc: "Roles granted by this level.",
         emoji: "📑",
@@ -193,7 +191,6 @@ export const defNews = {
       channel: {
         type: "CHANNEL",
         desc: "The channel that the news posts will be sent to. If unset, will use the default channel.",
-        optional: true,
         emoji: "📰",
       },
     },
@@ -529,7 +526,7 @@ export async function setSetting<K extends keyof TS, S extends SettingKeyFor<K>>
       `Attempted to set ${key}.${setting} (WHICH IS ITERABLE!) to something that is NOT a JS Array.`,
     );
 
-  const set: unknown = isArray && !isObject ? dekominator(value as string[]) : value;
+  const set: unknown = isArray && !isObject ? dekominator(value as unknown as string[]) : value;
   const keySetting = `${key}.${setting}`;
   const [table, ent] = clause(db, key);
   await db.begin(async tx => {

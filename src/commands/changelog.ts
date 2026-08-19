@@ -30,12 +30,16 @@ async function genChangelog(
   list: ReturnType<typeof getVersions>,
   madeWithEmoji: string,
 ): Promise<ContainerBuilder> {
+  const changelogBody = changelog.body[viewing];
+
+  if (!changelogBody) throw new Error("changelog broke (this should never happen)");
+
   return new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         `## What’s ${viewing.toLowerCase()} in ${changelog.ver}${changelog.codename ? ` • *${changelog.codename}*` : ""}`,
       ),
-      new TextDisplayBuilder().setContent(changelog.body[viewing]),
+      new TextDisplayBuilder().setContent(changelogBody),
     )
     .addActionRowComponents(
       new ActionRowBuilder<ButtonBuilder>().addComponents(

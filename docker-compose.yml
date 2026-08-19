@@ -16,11 +16,17 @@ services:
           initial_sync: true
           ignore:
             - node_modules/
+        - action: sync
+          path: ./tests
+          target: ./app/tests
+          initial_sync: true
+          ignore:
+            - node_modules/
     depends_on:
       db:
         condition: service_healthy
   db:
-    image: postgres:17
+    image: postgres:18
     environment:
       POSTGRES_USER: sokora
       POSTGRES_PASSWORD: 1234
@@ -28,7 +34,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/18/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sokora -d sokora-db"]
       interval: 5s

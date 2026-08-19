@@ -26,6 +26,7 @@ import {
 } from "database/settings";
 import {
   isSettingValueValid,
+  type Setting,
   type IterableObjectSetting,
   type SettingDefinitionRecord,
   type SettingKeyFor,
@@ -79,7 +80,7 @@ const OBJECTS_PER_ITR_PAGE = 10;
 interface ObjectState<K extends keyof TS, S extends SettingKeyFor<K>> {
   key: K;
   setting: S;
-  settingDef: TS[K]["settings"][S];
+  settingDef: Setting<K, S>;
   /** `settingState` is always "defined" but sometimes is an empty object. Holds the JS object you'd store in DB, used for data representation. */
   settingState: Record<string, SettingSettableValue>;
   /** `views` is a control string, tells you the type of page to be rendered.
@@ -490,7 +491,8 @@ async function constructBaseObjectView<K extends keyof TS, S extends SettingKeyF
   } else {
     if (!_objectValue) return lbl; // should never happen
     await baseObjectViewPrefixGenerator(lbl, currentState);
-    objectEntriesGenerator(ctl, _objectValue, lbl);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+    objectEntriesGenerator(ctl, _objectValue as any, lbl);
   }
 
   if (refreshedState) OSMSet(osmKey, refreshedState);
@@ -614,7 +616,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
   interaction: SettingInteraction<K, SettingKeyFor<K>> | NonExemptInteraction<K, S>,
   ctl: ControlObject<K, S>,
   methods?: MethodsObject,
-): Promise<undefined | SettingReturnType<K, SettingKeyFor<K>>> {
+): Promise<undefined | SettingReturnType<K, S>> {
   const { def, key } = ctl;
   const uID = interaction.user.id;
   const cID = interaction.customId as SettingKeyFor<K>;
@@ -744,7 +746,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
     }
   }
 
-  if (!methods) return value as SettingReturnType<K, S>;
+  if (!methods) return value as unknown as SettingReturnType<K, S>;
   if (interaction.isButton() || interaction.isAnySelectMenu())
     await safeEdit({
       interaction,
@@ -1259,7 +1261,11 @@ export async function settingsEmbed<K extends keyof TS>(
                 "settingState (return of toggleHandler) should NOT be undefined while collecting DEFAULT CASE and within an OBJECT view.",
               );
 
-            updatedState = OSMSet(uID, { ...currentObjectState, settingState });
+            updatedState = OSMSet(uID, {
+              ...currentObjectState,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+              settingState: settingState as any,
+            });
           }
 
           await baseObjectViewPrefixGenerator(lbl, updatedState);
