@@ -23,212 +23,216 @@ import type { GHCommit } from "utils/types";
 import { rescheduleUnbans } from "utils/unbanScheduler";
 import { IS_CANARY } from "./canary";
 
-const LOG_FILE = process.env.LIFECYCLE_LOG_PATH ?? "/app/logs/lifecycle.log";
-const CANARY_MSG_BATCH_SIZE = 25;
+export let client: Client;
 
-function appendLog(event: string): void {
-  try {
-    fs.appendFileSync(LOG_FILE, `${Date.now()}\t${event}\n`);
-  } catch (error) {
-    console.error(`something happened writing lifecycle log: ${error}`);
-  }
-}
+if (import.meta.main) {
+  const LOG_FILE = process.env.LIFECYCLE_LOG_PATH ?? "/app/logs/lifecycle.log";
+  const CANARY_MSG_BATCH_SIZE = 25;
 
-process.on("SIGTERM", () => {
-  appendLog("died to a sigterm");
-  process.exit(0);
-});
-
-process.on("SIGINT", () => {
-  appendLog("died to a sigint");
-  process.exit(0);
-});
-
-process.on("exit", code => {
-  appendLog(`died with status code ${code}`);
-});
-
-export const client = new Client({
-  presence: {
-    activities: [{ name: "your feedback!", type: ActivityType.Listening }],
-  },
-  partials: [Partials.Message, Partials.Reaction, Partials.User],
-  intents: [
-    "DirectMessages",
-    "Guilds",
-    "GuildMembers",
-    "GuildMessages",
-    "GuildModeration",
-    "GuildEmojisAndStickers",
-    "GuildBans",
-    "GuildMessageReactions",
-    "MessageContent",
-  ],
-});
-
-const topggHandler = async (): Promise<void> => {
-  if (!process.env.TOPGG_TOKEN)
-    throw new Error("No TOPGG_TOKEN but somehow top.gg handler got called.");
-
-  const topgg = new Api(process.env.TOPGG_TOKEN);
-  try {
-    await topgg.postStats({ serverCount: (await client.guilds.fetch()).size });
-    console.log("Posted statistics to top.gg!");
-  } catch (error) {
-    console.error(`Failed to start top.gg auto-poster: ${error}`);
-  }
-
-  const users = new Set(
-    (await getSettingsTable("topgg", "remind"))
-      ?.filter(index => index.value == "1")
-      // YES THIS IS BAD, SORRY
-      .map(index => (index as unknown as { userID: string }).userID.replaceAll('"', "")),
-  );
-
-  for (const user of users)
+  function appendLog(event: string): void {
     try {
-      if (await topgg.hasVoted(user)) continue;
-
-      const dmChannel = await (await safeUser(client, user)).createDM();
-      if (!dmChannel?.isSendable()) continue;
-
-      await dmChannel.send(
-        "Reminder that **you can vote for Sokora** on [top.gg](https://top.gg/bot/873918300726394960/vote) - go vote!!",
-      );
+      fs.appendFileSync(LOG_FILE, `${Date.now()}\t${event}\n`);
     } catch (error) {
-      await errorEmbed({
-        client,
-        error,
-        title: "top.gg reminding error.",
-        log: true,
-        forward: true,
-        fileName: "bot",
-      });
-      await setSetting(user, "topgg", "remind", false);
+      console.error(`something happened writing lifecycle log: ${error}`);
     }
-};
+  }
 
-const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
-  const user = client.user;
-  // second to last log should be date of the second to last shutdown
-  const lastNLogLines = await Bun.$`tail -n 2 ${LOG_FILE}`.text();
-  const lastShutdown = new Date(
-    Number(lastNLogLines.split("\n", 1)[0].split("\t", 1)[0]) - MILLISEC_30M,
-  );
-  const response = await fetch(
-    `https://api.github.com/repos/SokoraDesu/Sokora/commits?since=${lastShutdown.toISOString()}&until=${new Date().toISOString()}`,
-    {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2026-03-10",
-      },
-    },
-  );
-  const _log = (await response.json()) as GHCommit[];
-  const log = _log.filter(c => !c.commit.message.startsWith("Merge pull request"));
-  const hasTooManyCommits = log.length > 6;
-  const dump = log
-    .slice(0, 6)
-    .map(
-      c =>
-        `${c.commit.message
-          .trim()
-          .split("\n")
-          .map(s => `+ ${s}`)
-          .join("\n")}\n^ by ${c.commit.author?.name} in \`${c.sha.slice(0, 8)}\`\n`,
-    )
-    .join("\n");
-
-  const timestamp = mention(lastShutdown.valueOf(), "DEFAULT_TIMESTAMP");
-  const limit = pLimit(CANARY_MSG_BATCH_SIZE);
-
-  console.log(
-    "Issuing canary alert to",
-    client.guilds.cache.size,
-    "guilds in batches of",
-    CANARY_MSG_BATCH_SIZE,
-  );
-
-  await Promise.all(
-    client.guilds.cache.map(async guild =>
-      limit(async () => {
-        if (!user) return;
-        const alertChannel = await safeAlertChannel(guild);
-        const textDisplayComponents =
-          log.length > 0
-            ? [
-                new TextDisplayBuilder().setContent("## Sokora Canary pulled updates!"),
-                new TextDisplayBuilder().setContent(
-                  "Hello! This restart brought changes. We don’t maintain a formal changelog for these quick patches, so here’s a developer commit log, messages should be clear enough.",
-                ),
-                new TextDisplayBuilder().setContent(codeBlock("diff", dump)),
-                new TextDisplayBuilder().setContent(
-                  hasTooManyCommits
-                    ? // eslint-disable-next-line unicorn/string-content
-                      `There’s more commits that don’t fit in this message (total is ${log.length}), see the full log [at this link](https://github.com/SokoraDesu/Sokora/compare/${log.at(-1)?.sha}...dev) or compare latest \`dev\` to \`${log.at(-1)?.sha.slice(0, 8)}\`.\nFor reference, changes are counted from the second the bot started up until ${timestamp}.`
-                    : "That’s about it.",
-                ),
-              ]
-            : [
-                new TextDisplayBuilder().setContent(
-                  "## Sokora Canary restarted, though there’s nothing new",
-                ),
-                new TextDisplayBuilder().setContent(
-                  [
-                    `Hello! This restart brought no new updates. For reference, shutdown was logged at ${timestamp} + 30’, and no new commits exist since.`,
-                    "We’ll hopefully have something new soon.",
-                  ].join("\n"),
-                ),
-              ];
-
-        await alertChannel.send({
-          components: [
-            new ContainerBuilder()
-              .addTextDisplayComponents(textDisplayComponents)
-              .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(
-                  `**Enjoy testing, and thanks for using Sokora Canary!**\n-# Sent to ${mention(alertChannel.id, "CHANNEL")}. Want to use another channel? Head to \`/settings moderation\` and change the Channel setting.`,
-                ),
-              )
-              .setAccentColor(
-                await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Green }),
-              ),
-          ],
-          flags: "IsComponentsV2",
-        });
-      }),
-    ),
-  );
-};
-
-client.once("clientReady", async () => {
-  if (process.env.TOPGG_TOKEN) setInterval(topggHandler, MILLISEC_6H);
-
-  // runs before yellAtEveryoneThatCanaryUpdated() to ensure the file exists
-  appendLog("startup");
-
-  await updateDatabase(process.argv.includes("force-db-reset")); // Needs to be executed before anything else (since some things like rescheduleUnbans needs a DB in the first place)
-  await Promise.all([
-    loadEvents(client),
-    loadEasterEggs(),
-    registerGuildCommands(client),
-    rescheduleUnbans(client),
-  ]).then(() => {
-    console.log(
-      Math.random() < 0.002
-        ? "こんにちは! (konichi whats upppppppp)"
-        : (IS_CANARY
-          ? "ちーっす Canary!"
-          : "ちーっす！"),
-    );
+  process.on("SIGTERM", () => {
+    appendLog("died to a sigterm");
+    process.exit(0);
   });
-  if (IS_CANARY) await yellAtEveryoneThatCanaryUpdated();
 
-  // if you want to register/remove guild/global commands, replace registerGuildCommands() with:
-  // removeGuildCommands(client)
-  // removeGlobalCommands(client)
-  // registerGlobalCommands(client)
-  Chart.register(...registerables);
-});
+  process.on("SIGINT", () => {
+    appendLog("died to a sigint");
+    process.exit(0);
+  });
 
-await client.login(process.env.TOKEN);
+  process.on("exit", code => {
+    appendLog(`died with status code ${code}`);
+  });
+
+  client = new Client({
+    presence: {
+      activities: [{ name: "your feedback!", type: ActivityType.Listening }],
+    },
+    partials: [Partials.Message, Partials.Reaction, Partials.User],
+    intents: [
+      "DirectMessages",
+      "Guilds",
+      "GuildMembers",
+      "GuildMessages",
+      "GuildModeration",
+      "GuildEmojisAndStickers",
+      "GuildBans",
+      "GuildMessageReactions",
+      "MessageContent",
+    ],
+  });
+
+  const topggHandler = async (): Promise<void> => {
+    if (!process.env.TOPGG_TOKEN)
+      throw new Error("No TOPGG_TOKEN but somehow top.gg handler got called.");
+
+    const topgg = new Api(process.env.TOPGG_TOKEN);
+    try {
+      await topgg.postStats({ serverCount: (await client.guilds.fetch()).size });
+      console.log("Posted statistics to top.gg!");
+    } catch (error) {
+      console.error(`Failed to start top.gg auto-poster: ${error}`);
+    }
+
+    const users = new Set(
+      (await getSettingsTable("topgg", "remind"))
+        ?.filter(index => index.value == "1")
+        // YES THIS IS BAD, SORRY
+        .map(index => (index as unknown as { userID: string }).userID.replaceAll('"', "")),
+    );
+
+    for (const user of users)
+      try {
+        if (await topgg.hasVoted(user)) continue;
+
+        const dmChannel = await (await safeUser(client, user)).createDM();
+        if (!dmChannel?.isSendable()) continue;
+
+        await dmChannel.send(
+          "Reminder that **you can vote for Sokora** on [top.gg](https://top.gg/bot/873918300726394960/vote) - go vote!!",
+        );
+      } catch (error) {
+        await errorEmbed({
+          client,
+          error,
+          title: "top.gg reminding error.",
+          log: true,
+          forward: true,
+          fileName: "bot",
+        });
+        await setSetting(user, "topgg", "remind", false);
+      }
+  };
+
+  const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
+    const user = client.user;
+    // second to last log should be date of the second to last shutdown
+    const lastNLogLines = await Bun.$`tail -n 2 ${LOG_FILE}`.text();
+    const lastShutdown = new Date(
+      Number(lastNLogLines.split("\n", 1)[0].split("\t", 1)[0]) - MILLISEC_30M,
+    );
+    const response = await fetch(
+      `https://api.github.com/repos/SokoraDesu/Sokora/commits?since=${lastShutdown.toISOString()}&until=${new Date().toISOString()}`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2026-03-10",
+        },
+      },
+    );
+    const _log = (await response.json()) as GHCommit[];
+    const log = _log.filter(c => !c.commit.message.startsWith("Merge pull request"));
+    const hasTooManyCommits = log.length > 6;
+    const dump = log
+      .slice(0, 6)
+      .map(
+        c =>
+          `${c.commit.message
+            .trim()
+            .split("\n")
+            .map(s => `+ ${s}`)
+            .join("\n")}\n^ by ${c.commit.author?.name} in \`${c.sha.slice(0, 8)}\`\n`,
+      )
+      .join("\n");
+
+    const timestamp = mention(lastShutdown.valueOf(), "DEFAULT_TIMESTAMP");
+    const limit = pLimit(CANARY_MSG_BATCH_SIZE);
+
+    console.log(
+      "Issuing canary alert to",
+      client.guilds.cache.size,
+      "guilds in batches of",
+      CANARY_MSG_BATCH_SIZE,
+    );
+
+    await Promise.all(
+      client.guilds.cache.map(async guild =>
+        limit(async () => {
+          if (!user) return;
+          const alertChannel = await safeAlertChannel(guild);
+          const textDisplayComponents =
+            log.length > 0
+              ? [
+                  new TextDisplayBuilder().setContent("## Sokora Canary pulled updates!"),
+                  new TextDisplayBuilder().setContent(
+                    "Hello! This restart brought changes. We don’t maintain a formal changelog for these quick patches, so here’s a developer commit log, messages should be clear enough.",
+                  ),
+                  new TextDisplayBuilder().setContent(codeBlock("diff", dump)),
+                  new TextDisplayBuilder().setContent(
+                    hasTooManyCommits
+                      ? // eslint-disable-next-line unicorn/string-content
+                        `There’s more commits that don’t fit in this message (total is ${log.length}), see the full log [at this link](https://github.com/SokoraDesu/Sokora/compare/${log.at(-1)?.sha}...dev) or compare latest \`dev\` to \`${log.at(-1)?.sha.slice(0, 8)}\`.\nFor reference, changes are counted from the second the bot started up until ${timestamp}.`
+                      : "That’s about it.",
+                  ),
+                ]
+              : [
+                  new TextDisplayBuilder().setContent(
+                    "## Sokora Canary restarted, though there’s nothing new",
+                  ),
+                  new TextDisplayBuilder().setContent(
+                    [
+                      `Hello! This restart brought no new updates. For reference, shutdown was logged at ${timestamp} + 30’, and no new commits exist since.`,
+                      "We’ll hopefully have something new soon.",
+                    ].join("\n"),
+                  ),
+                ];
+
+          await alertChannel.send({
+            components: [
+              new ContainerBuilder()
+                .addTextDisplayComponents(textDisplayComponents)
+                .addTextDisplayComponents(
+                  new TextDisplayBuilder().setContent(
+                    `**Enjoy testing, and thanks for using Sokora Canary!**\n-# Sent to ${mention(alertChannel.id, "CHANNEL")}. Want to use another channel? Head to \`/settings moderation\` and change the Channel setting.`,
+                  ),
+                )
+                .setAccentColor(
+                  await colorize({ user, avatar: user.displayAvatarURL(), hue: Sokolors.Green }),
+                ),
+            ],
+            flags: "IsComponentsV2",
+          });
+        }),
+      ),
+    );
+  };
+
+  client.once("clientReady", async () => {
+    if (process.env.TOPGG_TOKEN) setInterval(topggHandler, MILLISEC_6H);
+
+    // runs before yellAtEveryoneThatCanaryUpdated() to ensure the file exists
+    appendLog("startup");
+
+    await updateDatabase(process.argv.includes("force-db-reset")); // Needs to be executed before anything else (since some things like rescheduleUnbans needs a DB in the first place)
+    await Promise.all([
+      loadEvents(client),
+      loadEasterEggs(),
+      registerGuildCommands(client),
+      rescheduleUnbans(client),
+    ]).then(() => {
+      console.log(
+        Math.random() < 0.002
+          ? "こんにちは! (konichi whats upppppppp)"
+          : (IS_CANARY
+            ? "ちーっす Canary!"
+            : "ちーっす！"),
+      );
+    });
+    if (IS_CANARY) await yellAtEveryoneThatCanaryUpdated();
+
+    // if you want to register/remove guild/global commands, replace registerGuildCommands() with:
+    // removeGuildCommands(client)
+    // removeGlobalCommands(client)
+    // registerGlobalCommands(client)
+    Chart.register(...registerables);
+  });
+
+  await client.login(process.env.TOKEN);
+}

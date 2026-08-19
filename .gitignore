@@ -7,5 +7,3 @@ data.db
 *.tsbuildinfo
 .eslintcache
 lifecycle.log
-# test command
-src/commands/test.ts

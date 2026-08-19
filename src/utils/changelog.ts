@@ -7,7 +7,7 @@ interface TParsedVersion {
   date: TVersion;
 }
 type TParsedChangelog = TParsedVersion & {
-  body: Record<"Fixed" | "Added" | "Removed" | "Changed", string>;
+  body: Partial<Record<"Fixed" | "Added" | "Removed" | "Changed", string>>;
 };
 const changelog = await Bun.file("./CHANGELOG.md").text();
 
@@ -39,7 +39,7 @@ export function getChangelog(version: string): TParsedChangelog {
 
   return {
     ...parseVersion(lines[0]),
-    body: Object.fromEntries(entries) as TParsedChangelog["body"],
+    body: Object.fromEntries(entries),
   };
 }
 
