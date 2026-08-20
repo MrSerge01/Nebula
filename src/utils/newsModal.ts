@@ -56,6 +56,7 @@ export async function newsModal(
             return new StringSelectMenuOptionBuilder()
               .setLabel(category.name)
               .setDescription(
+                // [TODO] related: database/settings.ts:174-175
                 `Sends to #${((await safeChannel(guild, category.channel ?? (await getSetting(guild.id, "news", "channel")))) as GuildBasedChannel).name}`,
               )
               .setValue(category.$);

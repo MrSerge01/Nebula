@@ -11,7 +11,7 @@ import {
   FileBuilder,
   LabelBuilder,
   ModalBuilder,
-  ModalSubmitInteraction,
+  type ModalSubmitInteraction,
   PermissionsBitField,
   SectionBuilder,
   SlashCommandBuilder,
@@ -171,9 +171,9 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       const levels =
         cID === "MEE6"
           ? await leveler.GetLeaderboard(SupportedBots.MEE6)
-          : cID === "LURKR" && lurkrKey
+          : (cID === "LURKR" && lurkrKey
             ? await leveler.GetLeaderboard(SupportedBots.LURKR)
-            : await leveler.GetLeaderboard(SupportedBots.TATSU);
+            : await leveler.GetLeaderboard(SupportedBots.TATSU));
 
       const switchContainer = new ContainerBuilder()
         .addActionRowComponents(

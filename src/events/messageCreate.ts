@@ -23,9 +23,9 @@ import { errorEmbed } from "embeds/errorEmbed";
 import { easterEggs } from "handlers/events";
 import { channelCheck } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
+import { interkora } from "utils/interkora";
 import { mention } from "utils/mention";
 import { safeChannel, safeMember, safeRole } from "utils/safeThings";
-import { interkora } from "utils/interkora";
 import type { Event } from "utils/types";
 
 const cooldowns = new Map<string, number>();
@@ -39,6 +39,7 @@ async function grantRewards(
 ): Promise<void> {
   if (reward.roles && reward.roles.length > 0)
     for (const _role of reward.roles) {
+      if (!_role) continue;
       const role = await safeRole(guild, _role);
       if (!member.roles.cache.has(role.id))
         push(`**You’ve been rewarded the ${mention(role.id, "ROLE")} role!** Congrats.`);
@@ -48,6 +49,7 @@ async function grantRewards(
 
   if (reward.channels && reward.channels.length > 0)
     for (const _channel of reward.channels) {
+      if (!_channel) continue;
       const channel = await safeChannel(guild, _channel);
       if (
         !channel.isTextBased() ||

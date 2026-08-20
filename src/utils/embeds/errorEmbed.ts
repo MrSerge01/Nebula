@@ -11,7 +11,7 @@ import {
   MediaGalleryBuilder,
   MediaGalleryItemBuilder,
   ModalBuilder,
-  ModalSubmitInteraction,
+  type ModalSubmitInteraction,
   SeparatorBuilder,
   TextDisplayBuilder,
   TextInputBuilder,
@@ -97,9 +97,9 @@ export async function errorEmbed(options: {
         [
           shouldUseEmojis ? "**📜 • Error stack**" : "**error stack**",
           stack
-            ? stack.length <= 2048
+            ? (stack.length <= 2048
               ? codeBlock(stack)
-              : "The error stacktrace is an attachment below due to it being too large."
+              : "The error stacktrace is an attachment below due to it being too large.")
             : "No error stacktrace.",
         ].join("\n"),
       ),
