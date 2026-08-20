@@ -120,11 +120,23 @@ export default (async function run(message) {
     cooldowns.set(key, now);
   }
 
+  const member = await safeMember(guild, author.id);
+  const multiplier = await getSetting(guild.id, "leveling", "global_multiplier");
   const xpGain = await getSetting(guild.id, "leveling", "xp_gain");
   const difficulty = await getSetting(guild.id, "leveling", "difficulty");
   const levelChannelId = await getSetting(guild.id, "leveling", "channel");
+  // const multipliers = await getSetting(guild.id, "leveling", "multipliers");
   const xp = await getUserXp(guild.id, author.id);
-  const newXp = xp + xpGain;
+  const newXp = multiplier * (xp + xpGain);
+
+  // [TODO] implement
+  /*
+  for (const mult of multipliers) {
+    if (message.channelId in mult.channels) newXp *= mult.multiplier
+    if (mult.roles.forEach(role => member.roles.valueOf().has(role)))
+  }
+  */
+
   const newLevel = calculateLevel({ xp: newXp, difficulty });
   await setUserXp(guild.id, author.id, newXp);
   if (newLevel <= calculateLevel({ xp, difficulty })) return;
@@ -137,7 +149,6 @@ export default (async function run(message) {
 
   if (rewards && rewards.length > 0)
     for (const reward of rewards) {
-      const member = await safeMember(guild, author.id);
       if (reward.roles && reward.roles.length > 0 && !clientMember.permissions.has("ManageRoles")) {
         await removeLevelRewards(guild.id, [reward]);
         return await errorEmbed({

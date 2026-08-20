@@ -16,6 +16,7 @@ type Def = Satisfies<
       messageID: "TEXT";
       imageURL: "mTEXT";
       id: "INTEGER";
+      categoryID: "mTEXT";
     };
   }
 >;
@@ -30,9 +31,21 @@ const sendQuery = async (
   messageID: string,
   imageURL: string | null | undefined,
   id: number,
+  categoryID: string,
   sql_: Bun.SQL = db, // what's this supposed to do?
 ): Promise<void> => {
-  const insObject = { guildID, title, body, author, createdAt, updatedAt, messageID, imageURL, id };
+  const insObject = {
+    guildID,
+    title,
+    body,
+    author,
+    createdAt,
+    updatedAt,
+    messageID,
+    imageURL,
+    id,
+    categoryID,
+  };
   await sql_`INSERT INTO news ${db(insObject)};`;
 };
 
@@ -57,8 +70,20 @@ export async function postNews(
   messageID: string,
   imageURL: string | null | undefined,
   id: number,
+  categoryID: string,
 ): Promise<void> {
-  await sendQuery(guildID, title, body, author, new Date(), null, messageID, imageURL, id);
+  await sendQuery(
+    guildID,
+    title,
+    body,
+    author,
+    new Date(),
+    null,
+    messageID,
+    imageURL,
+    id,
+    categoryID,
+  );
 }
 
 export async function getNews(guildID: string, id: number): Promise<TypeOfDefinition<Def> | null> {
@@ -93,6 +118,7 @@ export async function updateNews(
       messageID ?? lastElement.messageID,
       imageURL ?? lastElement.imageURL,
       id,
+      lastElement.categoryID ?? "",
       tx,
     );
   });

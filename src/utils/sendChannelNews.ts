@@ -30,9 +30,7 @@ export async function sendChannelNews(
   const { title, body, author, id, imageURL, categoryID } = newsOptions;
   if (!isInteractionSafe(interaction)) return;
 
-  const category = (await getSetting(guild.id, "news", "categories"))?.find(
-    setting => setting.$ == categoryID,
-  );
+  const category = await getSetting(guild.id, "news", "categories", categoryID);
   const channel = (await safeChannel(
     guild,
     category?.channel ?? (await getSetting(guild.id, "news", "channel")) ?? interaction.channel.id,
@@ -58,5 +56,5 @@ export async function sendChannelNews(
     await updateNews(guild.id, id, title, body, message.id);
     return;
   }
-  await postNews(guild.id, title, body, author, message.id, imageURL, id);
+  await postNews(guild.id, title, body, author, message.id, imageURL, id, categoryID ?? "");
 }

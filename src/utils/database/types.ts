@@ -154,9 +154,7 @@ export type SettingKeyFor<K extends keyof TS> = keyof TS[K]["settings"] & string
 export type Setting<K extends keyof TS, S extends SettingKeyFor<K>> = SingleSettingDefinition &
   TS[K]["settings"][S];
 
-export type GuidParameter<T extends SingleSettingDefinition> = T extends {
-  type: "OBJECT";
-}
+export type GuidParameter<T extends SingleSettingDefinition> = T extends { type: "OBJECT" }
   ? string
   : never;
 
