@@ -11,6 +11,7 @@ import {
   FileBuilder,
   LabelBuilder,
   ModalBuilder,
+  ModalSubmitInteraction,
   PermissionsBitField,
   SectionBuilder,
   SlashCommandBuilder,
@@ -21,12 +22,10 @@ import {
   type ChatInputCommandInteraction,
   type InteractionResponse,
   type Message,
-  type ModalSubmitInteraction,
 } from "discord.js";
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
-import { modalSubmit } from "utils/modalSubmit";
 import { safeEdit, safeReply } from "utils/safeThings";
 
 export const data = new SlashCommandBuilder()
@@ -172,9 +171,9 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       const levels =
         cID === "MEE6"
           ? await leveler.GetLeaderboard(SupportedBots.MEE6)
-          : (cID === "LURKR" && lurkrKey
+          : cID === "LURKR" && lurkrKey
             ? await leveler.GetLeaderboard(SupportedBots.LURKR)
-            : await leveler.GetLeaderboard(SupportedBots.TATSU));
+            : await leveler.GetLeaderboard(SupportedBots.TATSU);
 
       const switchContainer = new ContainerBuilder()
         .addActionRowComponents(
@@ -307,16 +306,27 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           ),
       );
 
-    await buttonInteraction.showModal(modal);
-    const modalInteraction = await modalSubmit(buttonInteraction);
-    collector.resetTimer({ time: COLLECTOR_DURATION });
-    if (!modalInteraction) return;
-
     try {
-      await construct(modalInteraction.fields.getTextInputValue("setting"), modalInteraction);
+      await buttonInteraction.showModal(modal);
     } catch (error) {
-      return await collapse(error, interaction);
+      await errorEmbed({ interaction, error, forward: true, fileName: "import" });
     }
+
+    collector.resetTimer({ time: COLLECTOR_DURATION });
+    interaction.client.once("interactionCreate", async modalInteraction => {
+      if (!modalInteraction.isModalSubmit()) return;
+      if (modalInteraction.user.id != user.id)
+        return await errorEmbed({
+          interaction: modalInteraction,
+          title: "You are not the person who executed this command.",
+        });
+
+      try {
+        await construct(modalInteraction.fields.getTextInputValue("setting"), modalInteraction);
+      } catch (error) {
+        return await collapse(error, interaction);
+      }
+    });
   });
 
   collector.on("end", async (_, reason) => {

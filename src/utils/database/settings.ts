@@ -106,13 +106,13 @@ export const defLeveling = {
         emoji: "🔢",
       },
       channels: {
-        type: "CHANNEL",
+        type: "mCHANNEL",
         iterable: true,
         desc: "Channels granted by this level.",
         emoji: "📑",
       },
       roles: {
-        type: "ROLE",
+        type: "mROLE",
         iterable: true,
         desc: "Roles granted by this level.",
         emoji: "📑",
@@ -189,7 +189,7 @@ export const defNews = {
         emoji: "📢",
       },
       channel: {
-        type: "CHANNEL",
+        type: "mCHANNEL",
         desc: "The channel that the news posts will be sent to. If unset, will use the default channel.",
         emoji: "📰",
       },

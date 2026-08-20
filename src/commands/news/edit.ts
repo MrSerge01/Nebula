@@ -12,8 +12,8 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { newsEmbed } from "embeds/newsEmbed";
 import { colorize, Sokolors } from "utils/colorize";
-import { modalSubmit } from "utils/modalSubmit";
 import { newsModal } from "utils/newsModal";
+import { replaceVariables } from "utils/replace";
 import { safeChannel, safeMember } from "utils/safeThings";
 import { sendChannelNews } from "utils/sendChannelNews";
 import { isInteractionSafe } from "utils/types";
@@ -31,10 +31,10 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
-  const userID = interaction.user.id;
+  const user = interaction.user;
   if (
     !isInteractionSafe(interaction) ||
-    !(await safeMember(interaction.guild, userID)).permissions.has("ManageGuild")
+    !(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild")
   )
     return await errorEmbed({
       interaction,
@@ -51,7 +51,8 @@ export async function run(
         "You somehow ran the command without an ID being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
     });
 
-  const news = await getNews(interaction.guild.id, id);
+  const guild = interaction.guild;
+  const news = await getNews(guild.id, id);
   if (!news)
     return await errorEmbed({ interaction, title: "The specified news post doesn’t exist." });
 
@@ -61,44 +62,60 @@ export async function run(
     await errorEmbed({ interaction, error, forward: true, fileName: "edit" });
   }
 
-  const modalInteraction = await modalSubmit(interaction);
-  if (!modalInteraction) return;
+  interaction.client.once("interactionCreate", async modalInteraction => {
+    if (!modalInteraction.isModalSubmit()) return;
+    if (modalInteraction.user.id != user.id)
+      return await errorEmbed({
+        interaction: modalInteraction,
+        title: "You are not the person who executed this command.",
+      });
 
-  const title = modalInteraction.fields.getTextInputValue("title");
-  const body = modalInteraction.fields.getTextInputValue("body");
-  const editedContainer = new ContainerBuilder()
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post edited."))
-    .setAccentColor(await colorize({ hue: Sokolors.Green }));
-
-  if (!(await getSetting(interaction.guild.id, "news", "edit_original_message"))) {
-    await sendChannelNews(
-      interaction.guild,
-      interaction,
-      { title, body, author: news.author, id },
-      true,
+    const title = await replaceVariables(
+      modalInteraction.fields.getTextInputValue("title"),
+      guild,
+      user,
     );
-    return await modalInteraction.reply({
-      components: [editedContainer],
-      flags: ["Ephemeral", "IsComponentsV2"],
-    });
-  }
 
-  const channel = (await safeChannel(
-    interaction.guild,
-    (await getSetting(interaction.guild.id, "news", "channel")) ?? interaction.channel.id,
-  )) as TextChannel;
+    const body = await replaceVariables(
+      modalInteraction.fields.getTextInputValue("body"),
+      guild,
+      user,
+    );
 
-  await Promise.all([
-    channel.messages.edit(news.messageID, {
-      components: [
-        await newsEmbed(interaction.guild, { title, body, author: news.author, id }, true),
-      ],
-      flags: "IsComponentsV2",
-    }),
-    updateNews(interaction.guild.id, id, title, body),
-    modalInteraction.reply({
-      components: [editedContainer],
-      flags: ["Ephemeral", "IsComponentsV2"],
-    }),
-  ]);
+    const editedContainer = new ContainerBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post edited."))
+      .setAccentColor(await colorize({ hue: Sokolors.Green }));
+
+    if (!(await getSetting(interaction.guild.id, "news", "edit_original_message"))) {
+      await sendChannelNews(
+        interaction.guild,
+        interaction,
+        { title, body, author: news.author, id },
+        true,
+      );
+      return await modalInteraction.reply({
+        components: [editedContainer],
+        flags: ["Ephemeral", "IsComponentsV2"],
+      });
+    }
+
+    const channel = (await safeChannel(
+      interaction.guild,
+      (await getSetting(interaction.guild.id, "news", "channel")) ?? interaction.channel.id,
+    )) as TextChannel;
+
+    await Promise.all([
+      channel.messages.edit(news.messageID, {
+        components: [
+          await newsEmbed(interaction.guild, { title, body, author: news.author, id }, true),
+        ],
+        flags: "IsComponentsV2",
+      }),
+      updateNews(interaction.guild.id, id, title, body),
+      modalInteraction.reply({
+        components: [editedContainer],
+        flags: ["Ephemeral", "IsComponentsV2"],
+      }),
+    ]);
+  });
 }

@@ -26,8 +26,8 @@ import {
 } from "database/settings";
 import {
   isSettingValueValid,
-  type Setting,
   type IterableObjectSetting,
+  type Setting,
   type SettingDefinitionRecord,
   type SettingKeyFor,
   type SettingReturnType,
@@ -68,11 +68,10 @@ import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { dotCheck } from "utils/dotCheck";
 import { humanizeSettings, humanizeSettingType } from "utils/humanizeSettings";
-import { modalSubmit } from "utils/modalSubmit";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { safeEdit, safeReply } from "utils/safeThings";
 import { setMap } from "utils/setMap";
-import { buttonCheck } from "./errorEmbed";
+import { buttonCheck, errorEmbed } from "./errorEmbed";
 
 const OBJECTS_PER_ITR_PAGE = 10;
 
@@ -159,26 +158,32 @@ async function confirmResetModal<K extends keyof TS>(
         .setCheckboxComponent(checkbox => checkbox.setCustomId("confirm").setDefault(false)),
     );
 
-  await interaction.showModal(modal);
-  const modalInteraction = await modalSubmit(interaction);
-  if (!modalInteraction) return false;
-  if (!modalInteraction.fields.getCheckbox("confirm")) {
-    await safeReply({
-      interaction: modalInteraction,
-      replyOptions: {
-        components: [
-          await constructModalContainer(
-            `**${dotCheck({ string: "✅", twoSides: true, includeString: true })}Nevermind that then**`,
-            "No setting was reset. Everything continues to shine the way it did so far.\nIf you *did* expect things to get reset, you probably did not mark the checkbox in the dialog. You’re required to toggle it as a double check.",
-            Sokolors.Blue,
-          ),
-        ],
-        flags: ["IsComponentsV2", "Ephemeral"],
-      },
-    });
-    return false;
+  try {
+    await interaction.showModal(modal);
+  } catch (error) {
+    await errorEmbed({ interaction, error, forward: true, fileName: "settingsEmbed" });
   }
-  return modalInteraction;
+
+  interaction.client.once("interactionCreate", async modalInteraction => {
+    if (!modalInteraction.isModalSubmit()) return false;
+    if (!modalInteraction.fields.getCheckbox("confirm")) {
+      await safeReply({
+        interaction: modalInteraction,
+        replyOptions: {
+          components: [
+            await constructModalContainer(
+              `**${dotCheck({ string: "✅", twoSides: true, includeString: true })}Nevermind that then**`,
+              "No setting was reset. Everything continues to shine the way it did so far.\nIf you *did* expect things to get reset, you probably did not mark the checkbox in the dialog. You’re required to toggle it as a double check.",
+              Sokolors.Blue,
+            ),
+          ],
+          flags: ["IsComponentsV2", "Ephemeral"],
+        },
+      });
+      return false;
+    }
+    return modalInteraction;
+  });
 }
 
 /**
@@ -215,21 +220,21 @@ function rowGenerator(
     .setCustomId(cID)
     .setLabel(
       isNormal
-        ? (settingObject.type === "OBJECT" || settingObject.iterable
+        ? settingObject.type === "OBJECT" || settingObject.iterable
           ? "Open"
-          : "Edit")
-        : (constructMode.resetting.has(cID)
+          : "Edit"
+        : constructMode.resetting.has(cID)
           ? "Unselect"
-          : "Select"),
+          : "Select",
     )
     .setDisabled(
       isNormal || constructMode.resetting.has(cID)
         ? false
-        : ((settingObject.val && settingObject.val == setting) ||
+        : (settingObject.val && settingObject.val == setting) ||
             setting == null ||
             (setting as unknown[]).length === 0
           ? true
-          : false),
+          : false,
     )
     .setStyle(
       isNormal || constructMode.resetting.has(cID) ? ButtonStyle.Secondary : ButtonStyle.Danger,
@@ -402,9 +407,9 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
         )
         .setLabel(
           currentState.views == "create_or_save" || currentState.views == "itr_obj_child"
-            ? (isDisabled
+            ? isDisabled
               ? "(Finish editing to save)"
-              : "Save")
+              : "Save"
             : "Create",
         )
         .setStyle(ButtonStyle.Success)
@@ -417,16 +422,16 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
           .setCustomId(
             currentState.views == "create_or_save"
               ? EXEMPT_CIDs.OBJECT_GO_BACK
-              : (currentState.views == "itr_obj_child"
+              : currentState.views == "itr_obj_child"
                 ? EXEMPT_CIDs.OBJECT_DELETE_CHILD
-                : EXEMPT_CIDs.OBJECT_CLEAR),
+                : EXEMPT_CIDs.OBJECT_CLEAR,
           )
           .setLabel(
             currentState.views == "create_or_save"
               ? "Cancel"
-              : (currentState.views == "itr_obj_child"
+              : currentState.views == "itr_obj_child"
                 ? "Delete"
-                : "Clear"),
+                : "Clear",
           )
           .setStyle(ButtonStyle.Danger),
       );
@@ -442,7 +447,7 @@ function baseObjectViewSuffixGenerator<K extends keyof TS, S extends SettingKeyF
   lbl.addActionRowComponents(actionRow);
   lbl.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      `-# You’re ${currentState.views === "default" ? "touching" : (currentState.views === "create_or_save" ? "creating a new object within" : "altering an object within")} **${currentState.key} > ${currentState.setting}** configuration, which is a${ctl.def.iterable ? "n iterable" : " static"} object`,
+      `-# You’re ${currentState.views === "default" ? "touching" : currentState.views === "create_or_save" ? "creating a new object within" : "altering an object within"} **${currentState.key} > ${currentState.setting}** configuration, which is a${ctl.def.iterable ? "n iterable" : " static"} object`,
     ),
   );
 
@@ -652,48 +657,60 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
           ),
         );
 
-      await (interaction as ButtonInteraction).showModal(modal);
-      const modalInteraction = await modalSubmit(interaction as ButtonInteraction);
-      if (!modalInteraction) break;
+      try {
+        await (interaction as ButtonInteraction).showModal(modal);
+      } catch (error) {
+        await errorEmbed({ interaction, error, forward: true, fileName: "settingsEmbed" });
+      }
 
-      const modalValue = modalInteraction.fields.getTextInputValue("setting");
-      const newValue =
-        setting.type === "INTEGER" || setting.type === "mINTEGER" ? Number(modalValue) : modalValue;
+      (interaction as ButtonInteraction).client.once(
+        "interactionCreate",
+        async modalInteraction => {
+          if (!modalInteraction.isModalSubmit()) return;
 
-      const isNewValueValid = isSettingValueValid(newValue, {
-        key: ctl.key,
-        setting: ctl.subKey,
-        def: setting,
-      });
+          const modalValue = modalInteraction.fields.getTextInputValue("setting");
+          const newValue =
+            setting.type === "INTEGER" || setting.type === "mINTEGER"
+              ? Number(modalValue)
+              : modalValue;
 
-      if (isNewValueValid)
-        if (methods) await methods.setSettingPlease(key, cID, newValue);
-        else
-          value = {
-            ...value,
-            [cID]:
-              setting.type === "INTEGER" || setting.type === "mINTEGER"
-                ? Number(newValue)
-                : newValue,
-          };
+          const isNewValueValid = isSettingValueValid(newValue, {
+            key: ctl.key,
+            setting: ctl.subKey,
+            def: setting,
+          });
 
-      await safeReply({
-        interaction: modalInteraction,
-        replyOptions: {
-          components: [
-            await constructModalContainer(
-              isNewValueValid
-                ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
-                : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
-              isNewValueValid
-                ? `The ${modalValue.length < 50 ? "value" : "**value**"} has been set ${modalValue.length >= 500 ? "successfully." : (modalValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
-                : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${modalValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(modalValue)}`}`,
-              isNewValueValid ? Sokolors.Blue : Sokolors.Red,
-            ),
-          ],
-          flags: ["Ephemeral", "IsComponentsV2"],
+          if (isNewValueValid)
+            if (methods) await methods.setSettingPlease(key, cID, newValue);
+            else
+              value = {
+                ...value,
+                [cID]:
+                  setting.type === "INTEGER" || setting.type === "mINTEGER"
+                    ? Number(newValue)
+                    : newValue,
+              };
+
+          await safeReply({
+            interaction: modalInteraction,
+            replyOptions: {
+              components: [
+                await constructModalContainer(
+                  isNewValueValid
+                    ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
+                    : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
+                  isNewValueValid
+                    ? `The ${modalValue.length < 50 ? "value" : "**value**"} has been set ${modalValue.length >= 500 ? "successfully." : modalValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`}`
+                    : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${modalValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(modalValue)}`}`,
+                  isNewValueValid ? Sokolors.Blue : Sokolors.Red,
+                ),
+              ],
+              flags: ["Ephemeral", "IsComponentsV2"],
+            },
+          });
         },
-      });
+      );
+
       break;
     }
     case "CHANNEL":

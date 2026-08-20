@@ -18,9 +18,9 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
-import { modalSubmit } from "utils/modalSubmit";
 import { safeEdit, safeReply } from "utils/safeThings";
 
 async function getContainers(
@@ -221,25 +221,36 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             ),
           );
 
-        await replyInteraction.showModal(modal);
-        const modalInteraction = await modalSubmit(interaction);
-        if (!modalInteraction) return;
+        try {
+          await replyInteraction.showModal(modal);
+        } catch (error) {
+          await errorEmbed({ interaction, error, forward: true, fileName: "help/settings" });
+        }
 
-        previewText = modalInteraction.fields.getTextInputValue("setting");
+        interaction.client.once("interactionCreate", async modalInteraction => {
+          if (!modalInteraction.isModalSubmit()) return;
+          if (modalInteraction.user.id != interaction.user.id)
+            return await errorEmbed({
+              interaction: modalInteraction,
+              title: "You are not the person who executed this command.",
+            });
 
-        await safeReply({
-          interaction: modalInteraction,
-          replyOptions: {
-            content:
-              "Changed the value! Click ’Edit’ again to see if it saved or not.\n-# Note that real PSE will be more descriptive and validate the data.",
-            flags: ["Ephemeral"],
-          },
-        });
-        await safeEdit({
-          interaction: replyInteraction,
-          editOptions: {
-            components: await getContainers(isPreviewBool, previewArraySelected),
-          },
+          previewText = modalInteraction.fields.getTextInputValue("setting");
+
+          await safeReply({
+            interaction: modalInteraction,
+            replyOptions: {
+              content:
+                "Changed the value! Click ’Edit’ again to see if it saved or not.\n-# Note that real PSE will be more descriptive and validate the data.",
+              flags: ["Ephemeral"],
+            },
+          });
+          await safeEdit({
+            interaction: replyInteraction,
+            editOptions: {
+              components: await getContainers(isPreviewBool, previewArraySelected),
+            },
+          });
         });
 
         break;

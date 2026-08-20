@@ -11,6 +11,7 @@ import {
   MediaGalleryBuilder,
   MediaGalleryItemBuilder,
   ModalBuilder,
+  ModalSubmitInteraction,
   SeparatorBuilder,
   TextDisplayBuilder,
   TextInputBuilder,
@@ -21,12 +22,10 @@ import {
   type Client,
   type InteractionResponse,
   type Message,
-  type ModalSubmitInteraction,
 } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { mention } from "utils/mention";
-import { modalSubmit } from "utils/modalSubmit";
 import { safeChannel, safeReply } from "utils/safeThings";
 import { errorType } from "../errorType";
 
@@ -98,9 +97,9 @@ export async function errorEmbed(options: {
         [
           shouldUseEmojis ? "**📜 • Error stack**" : "**error stack**",
           stack
-            ? (stack.length <= 2048
+            ? stack.length <= 2048
               ? codeBlock(stack)
-              : "The error stacktrace is an attachment below due to it being too large.")
+              : "The error stacktrace is an attachment below due to it being too large."
             : "No error stacktrace.",
         ].join("\n"),
       ),
@@ -218,84 +217,95 @@ export async function errorEmbed(options: {
             ),
         );
 
-      await buttonInteraction.showModal(modal);
-      const modalInteraction = await modalSubmit(buttonInteraction);
-      collector.resetTimer({ time: COLLECTOR_DURATION });
-      if (!modalInteraction) {
-        collector.stop();
-        return;
-      }
-
-      const modalContainer = new ContainerBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            "## Thank you for reporting! You’ve made Goos proud 🥹\nWe’ll look into this error and properly thank you in a future patch release 🫶",
-          ),
-        )
-        .setAccentColor(await colorize({ hue: Sokolors.Purple }));
-
-      await safeReply({
-        interaction: modalInteraction,
-        replyOptions: { components: [modalContainer], flags: ["Ephemeral", "IsComponentsV2"] },
-      });
-
-      const descriptionContainer = new ContainerBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            modalInteraction.fields.getTextInputValue("description"),
-          ),
-        )
-        .setAccentColor(await colorize({ hue: Sokolors.Green }));
-
-      const media = modalInteraction.fields.getUploadedFiles("images");
-      if (media) {
-        const actualMediaGallery = media
-          .filter(
-            item =>
-              item.contentType &&
-              (item.contentType.startsWith("image/") || item.contentType.startsWith("video/")),
-          )
-          .map(image => new MediaGalleryItemBuilder().setURL(image.url))
-          .toReversed();
-
-        if (actualMediaGallery)
-          descriptionContainer.addMediaGalleryComponents(
-            new MediaGalleryBuilder().addItems(actualMediaGallery),
-          );
-      }
-
-      descriptionContainer.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent("-# description"),
-      );
-
-      const explanationContainer = new ContainerBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            modalInteraction.fields.getTextInputValue("explanation"),
-          ),
-          new TextDisplayBuilder().setContent("-# explanation"),
-        )
-        .setAccentColor(await colorize({ hue: Sokolors.Yellow }));
-
-      const reportChannel = process.env.REPORT_CHANNEL_ID;
-      if (!reportChannel) {
+      try {
+        await buttonInteraction.showModal(modal);
+      } catch (error) {
         console.error(error);
-        console.log(
-          "hey, you don’t have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
-        );
-        collector.stop();
-        return;
       }
 
-      const channel = await safeChannel(client, reportChannel);
-      if (!channel?.isTextBased() || !channel.isSendable()) {
-        collector.stop();
-        return;
-      }
-      await channel.send({
-        components: [descriptionContainer, explanationContainer, forwardContainer],
-        files,
-        flags: "IsComponentsV2",
+      collector.resetTimer({ time: COLLECTOR_DURATION });
+      interaction.client.once("interactionCreate", async modalInteraction => {
+        if (!modalInteraction.isModalSubmit()) {
+          collector.stop();
+          return;
+        }
+        if (modalInteraction.user.id != interaction.user.id)
+          return await errorEmbed({
+            interaction: modalInteraction,
+            title: "You are not the person who executed this command.",
+          });
+
+        const modalContainer = new ContainerBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              "## Thank you for reporting! You’ve made Goos proud 🥹\nWe’ll look into this error and properly thank you in a future patch release 🫶",
+            ),
+          )
+          .setAccentColor(await colorize({ hue: Sokolors.Purple }));
+
+        await safeReply({
+          interaction: modalInteraction,
+          replyOptions: { components: [modalContainer], flags: ["Ephemeral", "IsComponentsV2"] },
+        });
+
+        const descriptionContainer = new ContainerBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              modalInteraction.fields.getTextInputValue("description"),
+            ),
+          )
+          .setAccentColor(await colorize({ hue: Sokolors.Green }));
+
+        const media = modalInteraction.fields.getUploadedFiles("images");
+        if (media) {
+          const actualMediaGallery = media
+            .filter(
+              item =>
+                item.contentType &&
+                (item.contentType.startsWith("image/") || item.contentType.startsWith("video/")),
+            )
+            .map(image => new MediaGalleryItemBuilder().setURL(image.url))
+            .toReversed();
+
+          if (actualMediaGallery)
+            descriptionContainer.addMediaGalleryComponents(
+              new MediaGalleryBuilder().addItems(actualMediaGallery),
+            );
+        }
+
+        descriptionContainer.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent("-# description"),
+        );
+
+        const explanationContainer = new ContainerBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              modalInteraction.fields.getTextInputValue("explanation"),
+            ),
+            new TextDisplayBuilder().setContent("-# explanation"),
+          )
+          .setAccentColor(await colorize({ hue: Sokolors.Yellow }));
+
+        const reportChannel = process.env.REPORT_CHANNEL_ID;
+        if (!reportChannel) {
+          console.error(error);
+          console.log(
+            "hey, you don’t have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
+          );
+          collector.stop();
+          return;
+        }
+
+        const channel = await safeChannel(client, reportChannel);
+        if (!channel?.isTextBased() || !channel.isSendable()) {
+          collector.stop();
+          return;
+        }
+        await channel.send({
+          components: [descriptionContainer, explanationContainer, forwardContainer],
+          files,
+          flags: "IsComponentsV2",
+        });
       });
     });
 

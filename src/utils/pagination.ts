@@ -12,9 +12,9 @@ import {
   type ButtonInteraction,
   type InteractionCollector,
 } from "discord.js";
+import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "./colorize";
 import { COLLECTOR_DURATION } from "./constants";
-import { modalSubmit } from "./modalSubmit";
 import { replace } from "./replace";
 import { safeReply } from "./safeThings";
 
@@ -85,37 +85,49 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
         ),
     );
 
-  await i.showModal(modal);
-  const modalInteraction = await modalSubmit(i);
-  if (!modalInteraction) return functionPage;
-  collector.resetTimer({ time: COLLECTOR_DURATION });
-  const value = Number.parseInt(modalInteraction.fields.getTextInputValue("page_input"));
-
-  if (!Number.isNaN(value)) {
-    // minus 1 because all these numbers revolve around arrays starting from 0.
-    // thus, if a user provides 2, this hunk of code and machinery produces 1.
-    const valueNumber = value - 1;
-    functionPage = valueNumber < 0 ? noErrorPages : Math.min(valueNumber, noErrorPages);
+  try {
+    await i.showModal(modal);
+  } catch (error) {
+    await errorEmbed({ interaction: i, error, forward: true, fileName: "pagination" });
   }
 
-  const container =
-    value > pages
-      ? new ContainerBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              `## You’re viewing page ${functionPage + 1}.\nThis is the last page, since you went out of bounds (there aren’t ${value} pages).`,
-            ),
-          )
-          .setAccentColor(await colorize({ hue: Sokolors.Yellow }))
-      : new ContainerBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`## You’re viewing page ${functionPage + 1}.`),
-          )
-          .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+  collector.resetTimer({ time: COLLECTOR_DURATION });
+  i.client.once("interactionCreate", async modalInteraction => {
+    if (!modalInteraction.isModalSubmit()) return functionPage;
+    if (modalInteraction.user.id != i.user.id)
+      return await errorEmbed({
+        interaction: modalInteraction,
+        title: "You are not the person who executed this command.",
+      });
 
-  await safeReply({
-    interaction: modalInteraction,
-    replyOptions: { components: [container], flags: ["Ephemeral", "IsComponentsV2"] },
+    const value = Number.parseInt(modalInteraction.fields.getTextInputValue("page_input"));
+
+    if (!Number.isNaN(value)) {
+      // minus 1 because all these numbers revolve around arrays starting from 0.
+      // thus, if a user provides 2, this hunk of code and machinery produces 1.
+      const valueNumber = value - 1;
+      functionPage = valueNumber < 0 ? noErrorPages : Math.min(valueNumber, noErrorPages);
+    }
+
+    const container =
+      value > pages
+        ? new ContainerBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                `## You’re viewing page ${functionPage + 1}.\nThis is the last page, since you went out of bounds (there aren’t ${value} pages).`,
+              ),
+            )
+            .setAccentColor(await colorize({ hue: Sokolors.Yellow }))
+        : new ContainerBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(`## You’re viewing page ${functionPage + 1}.`),
+            )
+            .setAccentColor(await colorize({ hue: Sokolors.Blue }));
+
+    await safeReply({
+      interaction: modalInteraction,
+      replyOptions: { components: [container], flags: ["Ephemeral", "IsComponentsV2"] },
+    });
   });
 
   return functionPage;
