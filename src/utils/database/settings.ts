@@ -9,6 +9,7 @@ import { db, values } from ".";
 import type {
   BulkedSettingReturnType,
   GuidParameter,
+  ParameterReturnType,
   Setting,
   SettingDefinitionRecord,
   SettingKeyFor,
@@ -16,7 +17,6 @@ import type {
   SettingReturnType,
   SettingsFor,
   SettingsGlueFix1,
-  SettingValueFromDef,
   SingleSettingDefinition,
   TableDefinition,
   TypeOfDefinition,
@@ -507,13 +507,12 @@ export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>
   key: K,
   setting: S,
 ): Promise<SettingReturnType<K, S>>;
-// [TODO] fix the bad return type when actually using ID
 export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>(
   entityID: string,
   key: K,
   setting: S,
-  id: GuidParameter<Setting<K, S>>,
-): Promise<SettingReturnType<K, S>[keyof SettingValueFromDef<Setting<K, S>>]>;
+  id?: GuidParameter<Setting<K, S>>,
+): Promise<ParameterReturnType<K, S, SettingReturnType<K, S>>>;
 /**
  * @param entityID ID of the guild/user to touch settings for.
  * @param key Key, e.g. `leveling`, `moderation`.
@@ -527,7 +526,7 @@ export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>
   key: K,
   setting: S,
   id?: GuidParameter<Setting<K, S>>,
-): Promise<SettingReturnType<K, S> | SettingReturnType<K, S>[keyof SettingReturnType<K, S>]> {
+): Promise<SettingReturnType<K, S> | ParameterReturnType<K, S, SettingReturnType<K, S>>> {
   const settings: SettingsFor<K> = settingsDefinition[key].settings;
   const set = settings[setting] as SettingsGlueFix1<K, S>;
 
@@ -553,10 +552,11 @@ export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>
     const result = value.map(valuelet => switchTypes(valuelet, set)) as SettingReturnType<K, S>;
     return set.iterable && set.type === "OBJECT"
       ? (id
-        ? ((result as unknown[]).find(resultling => resultling.$ == id) as SettingReturnType<
+        ? ((result as unknown[]).find(resultling => resultling.$ == id) as ParameterReturnType<
             K,
-            S
-          >[keyof SettingReturnType<K, S>])
+            S,
+            SettingReturnType<K, S>
+          >)
         : ((result as unknown[]).toSorted(set.sorting) as SettingReturnType<K, S>))
       : result;
   }

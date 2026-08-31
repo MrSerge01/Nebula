@@ -162,6 +162,12 @@ export type SettingReturnType<K extends keyof TS, S extends SettingKeyFor<K>> = 
   Setting<K, S>
 >;
 
+export type ParameterReturnType<
+  K extends keyof TS,
+  S extends SettingKeyFor<K>,
+  P extends SettingReturnType<K, S>,
+> = P extends readonly (infer T)[] ? T : never;
+
 export type BulkedSettingReturnType<K extends keyof TS> = {
   [S in SettingKeyFor<K>]: SettingValueFromDef<Setting<K, S>>;
 };

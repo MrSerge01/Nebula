@@ -26,6 +26,7 @@ import {
 import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
+import { modalSubmit } from "utils/modalSubmit";
 import { safeEdit, safeReply } from "utils/safeThings";
 
 export const data = new SlashCommandBuilder()
@@ -309,24 +310,17 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     try {
       await buttonInteraction.showModal(modal);
     } catch (error) {
-      await errorEmbed({ interaction, error, forward: true, fileName: "import" });
+      await errorEmbed({ interaction, error, log: true, forward: true, fileName: "import" });
     }
 
     collector.resetTimer({ time: COLLECTOR_DURATION });
-    interaction.client.once("interactionCreate", async modalInteraction => {
-      if (!modalInteraction.isModalSubmit()) return;
-      if (modalInteraction.user.id != user.id)
-        return await errorEmbed({
-          interaction: modalInteraction,
-          title: "You are not the person who executed this command.",
-        });
-
+    const modalInteraction = await modalSubmit(interaction, modal);
+    if (modalInteraction)
       try {
         await construct(modalInteraction.fields.getTextInputValue("setting"), modalInteraction);
       } catch (error) {
         return await collapse(error, interaction);
       }
-    });
   });
 
   collector.on("end", async (_, reason) => {

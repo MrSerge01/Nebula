@@ -59,16 +59,11 @@ export async function run(
   try {
     await interaction.showModal(await newsModal(news));
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "edit" });
+    await errorEmbed({ interaction, error, log: true, forward: true, fileName: "edit" });
   }
 
   interaction.client.once("interactionCreate", async modalInteraction => {
     if (!modalInteraction.isModalSubmit()) return;
-    if (modalInteraction.user.id != user.id)
-      return await errorEmbed({
-        interaction: modalInteraction,
-        title: "You are not the person who executed this command.",
-      });
 
     const title = await replaceVariables(
       modalInteraction.fields.getTextInputValue("title"),

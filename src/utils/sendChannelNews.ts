@@ -33,7 +33,7 @@ export async function sendChannelNews(
   const category = await getSetting(guild.id, "news", "categories", categoryID);
   const channel = (await safeChannel(
     guild,
-    category?.channel ?? (await getSetting(guild.id, "news", "channel")) ?? interaction.channel.id,
+    category.channel ?? (await getSetting(guild.id, "news", "channel")) ?? interaction.channel.id,
   )) as TextChannel;
 
   if (
@@ -48,7 +48,7 @@ export async function sendChannelNews(
 
   const message = await channel.send({
     components: [
-      await newsEmbed(guild, { title, body, author, id, imageURL, categoryRoles: category?.roles }),
+      await newsEmbed(guild, { title, body, author, id, imageURL, categoryRoles: category.roles }),
     ],
     flags: "IsComponentsV2",
   });

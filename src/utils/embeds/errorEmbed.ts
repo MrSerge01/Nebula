@@ -28,6 +28,7 @@ import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { mention } from "utils/mention";
 import { safeChannel, safeReply } from "utils/safeThings";
 import { errorType } from "../errorType";
+import { modalSubmit } from "utils/modalSubmit";
 
 /**
  * Sends a container containing an error.
@@ -223,89 +224,84 @@ export async function errorEmbed(options: {
         console.error(error);
       }
 
+      const modalInteraction = await modalSubmit(buttonInteraction, modal);
       collector.resetTimer({ time: COLLECTOR_DURATION });
-      interaction.client.once("interactionCreate", async modalInteraction => {
-        if (!modalInteraction.isModalSubmit()) {
-          collector.stop();
-          return;
-        }
-        if (modalInteraction.user.id != interaction.user.id)
-          return await errorEmbed({
-            interaction: modalInteraction,
-            title: "You are not the person who executed this command.",
-          });
 
-        const modalContainer = new ContainerBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              "## Thank you for reporting! You’ve made Goos proud 🥹\nWe’ll look into this error and properly thank you in a future patch release 🫶",
-            ),
+      if (!modalInteraction) {
+        collector.stop();
+        return;
+      }
+
+      const modalContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            "## Thank you for reporting! You’ve made Goos proud 🥹\nWe’ll look into this error and properly thank you in a future patch release 🫶",
+          ),
+        )
+        .setAccentColor(await colorize({ hue: Sokolors.Purple }));
+
+      await safeReply({
+        interaction: modalInteraction,
+        replyOptions: { components: [modalContainer], flags: ["Ephemeral", "IsComponentsV2"] },
+      });
+
+      const descriptionContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            modalInteraction.fields.getTextInputValue("description"),
+          ),
+        )
+        .setAccentColor(await colorize({ hue: Sokolors.Green }));
+
+      const media = modalInteraction.fields.getUploadedFiles("images");
+      if (media) {
+        const actualMediaGallery = media
+          .filter(
+            item =>
+              item.contentType &&
+              (item.contentType.startsWith("image/") || item.contentType.startsWith("video/")),
           )
-          .setAccentColor(await colorize({ hue: Sokolors.Purple }));
+          .map(image => new MediaGalleryItemBuilder().setURL(image.url))
+          .toReversed();
 
-        await safeReply({
-          interaction: modalInteraction,
-          replyOptions: { components: [modalContainer], flags: ["Ephemeral", "IsComponentsV2"] },
-        });
-
-        const descriptionContainer = new ContainerBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              modalInteraction.fields.getTextInputValue("description"),
-            ),
-          )
-          .setAccentColor(await colorize({ hue: Sokolors.Green }));
-
-        const media = modalInteraction.fields.getUploadedFiles("images");
-        if (media) {
-          const actualMediaGallery = media
-            .filter(
-              item =>
-                item.contentType &&
-                (item.contentType.startsWith("image/") || item.contentType.startsWith("video/")),
-            )
-            .map(image => new MediaGalleryItemBuilder().setURL(image.url))
-            .toReversed();
-
-          if (actualMediaGallery)
-            descriptionContainer.addMediaGalleryComponents(
-              new MediaGalleryBuilder().addItems(actualMediaGallery),
-            );
-        }
-
-        descriptionContainer.addTextDisplayComponents(
-          new TextDisplayBuilder().setContent("-# description"),
-        );
-
-        const explanationContainer = new ContainerBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              modalInteraction.fields.getTextInputValue("explanation"),
-            ),
-            new TextDisplayBuilder().setContent("-# explanation"),
-          )
-          .setAccentColor(await colorize({ hue: Sokolors.Yellow }));
-
-        const reportChannel = process.env.REPORT_CHANNEL_ID;
-        if (!reportChannel) {
-          console.error(error);
-          console.log(
-            "hey, you don’t have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
+        if (actualMediaGallery)
+          descriptionContainer.addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(actualMediaGallery),
           );
-          collector.stop();
-          return;
-        }
+      }
 
-        const channel = await safeChannel(client, reportChannel);
-        if (!channel?.isTextBased() || !channel.isSendable()) {
-          collector.stop();
-          return;
-        }
-        await channel.send({
-          components: [descriptionContainer, explanationContainer, forwardContainer],
-          files,
-          flags: "IsComponentsV2",
-        });
+      descriptionContainer.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent("-# description"),
+      );
+
+      const explanationContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            modalInteraction.fields.getTextInputValue("explanation"),
+          ),
+          new TextDisplayBuilder().setContent("-# explanation"),
+        )
+        .setAccentColor(await colorize({ hue: Sokolors.Yellow }));
+
+      const reportChannel = process.env.REPORT_CHANNEL_ID;
+      if (!reportChannel) {
+        console.error(error);
+        console.log(
+          "hey, you don’t have REPORT_CHANNEL_ID set in .env and someone somehow reported an issue for the bot to send it to undefined :D",
+        );
+        collector.stop();
+        return;
+      }
+
+      const channel = await safeChannel(client, reportChannel);
+      if (!channel?.isTextBased() || !channel.isSendable()) {
+        collector.stop();
+        return;
+      }
+      await channel.send({
+        components: [descriptionContainer, explanationContainer, forwardContainer],
+        files,
+        flags: "IsComponentsV2",
       });
     });
 

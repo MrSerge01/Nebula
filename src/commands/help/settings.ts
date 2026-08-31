@@ -21,7 +21,8 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
-import { safeEdit, safeReply } from "utils/safeThings";
+import { modalSubmit } from "utils/modalSubmit";
+import { safeCustomId, safeEdit, safeReply } from "utils/safeThings";
 
 async function getContainers(
   isPreviewBool: boolean,
@@ -207,7 +208,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       }
       case "preview_text": {
         const modal = new ModalBuilder()
-          .setCustomId("modal_test")
+          .setCustomId(safeCustomId("modal_test"))
           .setTitle("•  Change the setting!")
           .addLabelComponents(
             new LabelBuilder().setLabel("Value").setTextInputComponent(
@@ -224,19 +225,18 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         try {
           await replyInteraction.showModal(modal);
         } catch (error) {
-          await errorEmbed({ interaction, error, forward: true, fileName: "help/settings" });
+          await errorEmbed({
+            interaction,
+            error,
+            log: true,
+            forward: true,
+            fileName: "help/settings",
+          });
         }
 
-        interaction.client.once("interactionCreate", async modalInteraction => {
-          if (!modalInteraction.isModalSubmit()) return;
-          if (modalInteraction.user.id != interaction.user.id)
-            return await errorEmbed({
-              interaction: modalInteraction,
-              title: "You are not the person who executed this command.",
-            });
-
+        const modalInteraction = await modalSubmit(replyInteraction, modal);
+        if (modalInteraction) {
           previewText = modalInteraction.fields.getTextInputValue("setting");
-
           await safeReply({
             interaction: modalInteraction,
             replyOptions: {
@@ -251,7 +251,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
               components: await getContainers(isPreviewBool, previewArraySelected),
             },
           });
-        });
+        }
 
         break;
       }

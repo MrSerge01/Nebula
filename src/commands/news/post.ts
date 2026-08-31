@@ -1,4 +1,5 @@
 import { getLatestNews } from "database/news";
+import { getSetting } from "database/settings";
 import {
   ContainerBuilder,
   SlashCommandSubcommandBuilder,
@@ -38,16 +39,11 @@ export async function run(
   try {
     await interaction.showModal(await newsModal(null, guild));
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "post" });
+    await errorEmbed({ interaction, error, log: true, forward: true, fileName: "post" });
   }
 
   interaction.client.once("interactionCreate", async modalInteraction => {
     if (!modalInteraction.isModalSubmit()) return;
-    if (modalInteraction.user.id != user.id)
-      return await errorEmbed({
-        interaction: modalInteraction,
-        title: "You are not the person who executed this command.",
-      });
 
     const title = await replaceVariables(
       modalInteraction.fields.getTextInputValue("title"),
@@ -60,6 +56,11 @@ export async function run(
       guild,
       user,
     );
+
+    const categoryID =
+      (await getSetting(guild.id, "news", "categories")).length > 0
+        ? modalInteraction.fields.getStringSelectValues("category")[0]
+        : "";
 
     try {
       const media = modalInteraction.fields.getUploadedFiles("images");
@@ -81,7 +82,7 @@ export async function run(
             )
           : null,
         id: ((await getLatestNews(guild.id))[0]?.id ?? 0) + 1,
-        categoryID: modalInteraction.fields.getStringSelectValues("category")[0],
+        categoryID,
       });
     } catch (error) {
       return await errorEmbed({ interaction, error, forward: true, fileName: "post" });

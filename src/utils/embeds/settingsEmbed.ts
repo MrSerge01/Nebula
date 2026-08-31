@@ -69,9 +69,10 @@ import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { dotCheck } from "utils/dotCheck";
 import { humanizeSettings, humanizeSettingType } from "utils/humanizeSettings";
 import { handlePages, pagedButtons } from "utils/pagination";
-import { safeEdit, safeReply } from "utils/safeThings";
+import { safeCustomId, safeEdit, safeReply } from "utils/safeThings";
 import { setMap } from "utils/setMap";
 import { buttonCheck, errorEmbed } from "./errorEmbed";
+import { modalSubmit } from "utils/modalSubmit";
 
 const OBJECTS_PER_ITR_PAGE = 10;
 
@@ -150,7 +151,7 @@ async function confirmResetModal<K extends keyof TS>(
   if (!interaction.isButton() && !interaction.isChatInputCommand()) return false;
 
   const modal = new ModalBuilder()
-    .setCustomId("confirm_resetting")
+    .setCustomId(safeCustomId("confirm_resetting"))
     .setTitle("•  Are you sure?")
     .addLabelComponents(
       new LabelBuilder()
@@ -161,29 +162,28 @@ async function confirmResetModal<K extends keyof TS>(
   try {
     await interaction.showModal(modal);
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "settingsEmbed" });
+    await errorEmbed({ interaction, error, log: true, forward: true, fileName: "settingsEmbed" });
   }
 
-  interaction.client.once("interactionCreate", async modalInteraction => {
-    if (!modalInteraction.isModalSubmit()) return false;
-    if (!modalInteraction.fields.getCheckbox("confirm")) {
-      await safeReply({
-        interaction: modalInteraction,
-        replyOptions: {
-          components: [
-            await constructModalContainer(
-              `**${dotCheck({ string: "✅", twoSides: true, includeString: true })}Nevermind that then**`,
-              "No setting was reset. Everything continues to shine the way it did so far.\nIf you *did* expect things to get reset, you probably did not mark the checkbox in the dialog. You’re required to toggle it as a double check.",
-              Sokolors.Blue,
-            ),
-          ],
-          flags: ["IsComponentsV2", "Ephemeral"],
-        },
-      });
-      return false;
-    }
-    return modalInteraction;
-  });
+  const modalInteraction = await modalSubmit(interaction, modal);
+  if (!modalInteraction) return false;
+  if (!modalInteraction.fields.getCheckbox("confirm")) {
+    await safeReply({
+      interaction: modalInteraction,
+      replyOptions: {
+        components: [
+          await constructModalContainer(
+            `**${dotCheck({ string: "✅", twoSides: true, includeString: true })}Nevermind that then**`,
+            "No setting was reset. Everything continues to shine the way it did so far.\nIf you *did* expect things to get reset, you probably did not mark the checkbox in the dialog. You’re required to toggle it as a double check.",
+            Sokolors.Blue,
+          ),
+        ],
+        flags: ["IsComponentsV2", "Ephemeral"],
+      },
+    });
+    return false;
+  }
+  return modalInteraction;
 }
 
 /**
@@ -643,7 +643,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
     case "TEXT":
     case "mTEXT": {
       const modal = new ModalBuilder()
-        .setCustomId(cID)
+        .setCustomId(safeCustomId(cID))
         .setTitle(`•  ${humanizeSettings(cID)}`)
         .addLabelComponents(
           new LabelBuilder().setLabel("Value").setTextInputComponent(
@@ -660,56 +660,58 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
       try {
         await (interaction as ButtonInteraction).showModal(modal);
       } catch (error) {
-        await errorEmbed({ interaction, error, forward: true, fileName: "settingsEmbed" });
+        await errorEmbed({
+          interaction,
+          error,
+          log: true,
+          forward: true,
+          fileName: "settingsEmbed",
+        });
       }
 
-      (interaction as ButtonInteraction).client.once(
-        "interactionCreate",
-        async modalInteraction => {
-          if (!modalInteraction.isModalSubmit()) return;
+      const modalInteraction = await modalSubmit(interaction as ButtonInteraction, modal);
+      if (modalInteraction) {
+        const modalValue = modalInteraction.fields.getTextInputValue("setting");
+        const newValue =
+          setting.type === "INTEGER" || setting.type === "mINTEGER"
+            ? Number(modalValue)
+            : modalValue;
 
-          const modalValue = modalInteraction.fields.getTextInputValue("setting");
-          const newValue =
-            setting.type === "INTEGER" || setting.type === "mINTEGER"
-              ? Number(modalValue)
-              : modalValue;
+        const isNewValueValid = isSettingValueValid(newValue, {
+          key: ctl.key,
+          setting: ctl.subKey,
+          def: setting,
+        });
 
-          const isNewValueValid = isSettingValueValid(newValue, {
-            key: ctl.key,
-            setting: ctl.subKey,
-            def: setting,
-          });
+        if (isNewValueValid)
+          if (methods) await methods.setSettingPlease(key, cID, newValue);
+          else
+            value = {
+              ...value,
+              [cID]:
+                setting.type === "INTEGER" || setting.type === "mINTEGER"
+                  ? Number(newValue)
+                  : newValue,
+            };
 
-          if (isNewValueValid)
-            if (methods) await methods.setSettingPlease(key, cID, newValue);
-            else
-              value = {
-                ...value,
-                [cID]:
-                  setting.type === "INTEGER" || setting.type === "mINTEGER"
-                    ? Number(newValue)
-                    : newValue,
-              };
-
-          await safeReply({
-            interaction: modalInteraction,
-            replyOptions: {
-              components: [
-                await constructModalContainer(
-                  isNewValueValid
-                    ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
-                    : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
-                  isNewValueValid
-                    ? `The ${modalValue.length < 50 ? "value" : "**value**"} has been set ${modalValue.length >= 500 ? "successfully." : (modalValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
-                    : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${modalValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(modalValue)}`}`,
-                  isNewValueValid ? Sokolors.Blue : Sokolors.Red,
-                ),
-              ],
-              flags: ["Ephemeral", "IsComponentsV2"],
-            },
-          });
-        },
-      );
+        await safeReply({
+          interaction: modalInteraction,
+          replyOptions: {
+            components: [
+              await constructModalContainer(
+                isNewValueValid
+                  ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
+                  : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
+                isNewValueValid
+                  ? `The ${modalValue.length < 50 ? "value" : "**value**"} has been set ${modalValue.length >= 500 ? "successfully." : (modalValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
+                  : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${modalValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(modalValue)}`}`,
+                isNewValueValid ? Sokolors.Blue : Sokolors.Red,
+              ),
+            ],
+            flags: ["Ephemeral", "IsComponentsV2"],
+          },
+        });
+      }
 
       break;
     }

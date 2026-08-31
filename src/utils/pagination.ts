@@ -88,7 +88,7 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
   try {
     await i.showModal(modal);
   } catch (error) {
-    await errorEmbed({ interaction: i, error, forward: true, fileName: "pagination" });
+    await errorEmbed({ interaction: i, error, log: true, forward: true, fileName: "pagination" });
   }
 
   collector.resetTimer({ time: COLLECTOR_DURATION });

@@ -51,13 +51,12 @@ export async function newsModal(
   if (!newsPost) {
     if (guild) {
       const categories = await getSetting(guild.id, "news", "categories");
-      if (categories) {
+      if (categories.length > 0) {
         const options = await Promise.all(
           categories.map(async category => {
             return new StringSelectMenuOptionBuilder()
               .setLabel(category.name)
               .setDescription(
-                // [TODO] related: database/settings.ts:174-175
                 `Sends to #${((await safeChannel(guild, category.channel ?? (await getSetting(guild.id, "news", "channel")))) as GuildBasedChannel).name}`,
               )
               .setValue(category.$);
@@ -66,7 +65,7 @@ export async function newsModal(
 
         modal.addLabelComponents(
           new LabelBuilder()
-            .setLabel("What news category does your post belong to?")
+            .setLabel("What category does your post belong to?")
             .setStringSelectMenuComponent(
               new StringSelectMenuBuilder()
                 .setCustomId("category")
@@ -80,7 +79,7 @@ export async function newsModal(
 
     modal.addLabelComponents(
       new LabelBuilder()
-        .setLabel("Upload a banner image if you want")
+        .setLabel("Upload some media to accompany your post")
         .setFileUploadComponent(
           new FileUploadBuilder().setCustomId("images").setMaxValues(10).setRequired(false),
         ),
