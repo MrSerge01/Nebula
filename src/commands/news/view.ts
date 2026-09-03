@@ -51,6 +51,7 @@ export async function run(
       pages,
       page,
       isDisabled,
+      willShowCategories: true,
     });
   }
 

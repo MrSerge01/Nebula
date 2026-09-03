@@ -57,11 +57,6 @@ export async function run(
       user,
     );
 
-    const categoryID =
-      (await getSetting(guild.id, "news", "categories")).length > 0
-        ? modalInteraction.fields.getStringSelectValues("category")[0]
-        : "";
-
     try {
       const media = modalInteraction.fields.getUploadedFiles("images");
       await sendChannelNews(guild, interaction, {
@@ -82,7 +77,10 @@ export async function run(
             )
           : null,
         id: ((await getLatestNews(guild.id))[0]?.id ?? 0) + 1,
-        categoryID,
+        category_id:
+          (await getSetting(guild.id, "news", "categories")).length > 0
+            ? modalInteraction.fields.getStringSelectValues("category")[0]
+            : null,
       });
     } catch (error) {
       return await errorEmbed({ interaction, error, forward: true, fileName: "post" });

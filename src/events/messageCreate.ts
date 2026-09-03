@@ -121,22 +121,23 @@ export default (async function run(message) {
   }
 
   const member = await safeMember(guild, author.id);
-  const multiplier = await getSetting(guild.id, "leveling", "global_multiplier");
   const xpGain = await getSetting(guild.id, "leveling", "xp_gain");
   const difficulty = await getSetting(guild.id, "leveling", "difficulty");
   const levelChannelId = await getSetting(guild.id, "leveling", "channel");
-  // const multipliers = await getSetting(guild.id, "leveling", "multipliers");
   const xp = await getUserXp(guild.id, author.id);
-  const newXp = multiplier * (xp + xpGain);
+  let multiplier = await getSetting(guild.id, "leveling", "global_multiplier");
 
-  // [TODO] implement
-  /*
+  // [TODO] redo to be more better.
+  // WHAT HAS TO BE DONE HERE:
+  // - find the highest role that the user has that a multiplier also has, then use that.
+  // - if same channel/role has multiple multipliers, it should apply the highest one.
+  const multipliers = await getSetting(guild.id, "leveling", "multipliers");
   for (const mult of multipliers) {
-    if (message.channelId in mult.channels) newXp *= mult.multiplier
-    if (mult.roles.forEach(role => member.roles.valueOf().has(role)))
+    if (mult.channels.includes(message.channelId)) multiplier *= mult.multiplier;
+    if (member.roles.cache.find(r => mult.roles.includes(r.id))) multiplier *= mult.multiplier;
   }
-  */
 
+  const newXp = multiplier * xpGain + xp;
   const newLevel = calculateLevel({ xp: newXp, difficulty });
   await setUserXp(guild.id, author.id, newXp);
   if (newLevel <= calculateLevel({ xp, difficulty })) return;

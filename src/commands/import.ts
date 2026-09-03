@@ -307,14 +307,8 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
           ),
       );
 
-    try {
-      await buttonInteraction.showModal(modal);
-    } catch (error) {
-      await errorEmbed({ interaction, error, log: true, forward: true, fileName: "import" });
-    }
-
+    const modalInteraction = await modalSubmit(buttonInteraction, modal, "import");
     collector.resetTimer({ time: COLLECTOR_DURATION });
-    const modalInteraction = await modalSubmit(interaction, modal);
     if (modalInteraction)
       try {
         await construct(modalInteraction.fields.getTextInputValue("setting"), modalInteraction);

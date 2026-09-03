@@ -18,7 +18,6 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION, MAX_INPUT_CHARS } from "utils/constants";
 import { modalSubmit } from "utils/modalSubmit";
@@ -222,19 +221,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
             ),
           );
 
-        try {
-          await replyInteraction.showModal(modal);
-        } catch (error) {
-          await errorEmbed({
-            interaction,
-            error,
-            log: true,
-            forward: true,
-            fileName: "help/settings",
-          });
-        }
-
-        const modalInteraction = await modalSubmit(replyInteraction, modal);
+        const modalInteraction = await modalSubmit(replyInteraction, modal, "help/settings");
         if (modalInteraction) {
           previewText = modalInteraction.fields.getTextInputValue("setting");
           await safeReply({

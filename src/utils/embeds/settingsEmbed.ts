@@ -71,7 +71,7 @@ import { humanizeSettings, humanizeSettingType } from "utils/humanizeSettings";
 import { handlePages, pagedButtons } from "utils/pagination";
 import { safeCustomId, safeEdit, safeReply } from "utils/safeThings";
 import { setMap } from "utils/setMap";
-import { buttonCheck, errorEmbed } from "./errorEmbed";
+import { buttonCheck } from "./errorEmbed";
 import { modalSubmit } from "utils/modalSubmit";
 
 const OBJECTS_PER_ITR_PAGE = 10;
@@ -159,13 +159,7 @@ async function confirmResetModal<K extends keyof TS>(
         .setCheckboxComponent(checkbox => checkbox.setCustomId("confirm").setDefault(false)),
     );
 
-  try {
-    await interaction.showModal(modal);
-  } catch (error) {
-    await errorEmbed({ interaction, error, log: true, forward: true, fileName: "settingsEmbed" });
-  }
-
-  const modalInteraction = await modalSubmit(interaction, modal);
+  const modalInteraction = await modalSubmit(interaction, modal, "settingsEmbed");
   if (!modalInteraction) return false;
   if (!modalInteraction.fields.getCheckbox("confirm")) {
     await safeReply({
@@ -657,62 +651,51 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
           ),
         );
 
-      try {
-        await (interaction as ButtonInteraction).showModal(modal);
-      } catch (error) {
-        await errorEmbed({
-          interaction,
-          error,
-          log: true,
-          forward: true,
-          fileName: "settingsEmbed",
-        });
-      }
+      const modalInteraction = await modalSubmit(
+        interaction as ButtonInteraction,
+        modal,
+        "settingsEmbed",
+      );
+      if (!modalInteraction) break;
 
-      const modalInteraction = await modalSubmit(interaction as ButtonInteraction, modal);
-      if (modalInteraction) {
-        const modalValue = modalInteraction.fields.getTextInputValue("setting");
-        const newValue =
-          setting.type === "INTEGER" || setting.type === "mINTEGER"
-            ? Number(modalValue)
-            : modalValue;
+      const modalValue = modalInteraction.fields.getTextInputValue("setting");
+      const newValue =
+        setting.type === "INTEGER" || setting.type === "mINTEGER" ? Number(modalValue) : modalValue;
 
-        const isNewValueValid = isSettingValueValid(newValue, {
-          key: ctl.key,
-          setting: ctl.subKey,
-          def: setting,
-        });
+      const isNewValueValid = isSettingValueValid(newValue, {
+        key: ctl.key,
+        setting: ctl.subKey,
+        def: setting,
+      });
 
-        if (isNewValueValid)
-          if (methods) await methods.setSettingPlease(key, cID, newValue);
-          else
-            value = {
-              ...value,
-              [cID]:
-                setting.type === "INTEGER" || setting.type === "mINTEGER"
-                  ? Number(newValue)
-                  : newValue,
-            };
+      if (isNewValueValid)
+        if (methods) await methods.setSettingPlease(key, cID, newValue);
+        else
+          value = {
+            ...value,
+            [cID]:
+              setting.type === "INTEGER" || setting.type === "mINTEGER"
+                ? Number(newValue)
+                : newValue,
+          };
 
-        await safeReply({
-          interaction: modalInteraction,
-          replyOptions: {
-            components: [
-              await constructModalContainer(
-                isNewValueValid
-                  ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
-                  : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
-                isNewValueValid
-                  ? `The ${modalValue.length < 50 ? "value" : "**value**"} has been set ${modalValue.length >= 500 ? "successfully." : (modalValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
-                  : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${modalValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(modalValue)}`}`,
-                isNewValueValid ? Sokolors.Blue : Sokolors.Red,
-              ),
-            ],
-            flags: ["Ephemeral", "IsComponentsV2"],
-          },
-        });
-      }
-
+      await safeReply({
+        interaction: modalInteraction,
+        replyOptions: {
+          components: [
+            await constructModalContainer(
+              isNewValueValid
+                ? `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}${humanizeSettings(cID)}** got changed`
+                : `**${dotCheck({ string: methods ? setting.emoji : "❌", twoSides: true, includeString: true })}${humanizeSettings(cID)}** couldn’t be changed!`,
+              isNewValueValid
+                ? `The ${modalValue.length < 50 ? "value" : "**value**"} has been set ${modalValue.length >= 500 ? "successfully." : (modalValue.length >= 50 ? `to ${newValue}` : `to **${newValue}**`)}`
+                : `Given data is invalid. Ensure it’s of the valid type (${humanizeSettingType(setting)}) and try again.${modalValue.length >= 500 ? "" : `\nData entered was:\n${codeBlock(modalValue)}`}`,
+              isNewValueValid ? Sokolors.Blue : Sokolors.Red,
+            ),
+          ],
+          flags: ["Ephemeral", "IsComponentsV2"],
+        },
+      });
       break;
     }
     case "CHANNEL":

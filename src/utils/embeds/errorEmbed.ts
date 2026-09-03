@@ -218,12 +218,6 @@ export async function errorEmbed(options: {
             ),
         );
 
-      try {
-        await buttonInteraction.showModal(modal);
-      } catch (error) {
-        console.error(error);
-      }
-
       const modalInteraction = await modalSubmit(buttonInteraction, modal);
       collector.resetTimer({ time: COLLECTOR_DURATION });
 

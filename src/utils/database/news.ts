@@ -16,7 +16,7 @@ type Def = Satisfies<
       messageID: "TEXT";
       imageURL: "mTEXT";
       id: "INTEGER";
-      categoryID: "mTEXT";
+      category_id: "mTEXT";
     };
   }
 >;
@@ -31,7 +31,7 @@ const sendQuery = async (
   messageID: string,
   imageURL: string | null | undefined,
   id: number,
-  categoryID: string,
+  category_id: string | null | undefined,
   sql_: Bun.SQL = db, // what's this supposed to do?
 ): Promise<void> => {
   const insObject = {
@@ -44,7 +44,7 @@ const sendQuery = async (
     messageID,
     imageURL,
     id,
-    categoryID,
+    category_id,
   };
   await sql_`INSERT INTO news ${db(insObject)};`;
 };
@@ -70,7 +70,7 @@ export async function postNews(
   messageID: string,
   imageURL: string | null | undefined,
   id: number,
-  categoryID: string,
+  category_id: string | null | undefined,
 ): Promise<void> {
   await sendQuery(
     guildID,
@@ -82,7 +82,7 @@ export async function postNews(
     messageID,
     imageURL,
     id,
-    categoryID,
+    category_id,
   );
 }
 
@@ -118,7 +118,7 @@ export async function updateNews(
       messageID ?? lastElement.messageID,
       imageURL ?? lastElement.imageURL,
       id,
-      lastElement.categoryID ?? "",
+      lastElement.category_id,
       tx,
     );
   });

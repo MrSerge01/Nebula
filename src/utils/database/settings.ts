@@ -77,8 +77,7 @@ export const defLeveling = {
     type: "INTEGER",
     desc: "Multiplies the XP gained per message (e.g 1.5x will make 2xp 3).",
     val: 1,
-    // [TODO] replace emoji
-    emoji: "🧮",
+    emoji: "🗺️",
   },
   cooldown: {
     type: "INTEGER",
@@ -116,13 +115,13 @@ export const defLeveling = {
         emoji: "🔢",
       },
       channels: {
-        type: "mCHANNEL",
+        type: "CHANNEL",
         iterable: true,
         desc: "Channels granted by this level.",
         emoji: "📑",
       },
       roles: {
-        type: "mROLE",
+        type: "ROLE",
         iterable: true,
         desc: "Roles granted by this level.",
         emoji: "📑",
@@ -154,13 +153,13 @@ export const defLeveling = {
         emoji: "📈",
       },
       channels: {
-        type: "mCHANNEL",
+        type: "CHANNEL",
         iterable: true,
         desc: "Channels to apply the multiplier to.",
         emoji: "📑",
       },
       roles: {
-        type: "mROLE",
+        type: "ROLE",
         iterable: true,
         desc: "Roles to apply the multiplier to.",
         emoji: "📑",
@@ -239,7 +238,7 @@ export const defNews = {
         emoji: "📢",
       },
       channel: {
-        type: "mCHANNEL",
+        type: "CHANNEL",
         desc: "The channel that the news posts will be sent to. If unset, will use the default channel.",
         emoji: "📰",
       },
