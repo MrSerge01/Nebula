@@ -1,4 +1,4 @@
-import { getNews } from "database/news";
+import { getNews, listAllNewsInCategory } from "database/news";
 import { getSetting } from "database/settings";
 import {
   ActionRowBuilder,
@@ -67,27 +67,34 @@ export async function newsEmbed(
       pagedButtons(viewOptions.pages, viewOptions.page, viewOptions.isDisabled),
     );
 
-  // [TODO] make this worky
   if (viewOptions?.willShowCategories) {
     const categories = await getSetting(guild.id, "news", "categories");
-    if (categories.length > 0)
+    if (categories.length > 0) {
+      const news = await Promise.all(
+        categories.map(async category => {
+          return await listAllNewsInCategory(guild.id, category.$);
+        }),
+      );
+      if (news.flat().length === 0) return container;
+
       container.addActionRowComponents(
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
           new StringSelectMenuBuilder()
             .setCustomId("category")
             .setPlaceholder("Select a category")
             .addOptions([
+              new StringSelectMenuOptionBuilder().setLabel("All").setValue("all"),
               ...categories.map(category =>
                 new StringSelectMenuOptionBuilder()
                   .setLabel(category.name)
                   .setDescription(category.$)
                   .setValue(category.$),
               ),
-              new StringSelectMenuOptionBuilder().setLabel("None").setValue("none"),
             ])
             .setDisabled(viewOptions.isDisabled),
         ),
       );
+    }
   }
 
   container.addTextDisplayComponents(

@@ -218,8 +218,6 @@ export const defNews = {
       const roleCount = a.roles.length;
       return `**${a.name}**  •  pings **${roleCount}** ${pluralOrNot("role", roleCount ?? 0)}${a.channel ? `  •  sends to ${mention(a.channel, "CHANNEL")}` : ""}`;
     },
-    // [TODO] add validation that checks for if category channel OR news channel is available.
-    // if the latter is not, you'll be forced to set the channel property.
     properties: {
       $: {
         type: "TEXT",

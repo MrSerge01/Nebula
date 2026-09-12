@@ -70,6 +70,7 @@ export async function handlePages(options: HandlePagesOptions): Promise<number> 
 
   if (i.customId == "left") return functionPage === 0 ? noErrorPages : page - 1;
   if (i.customId == "right") return functionPage === noErrorPages ? 0 : page + 1;
+  if (i.customId == "category") return 0;
 
   const modal = new ModalBuilder()
     .setCustomId("page_select")

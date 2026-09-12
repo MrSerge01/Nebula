@@ -54,6 +54,14 @@ export const listAllNews = async (guildID: string): Promise<TypeOfDefinition<Def
     await db`SELECT * FROM news WHERE "guildID" = ${guildID} ORDER BY "id" DESC;`,
   );
 
+export const listAllNewsInCategory = async (
+  guildID: string,
+  categoryID: string,
+): Promise<TypeOfDefinition<Def>[]> =>
+  values<TypeOfDefinition<Def>>(
+    await db`SELECT * FROM news WHERE "guildID" = ${guildID} AND "category_id" = ${categoryID} ORDER BY "id" DESC;`,
+  );
+
 export const getLatestNews = async (guildID: string): Promise<TypeOfDefinition<Def>[]> =>
   values<TypeOfDefinition<Def>>(
     await db`SELECT * FROM news WHERE "guildID" = ${guildID} ORDER BY "id" DESC LIMIT 1;`,
